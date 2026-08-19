@@ -41,8 +41,6 @@ interface StoreShape {
   promo: string | null;
   applyPromo: (code: string) => boolean;
   clearPromo: () => void;
-  profile: { name: string; email: string; phone: string };
-  updateProfile: (p: { name: string; email: string; phone: string }) => void;
 }
 
 const Ctx = createContext<StoreShape | null>(null);
@@ -74,11 +72,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [addresses, setAddresses] = useLocal<Address[]>("imara.addresses", SEED_ADDRESSES);
   const [tickets, setTickets] = useLocal<Ticket[]>("imara.tickets", SEED_TICKETS);
   const [promo, setPromo] = useLocal<string | null>("imara.promo", null);
-  const [profile, setProfile] = useLocal("imara.profile", {
-    name: "Amina Wanjiku",
-    email: "amina@example.co.ke",
-    phone: "0712 345 678",
-  });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
@@ -201,11 +194,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const clearPromo = useCallback(() => setPromo(null), []);
 
-  const updateProfile = useCallback((p: { name: string; email: string; phone: string }) => {
-    setProfile(p);
-    toast("Profile updated.");
-  }, [toast]);
-
   const value: StoreShape = {
     cart, cartItems, cartCount, cartSubtotal, cartSavings,
     addToCart, setQty, removeFromCart, clearCart,
@@ -217,7 +205,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addresses, addAddress, removeAddress,
     tickets, addTicket,
     promo, applyPromo, clearPromo,
-    profile, updateProfile,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

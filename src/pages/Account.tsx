@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { byId, fmt } from "../data/products";
 import { KENYA_COUNTIES, ORDER_FLOW, statusLabel, type Order } from "../data/content";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/AuthContext";
+import { AuthError, passwordIssues } from "../lib/auth";
+import { AVATAR_HUES, AUTH } from "../config";
 import ProductArt from "../components/ProductArt";
 import { Crumbs, DemoPill } from "../components/ui";
 import { WhatsAppButton } from "../components/Contact";
 import {
-  IcBox, IcCard, IcCheck, IcChevD, IcHeadset, IcHeart, IcPin, IcRefresh, IcTrash, IcUser,
+  IcBox, IcCard, IcCheck, IcChevD, IcHeadset, IcHeart, IcLock, IcPin, IcRefresh, IcTrash, IcUser,
 } from "../components/Icons";
 
 const TABS = [
@@ -25,16 +28,29 @@ const TABS = [
 export default function Account() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "dashboard";
-  const { orders, wishlist, profile } = useStore();
+  const { orders, wishlist } = useStore();
+  const { user, logout } = useAuth();
+  const nav = useNavigate();
+
+  if (!user) return null; // ProtectedRoute guarantees a user — this keeps TS happy
 
   return (
     <div className="wrap py-8 md:py-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Crumbs items={[{ label: "Home", to: "/" }, { label: "My account" }]} />
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight md:text-4xl">Karibu, {profile.name.split(" ")[0]}</h1>
+          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight md:text-4xl">Karibu, {user.name.split(" ")[0]}</h1>
         </div>
-        <DemoPill />
+        <div className="flex items-center gap-2.5">
+          <DemoPill />
+          <button
+            type="button"
+            onClick={() => { logout(); nav("/"); }}
+            className="btn btn-outline btn-sm !text-error hover:!border-error"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
@@ -72,7 +88,8 @@ export default function Account() {
 
 /* ---------- Dashboard ---------- */
 function Dashboard() {
-  const { orders, wishlist, cartCount, profile } = useStore();
+  const { orders, wishlist, cartCount } = useStore();
+  const { user } = useAuth();
   const spent = orders.reduce((s, o) => s + o.total, 0);
   const stats = [
     { label: "Orders placed", value: String(orders.length), icon: IcBox },
@@ -80,14 +97,26 @@ function Dashboard() {
     { label: "In cart now", value: String(cartCount), icon: IcCard },
     { label: "Lifetime spend", value: fmt(spent), icon: IcCheck },
   ];
+  if (!user) return null;
+  const memberSince = new Date(user.createdAt).toLocaleDateString("en-KE", { month: "long", year: "numeric" });
   return (
     <div className="space-y-5">
       <div className="card relative overflow-hidden p-6">
         <div className="dots-bg pointer-events-none absolute inset-0 opacity-40" />
-        <div className="relative">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-teal">Demo account</p>
-          <h2 className="mt-1 font-display text-xl font-bold">{profile.name}</h2>
-          <p className="text-sm font-semibold text-muted">{profile.email} · {profile.phone} · Nairobi</p>
+        <div className="relative flex items-center gap-4">
+          <span
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl font-display text-lg font-bold text-white shadow-lg"
+            style={{ background: user.avatarHue }}
+          >
+            {user.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("")}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-teal">Your account</p>
+            <h2 className="mt-0.5 truncate font-display text-xl font-bold">{user.name}</h2>
+            <p className="truncate text-sm font-semibold text-muted">
+              {user.email}{user.phone ? ` · ${user.phone}` : ""} · member since {memberSince}
+            </p>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -272,20 +301,116 @@ function Addresses() {
 
 /* ---------- Profile ---------- */
 function Profile() {
-  const { profile, updateProfile } = useStore();
-  const [f, setF] = useState(profile);
+  const { user, updateProfile, changePassword } = useAuth();
+  const { toast } = useStore();
+  const [name, setName] = useState(user?.name ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [hue, setHue] = useState(user?.avatarHue ?? AVATAR_HUES[0]);
+  const [pwErr, setPwErr] = useState<string | null>(null);
+
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+
+  if (!user) return null;
+
+  const saveProfile = (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      updateProfile({ name, phone, avatarHue: hue });
+      toast("Profile updated.");
+    } catch (err) {
+      setPwErr(err instanceof AuthError ? err.message : "Could not save profile.");
+    }
+  };
+
+  const savePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setPwErr(null);
+    if (newPw !== newPw2) { setPwErr("New passwords don't match."); return; }
+    const issues = passwordIssues(newPw);
+    if (issues.length) { setPwErr(`New password needs: ${issues.join(", ").toLowerCase()}`); return; }
+    setPwBusy(true);
+    try {
+      await changePassword(curPw, newPw);
+      setCurPw(""); setNewPw(""); setNewPw2("");
+      toast("Password changed — use it next time you sign in.");
+    } catch (err) {
+      setPwErr(err instanceof AuthError ? err.message : "Could not change password.");
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
+  const previewInitials = (name.trim() || user.name).split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
+
   return (
-    <form className="card max-w-xl p-6" onSubmit={(e) => { e.preventDefault(); updateProfile(f); }}>
-      <h2 className="font-display text-xl font-bold">Profile details</h2>
-      <p className="mt-1 text-xs font-bold text-muted">Demo data — stored only in your browser.</p>
-      <div className="mt-5 grid gap-3.5">
-        <label className="block text-xs font-extrabold text-muted">Full name<input className="input mt-1.5" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-        <label className="block text-xs font-extrabold text-muted">Email<input type="email" className="input mt-1.5" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-        <label className="block text-xs font-extrabold text-muted">Phone<input className="input mt-1.5" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
-        <label className="block text-xs font-extrabold text-muted">Password<input type="password" className="input mt-1.5" placeholder="•••••••• (demo)" readOnly /></label>
-      </div>
-      <button type="submit" className="btn btn-amber mt-5">Save changes</button>
-    </form>
+    <div className="max-w-xl space-y-5">
+      {/* Profile details */}
+      <form className="card p-6" onSubmit={saveProfile}>
+        <div className="flex items-center gap-4">
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl font-display text-xl font-bold text-white shadow-lg transition-colors duration-300" style={{ background: hue }}>
+            {previewInitials}
+          </span>
+          <div>
+            <h2 className="font-display text-xl font-bold">Profile details</h2>
+            <p className="mt-0.5 text-xs font-bold text-muted">Only you can see this page — it's guarded by your session.</p>
+          </div>
+        </div>
+
+        <p className="mt-5 text-xs font-extrabold text-muted">Avatar colour</p>
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Avatar colour">
+          {AVATAR_HUES.map((h) => (
+            <button
+              key={h} type="button" role="radio" aria-checked={hue === h} onClick={() => setHue(h)}
+              className={`grid h-9 w-9 place-items-center rounded-full text-white transition ${hue === h ? "ring-2 ring-ink ring-offset-2 ring-offset-card" : "hover:scale-110"}`}
+              style={{ background: h }}
+              aria-label={`Colour ${h}`}
+            >
+              {hue === h && <IcCheck className="h-4 w-4" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 grid gap-3.5">
+          <label className="block text-xs font-extrabold text-muted">Full name
+            <input className="input mt-1.5" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="block text-xs font-extrabold text-muted">Email <span className="font-bold text-muted/70">(sign-in ID — fixed)</span>
+            <input className="input mt-1.5 opacity-70" value={user.email} readOnly />
+          </label>
+          <label className="block text-xs font-extrabold text-muted">Phone / WhatsApp
+            <input className="input mt-1.5" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07XX XXX XXX" />
+          </label>
+        </div>
+        <button type="submit" className="btn btn-amber mt-5">Save changes</button>
+        <p className="mt-3 text-[11px] font-bold text-muted">{AUTH.demoNotice}</p>
+      </form>
+
+      {/* Password change */}
+      <form className="card p-6" onSubmit={savePassword}>
+        <h2 className="flex items-center gap-2 font-display text-xl font-bold"><IcLock className="h-5 w-5 text-teal" /> Change password</h2>
+        <p className="mt-1 text-xs font-bold text-muted">You must confirm your current password. The new one is re-hashed with a fresh salt.</p>
+        {pwErr && <p className="animate-pop mt-3 rounded-lg border border-error/30 bg-error/5 px-3.5 py-2.5 text-[12.5px] font-extrabold text-error" role="alert">{pwErr}</p>}
+        <div className="mt-4 grid gap-3.5">
+          <label className="block text-xs font-extrabold text-muted">Current password
+            <input type="password" className="input mt-1.5" value={curPw} onChange={(e) => setCurPw(e.target.value)} autoComplete="current-password" required />
+          </label>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <label className="block text-xs font-extrabold text-muted">New password
+              <input type="password" className="input mt-1.5" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" required />
+            </label>
+            <label className="block text-xs font-extrabold text-muted">Confirm new password
+              <input type="password" className="input mt-1.5" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} autoComplete="new-password" required />
+            </label>
+          </div>
+        </div>
+        <button type="submit" disabled={pwBusy} className="btn btn-dark mt-5">
+          {pwBusy ? "Updating…" : "Update password"}
+        </button>
+      </form>
+    </div>
   );
 }
 

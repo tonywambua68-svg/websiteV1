@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { fmt, type ArtKind } from "../data/products";
 import { KENYA_COUNTIES, type Order } from "../data/content";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/AuthContext";
 import { DELIVERY_OPTIONS, FREE_DELIVERY_AT } from "../config";
 import ProductArt from "../components/ProductArt";
 import { Crumbs, DemoPill, Empty } from "../components/ui";
@@ -11,13 +12,14 @@ import { IcCart, IcCheck, IcChevD, IcPhone, IcTruck } from "../components/Icons"
 
 export default function Checkout() {
   const { cartItems, cartSubtotal, promo, placeOrder, addresses } = useStore();
+  const { user } = useAuth();
   const nav = useNavigate();
   const [done, setDone] = useState<Order | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  const [name, setName] = useState("Amina Wanjiku");
-  const [phone, setPhone] = useState("0712 345 678");
-  const [email, setEmail] = useState("amina@example.co.ke");
+  const [name, setName] = useState(user?.name ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [county, setCounty] = useState("Nairobi");
   const [details, setDetails] = useState(addresses[0]?.details ?? "");
   const [deliveryId, setDeliveryId] = useState(DELIVERY_OPTIONS[0]?.id ?? "standard");
@@ -112,6 +114,11 @@ export default function Checkout() {
             <StepHead n={1} title="Contact & delivery address" sub={`${name} · ${county}`} />
             {step === 1 && (
               <div className="animate-pop mt-5 grid gap-3.5 sm:grid-cols-2">
+                {user && (
+                  <p className="rounded-lg bg-mint px-3.5 py-2.5 text-[12px] font-extrabold text-teal sm:col-span-2">
+                    Ordering as {user.name} ({user.email}) — details pre-filled from your account.
+                  </p>
+                )}
                 <Field label="Full name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></Field>
                 <Field label="Phone / WhatsApp (for order confirmation)"><input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" autoComplete="tel" /></Field>
                 <Field label="Email (receipt)"><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></Field>

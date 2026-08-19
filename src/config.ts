@@ -80,6 +80,33 @@ export const PAYMENT_WORDS = {
     "Payments are verified manually on WhatsApp before dispatch — you'll get a confirmation message from us once it's done.",
 };
 
+/* ----------------------------------------------------------------------------
+   ACCOUNTS & SECURITY (demo-grade, browser-only)
+   These tune the built-in account system. When you connect a real backend
+   (Supabase / Firebase / WooCommerce), delete this block and swap
+   src/lib/auth.ts — nothing else in the app needs to change.
+   -------------------------------------------------------------------------- */
+export const AUTH = {
+  /** How long a login session lasts (days). */
+  sessionDays: 7,
+
+  /** PBKDF2 iteration count — the hashing cost for every stored password. */
+  pbkdf2Iterations: 120_000,
+
+  /** Failed login attempts allowed before a temporary lock. */
+  maxFailedAttempts: 5,
+
+  /** Lock duration after too many failed attempts (seconds). */
+  lockoutSeconds: 60,
+
+  /** Notice shown on the sign-in screen — edit to match your store. */
+  demoNotice:
+    "Demo accounts — passwords are hashed and stored in this browser only. Connect a backend before going live.",
+};
+
+/** Brand accent hues offered as avatar colours in the profile editor. */
+export const AVATAR_HUES = ["#0b7a63", "#b45309", "#0369a1", "#7c3aed", "#be185d", "#c2410c"];
+
 /* Helper: clean WhatsApp link, or null when the number is not configured. */
 export function waHref(message: string): string | null {
   const n = WHATSAPP_NUMBER.replace(/[^\d]/g, "");

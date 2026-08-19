@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { HashRouter, Link, Route, Routes, useLocation } from "react-router-dom";
 import { StoreProvider } from "./lib/store";
+import { AuthProvider } from "./lib/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { BottomNav, CartDrawer, CompareTray, Toasts } from "./components/Overlays";
@@ -10,6 +12,7 @@ import ProductPage from "./pages/Product";
 import CartPage from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Account from "./pages/Account";
+import AuthPage from "./pages/Auth";
 import Wishlist from "./pages/Wishlist";
 import Deals from "./pages/Deals";
 import Compare from "./pages/Compare";
@@ -46,6 +49,7 @@ function NotFound() {
 export default function App() {
   return (
     <HashRouter>
+      <AuthProvider>
       <StoreProvider>
         <ScrollToTop />
         <div className="flex min-h-screen flex-col pb-16 md:pb-0">
@@ -57,7 +61,8 @@ export default function App() {
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/account" element={<Account />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/deals" element={<Deals />} />
               <Route path="/compare" element={<Compare />} />
@@ -73,6 +78,7 @@ export default function App() {
         <CompareTray />
         <Toasts />
       </StoreProvider>
+      </AuthProvider>
     </HashRouter>
   );
 }
