@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { CATEGORIES, fmt, PRODUCTS } from "../data/products";
 import { POPULAR_SEARCHES } from "../data/content";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/AuthContext";
 import ProductArt from "./ProductArt";
 import { SocialRow, WhatsAppButton } from "./Contact";
 import {
@@ -38,8 +39,12 @@ const NAV = [
   { label: "Support", to: "/support" },
 ];
 
+const initialsOf = (name: string) =>
+  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+
 export default function Header() {
   const { cartCount, wishlist, compare, setDrawerOpen } = useStore();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const loc = useLocation();
 
@@ -71,13 +76,20 @@ export default function Header() {
           </div>
 
           <nav className="ml-auto flex items-center gap-1 md:gap-2" aria-label="Account">
-            <Link to="/account" className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-mist">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-mint text-teal transition group-hover:bg-teal group-hover:text-white">
-                <IcUser className="h-4 w-4" />
+            <Link
+              to={user ? "/account" : "/auth?mode=login&redirect=%2Faccount"}
+              className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-mist"
+              aria-label={user ? `Your account, ${user.name}` : "Sign in"}
+            >
+              <span
+                className="grid h-8 w-8 place-items-center rounded-full font-display text-[11px] font-bold text-white transition group-hover:scale-105"
+                style={{ background: user ? user.avatarHue : "#e3f2ed", color: user ? "#fff" : "#0b7a63" }}
+              >
+                {user ? initialsOf(user.name) : <IcUser className="h-4 w-4" />}
               </span>
               <span className="hidden text-left leading-tight lg:block">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-muted">Account</span>
-                <span className="block text-xs font-extrabold">Amina</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-muted">{user ? "Account" : "Welcome"}</span>
+                <span className="block text-xs font-extrabold">{user ? user.name.split(" ")[0] : "Sign in"}</span>
               </span>
             </Link>
 
@@ -258,6 +270,8 @@ function SearchBar() {
 
 function MobileMenu({ onClose }: { onClose: () => void }) {
   const { wishlist, compare } = useStore();
+  const { user, logout } = useAuth();
+  const nav = useNavigate();
   return (
     <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
       <button type="button" className="animate-fade absolute inset-0 bg-ink/60" onClick={onClose} aria-label="Close menu" />
@@ -296,10 +310,25 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Follow us</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Link to="/account" className="rounded-xl bg-mist px-2 py-2.5 text-center text-xs font-extrabold">Account</Link>
+            <Link to={user ? "/account" : "/auth?mode=login&redirect=%2Faccount"} className="rounded-xl bg-mist px-2 py-2.5 text-center text-xs font-extrabold">
+              {user ? "Account" : "Sign in"}
+            </Link>
             <Link to="/wishlist" className="rounded-xl bg-mist px-2 py-2.5 text-center text-xs font-extrabold">Wishlist ({wishlist.length})</Link>
             <Link to="/compare" className="rounded-xl bg-mist px-2 py-2.5 text-center text-xs font-extrabold">Compare ({compare.length})</Link>
           </div>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => { logout(); onClose(); nav("/"); }}
+              className="w-full rounded-xl border border-line px-2 py-2.5 text-center text-xs font-extrabold text-error transition hover:border-error"
+            >
+              Sign out ({user.name.split(" ")[0]})
+            </button>
+          ) : (
+            <Link to="/auth?mode=register" className="block rounded-xl bg-ink px-2 py-2.5 text-center text-xs font-extrabold text-amber">
+              Create an account — it's free
+            </Link>
+          )}
         </div>
       </div>
     </div>

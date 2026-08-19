@@ -58,12 +58,47 @@ checkout validation, WhatsApp deep-links, tracking UI, everything persists in yo
 (no backend), payment verification (manual via WhatsApp in real life), the AI finder
 (rule-based), support tickets, newsletter.
 
+## 🔐 Accounts & security (demo-grade)
+
+The store includes a full account system: **register, sign in, sign out, profile
+editing, avatar colour, and password change**.
+
+- Passwords are **never stored in plain text** — they are stretched with
+  **PBKDF2-SHA-256** (120,000 iterations, random per-user salt) via the browser's
+  Web Crypto API (`src/lib/crypto.ts`).
+- Sessions use CSPRNG tokens with a configurable expiry (`AUTH.sessionDays`),
+  plus **brute-force lockout** after repeated failed logins.
+- `/account` is a **protected route** — visitors are redirected to `/auth`.
+- One user can never read another user's data through the app: the service layer
+  (`src/lib/auth.ts`) only ever exposes the *current session's* user.
+- **Honest limitation:** this is a frontend-only app, so accounts live in the
+  browser (localStorage). It is clearly labelled demo-grade in the UI. To go
+  live, swap the internals of `src/lib/auth.ts` for a real backend
+  (Supabase / Firebase / Node / WooCommerce) — **nothing else changes**.
+
+Tune it in `src/config.ts` → `AUTH` (session length, hashing cost, lockout).
+
+## 🎨 Selling this as a template
+
+Everything a buyer needs to customise is centralised:
+
+| What | Where |
+|---|---|
+| Business name, WhatsApp, PayBill, socials, delivery, auth | `src/config.ts` |
+| Colours, fonts, buttons, animations | `src/index.css` (`@theme` tokens) |
+| Products & prices | `src/data/products.ts` |
+| Text, FAQs, guides, tracking statuses | `src/data/content.ts` |
+| Legal pages | `src/data/policies.ts` |
+
+No branding is hard-coded in components — change one file, restyle the whole store.
+
 ## 📈 Roadmap to production
 
 1. Add your real products & prices in `src/data/products.ts`
 2. Set `WHATSAPP_NUMBER` + `MPESA_PAYBILL_NUMBER` in `src/config.ts`
 3. Write your real policies in `src/data/policies.ts`
-4. Later: connect WooCommerce (products/orders via REST API) and automatic M-PESA verification
+4. Replace `src/lib/auth.ts` internals with a real auth backend
+5. Later: connect WooCommerce (products/orders via REST API) and automatic M-PESA verification
 
 ## 📁 Project structure
 
