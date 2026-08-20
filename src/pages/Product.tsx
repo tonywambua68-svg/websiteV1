@@ -1,11 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { byId, catName, fmt, PRODUCTS, type Product as TProduct } from "../data/products";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/AuthContext";
+import { logView } from "../lib/nova/analytics";
+import { addReview, getReviews, qualifyingOrder, type Review } from "../lib/reviews";
 import ProductArt from "../components/ProductArt";
 import ProductCard from "../components/ProductCard";
-import { Crumbs, Empty, Price, Qty, Reveal } from "../components/ui";
-import { productWaMessage, WhatsAppButton } from "../components/Contact";
+import RecentlyViewed from "../components/RecentlyViewed";
+import { Crumbs, Empty, Price, Qty, Reveal, Stars } from "../components/ui";
+import { productUrl, productWaMessage, WhatsAppButton } from "../components/Contact";
+import { IcShare } from "../components/Icons";
 import {
   IcBox, IcCart, IcCheck, IcHeart, IcHeartFill, IcLock, IcRefresh, IcShield, IcSwap, IcTruck, IcWallet,
 } from "../components/Icons";
@@ -21,11 +26,17 @@ export default function ProductPage() {
   const { id } = useParams();
   const p = byId(id ?? "");
   const nav = useNavigate();
-  const { addToCart, wishlist, toggleWishlist, compare, toggleCompare, setDrawerOpen } = useStore();
+  const { addToCart, wishlist, toggleWishlist, compare, toggleCompare, setDrawerOpen, toast } = useStore();
+  const { user } = useAuth();
   const [qty, setQtyState] = useState(1);
   const [view, setView] = useState("tint");
   const [tab, setTab] = useState<"desc" | "specs" | "reviews" | "warranty">("desc");
   const [added, setAdded] = useState(false);
+
+  // NOVA behaviour log — powers "Recently viewed" and admin insights.
+  useEffect(() => {
+    if (p) logView(p.id);
+  }, [p?.id]);
 
   const related = useMemo(
     () => (p ? PRODUCTS.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4) : []),
@@ -119,8 +130,17 @@ export default function ProductPage() {
           <p className="mt-1 text-sm font-semibold text-muted">{p.tagline}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] font-bold">
-            <span className="rounded-md bg-mint px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-teal">No reviews yet</span>
-            <button type="button" onClick={() => setTab("reviews")} className="text-teal underline-offset-2 hover:underline">Be the first to review</button>
+            {getReviews(p.id).length > 0 ? (
+              <button type="button" onClick={() => setTab("reviews")} className="flex items-center gap-1.5 underline-offset-2 hover:underline">
+                <Stars value={getReviews(p.id).reduce((s, r) => s + r.rating, 0) / getReviews(p.id).length} size={14} />
+                <span className="text-teal">{getReviews(p.id).length} verified review{getReviews(p.id).length > 1 ? "s" : ""}</span>
+              </button>
+            ) : (
+              <>
+                <span className="rounded-md bg-mint px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-teal">No reviews yet</span>
+                <button type="button" onClick={() => setTab("reviews")} className="text-teal underline-offset-2 hover:underline">Be the first to review</button>
+              </>
+            )}
           </div>
 
           <div className="mt-5 rounded-2xl border border-line bg-card p-5">
@@ -142,6 +162,9 @@ export default function ProductPage() {
           <p className="mt-4 flex items-center gap-2 text-xs font-bold text-muted">
             <IcBox className="h-4 w-4 text-teal" /> In the box: {p.inBox.join(" · ")}
           </p>
+
+          {/* Share — social commerce, the Jumia/AliExpress way */}
+          <ShareRow name={p.name} price={fmt(p.price)} id={p.id} onCopied={() => toast("Product link copied — share it anywhere.")} />
         </div>
 
         {/* ---------- Buy box ---------- */}
@@ -159,12 +182,21 @@ export default function ProductPage() {
               Order via WhatsApp
             </WhatsAppButton>
 
+            {out && (
+              <WhatsAppButton
+                message={`Hello! The ${p.name} is out of stock on the website. Please notify me on WhatsApp as soon as it's back.`}
+                className="mt-2.5 w-full !h-12 !text-[15px] !bg-teal hover:!bg-tealdeep"
+              >
+                Notify me when back in stock
+              </WhatsAppButton>
+            )}
+
             <button type="button" onClick={() => setDrawerOpen(true)} className="mt-2.5 w-full text-center text-xs font-extrabold text-teal underline-offset-2 hover:underline">
               View cart & checkout
             </button>
 
             <div className="mt-5 space-y-3 border-t border-line pt-4 text-[12.5px] font-semibold text-ink/80">
-              <p className="flex gap-2.5"><IcTruck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal" /><span><b>Nairobi:</b> same-day (order before 2 PM) · KSh 300<br /><b>Nationwide:</b> 1–3 working days · from KSh 500</span></p>
+              <DeliveryEta />
               <p className="flex gap-2.5"><IcWallet className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal" /><span><b>Pay with M-PESA PayBill</b> — clear instructions at checkout, verified on WhatsApp</span></p>
               <p className="flex gap-2.5"><IcShield className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal" /><span><b>{p.warranty}</b>, honoured in Kenya</span></p>
               <p className="flex gap-2.5"><IcRefresh className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal" /><span><b>7-day returns</b> — sealed items, no questions asked</span></p>
@@ -208,25 +240,7 @@ export default function ProductPage() {
               </div>
             </dl>
           )}
-          {tab === "reviews" && (
-            <div className="max-w-3xl">
-              <div className="rounded-xl bg-mist p-6 text-center">
-                <p className="font-display text-lg font-bold">No reviews yet — be the first</p>
-                <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-relaxed text-muted">
-                  We're a new store, and we only publish reviews from real, verified customers —
-                  never invented ones. Once you've ordered and used this product, we'll invite you
-                  to share your experience here.
-                </p>
-                <WhatsAppButton message={`Hello! I'd like to order the ${p.name} (${fmt(p.price)}). Please confirm availability.`} className="mt-4">
-                  Order now & review later
-                </WhatsAppButton>
-              </div>
-              <p className="mt-4 text-[11.5px] font-bold text-muted">
-                Reviews will appear on this page as soon as verified customers share them. Until then,
-                our specs, warranty and policies speak for the product.
-              </p>
-            </div>
-          )}
+          {tab === "reviews" && <ReviewsTab p={p} />}
           {tab === "warranty" && (
             <div className="grid max-w-3xl gap-5 sm:grid-cols-2">
               <div className="rounded-xl border border-line p-5">
@@ -300,6 +314,9 @@ export default function ProductPage() {
         </div>
       )}
 
+      {/* ---------- Recently viewed ---------- */}
+      <RecentlyViewed excludeId={p.id} />
+
       {/* ---------- Mobile sticky buy bar ---------- */}
       <div className="fixed inset-x-0 bottom-14 z-[54] border-t border-line bg-card/95 p-3 backdrop-blur md:hidden">
         <div className="flex items-center gap-3">
@@ -327,5 +344,176 @@ function ComboRow({ x }: { x: TProduct }) {
         <span className="block font-display text-[13px] font-bold text-teal">{fmt(x.price)}</span>
       </span>
     </>
+  );
+}
+
+/* ---------- Share (WhatsApp · Telegram · X · copy) ---------- */
+function ShareRow({ name, price, id, onCopied }: { name: string; price: string; id: string; onCopied: () => void }) {
+  const [srcP] = useState(() => byId(id));
+  const msg = `${name} — ${price} · Imara Tech`;
+  const url = srcP ? productUrl(srcP) : window.location.href;
+  const enc = encodeURIComponent;
+  const share = (href: string) => window.open(href, "_blank", "noopener");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${msg}\n${url}`);
+      onCopied();
+    } catch {
+      onCopied();
+    }
+  };
+  const btn = "grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition hover:-translate-y-0.5 hover:border-teal hover:text-teal";
+  return (
+    <div className="mt-4 flex items-center gap-2">
+      <span className="mr-1 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-muted"><IcShare className="h-4 w-4 text-teal" /> Share</span>
+      <button type="button" aria-label="Share on WhatsApp" className={`${btn} hover:!border-[#1b9e4b] hover:!text-[#1b9e4b]`} onClick={() => share(`https://wa.me/?text=${enc(msg + "\n" + url)}`)}>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.96L2 22l5.18-1.5A9.93 9.93 0 1 0 12.04 2Zm5.84 14.13c-.25.7-1.45 1.33-2 1.38-.53.05-1.03.24-3.47-.72-2.93-1.15-4.78-4.16-4.92-4.35-.14-.2-1.16-1.55-1.16-2.96 0-1.4.74-2.1 1-2.38.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.66.5.25.6.84 2.07.91 2.22.07.14.12.31.02.5-.09.2-.14.31-.28.48-.14.17-.3.38-.42.51-.14.14-.29.3-.12.58.16.29.73 1.2 1.57 1.95 1.08.96 1.99 1.26 2.27 1.4.29.14.45.12.62-.07.16-.19.7-.82.89-1.1.19-.29.38-.24.64-.14.26.09 1.65.78 1.93.92.29.14.48.22.55.34.07.12.07.7-.18 1.4Z" /></svg>
+      </button>
+      <button type="button" aria-label="Share on Telegram" className={`${btn} hover:!border-[#0369a1] hover:!text-[#0369a1]`} onClick={() => share(`https://t.me/share/url?url=${enc(url)}&text=${enc(msg)}`)}>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M21.9 4.6 19 19.3c-.2 1-.8 1.2-1.6.8l-4.5-3.3-2.2 2.1c-.24.24-.44.44-.9.44l.32-4.6L18.6 7c.37-.33-.08-.52-.57-.2L7.6 13.4l-4.5-1.4c-1-.3-1-1 .2-1.4l17-6.6c.8-.3 1.5.2 1.6 1.6Z" /></svg>
+      </button>
+      <button type="button" aria-label="Share on X" className={`${btn} hover:!border-ink hover:!text-ink`} onClick={() => share(`https://twitter.com/intent/tweet?text=${enc(msg)}&url=${enc(url)}`)}>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true"><path d="M17.7 3H21l-7.3 8.3L22.2 21h-6.7l-5.2-6.2L4.3 21H1l7.8-8.9L1.8 3h6.9l4.7 5.7L17.7 3Zm-1.2 16h1.9L7.3 4.9H5.3L16.5 19Z" /></svg>
+      </button>
+      <button type="button" aria-label="Copy product link" className={btn} onClick={copy}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className="h-4 w-4" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Live delivery estimate ---------- */
+function DeliveryEta() {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => force((n) => n + 1), 60000);
+    return () => window.clearInterval(id);
+  }, []);
+  const now = new Date();
+  const cutoff = new Date(now);
+  cutoff.setHours(14, 0, 0, 0);
+  const sameDay = now < cutoff;
+  const fmtDay = (d: Date) => d.toLocaleDateString("en-KE", { weekday: "short", day: "numeric", month: "short" });
+  const nairobi = new Date(now);
+  if (!sameDay) nairobi.setDate(nairobi.getDate() + 1);
+  const country = new Date(now);
+  country.setDate(country.getDate() + 2);
+  const countryEnd = new Date(now);
+  countryEnd.setDate(countryEnd.getDate() + 3);
+  return (
+    <p className="flex gap-2.5">
+      <IcTruck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal" />
+      <span>
+        <b>Nairobi:</b>{" "}
+        {sameDay ? (
+          <>order within <b className="text-amberdeep">{Math.max(0, Math.floor((cutoff.getTime() - now.getTime()) / 3600000))}h {Math.floor(((cutoff.getTime() - now.getTime()) % 3600000) / 60000)}m</b> for <b>same-day delivery today</b></>
+        ) : (
+          <>order now → delivered <b>{fmtDay(nairobi)}</b></>
+        )}
+        <br />
+        <b>Nationwide:</b> {fmtDay(country)} – {fmtDay(countryEnd)}
+      </span>
+    </p>
+  );
+}
+
+/* ---------- Verified-purchase reviews (honesty-first) ---------- */
+function ReviewsTab({ p }: { p: TProduct }) {
+  const { orders, toast } = useStore();
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<Review[]>(() => getReviews(p.id));
+  const [rating, setRating] = useState(0);
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const qualifying = user ? qualifyingOrder(user, orders, p.id) : null;
+  const alreadyReviewed = !!qualifying && reviews.some((r) => r.orderId === qualifying.id);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !qualifying) return;
+    if (rating < 1) { setErr("Tap a star to rate the product."); return; }
+    if (text.trim().length < 15) { setErr("Tell other shoppers a little more — at least 15 characters."); return; }
+    setErr(null);
+    addReview({ user, order: qualifying, productId: p.id, rating, title, text });
+    setReviews(getReviews(p.id));
+    setRating(0); setTitle(""); setText("");
+    toast("Asante! Your verified review is live.");
+  };
+
+  return (
+    <div className="max-w-3xl">
+      {reviews.length > 0 ? (
+        <>
+          <div className="flex items-center gap-3">
+            <p className="font-display text-4xl font-bold">
+              {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}
+            </p>
+            <div>
+              <Stars value={reviews.reduce((s, r) => s + r.rating, 0) / reviews.length} size={16} />
+              <p className="text-xs font-bold text-muted">{reviews.length} verified review{reviews.length > 1 ? "s" : ""} — all from real orders</p>
+            </div>
+          </div>
+          <ul className="mt-5 space-y-3">
+            {reviews.map((r) => (
+              <li key={r.id} className="rounded-xl border border-line p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Stars value={r.rating} size={13} />
+                  <span className="rounded bg-mint px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-success">✓ Verified purchase · {r.orderId}</span>
+                </div>
+                {r.title && <p className="mt-1.5 text-[14px] font-extrabold">{r.title}</p>}
+                <p className="mt-1 text-[13.5px] font-semibold leading-relaxed text-muted">{r.text}</p>
+                <p className="mt-2 text-[11px] font-bold text-muted">{r.userName} · {new Date(r.date).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <div className="rounded-xl bg-mist p-6 text-center">
+          <p className="font-display text-lg font-bold">No reviews yet — every review here is earned, not invented</p>
+          <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-relaxed text-muted">
+            We only publish reviews from customers who actually ordered this product. Once it's in your order history, you can review it right here.
+          </p>
+        </div>
+      )}
+
+      {/* Write-a-review (verified purchase only) */}
+      <div className="mt-6 rounded-xl border border-line p-5">
+        <p className="font-display text-[15px] font-bold">Review this product</p>
+        {!user ? (
+          <p className="mt-2 text-[13px] font-semibold text-muted">
+            <Link to="/auth?mode=login&redirect=%2Faccount" className="font-extrabold text-teal underline-offset-2 hover:underline">Sign in</Link> to review — only customers who ordered this product can write a review.
+          </p>
+        ) : !qualifying ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[13px] font-semibold text-muted">Reviews unlock after this product appears in your orders — no fake five-stars, ever.</p>
+            <Link to="/deals" className="btn btn-outline btn-sm">Browse deals</Link>
+          </div>
+        ) : alreadyReviewed ? (
+          <p className="mt-2 flex items-center gap-2 text-[13px] font-extrabold text-success"><IcCheck className="h-4 w-4" /> You've already reviewed this order — asante!</p>
+        ) : (
+          <form className="mt-4 space-y-3.5" onSubmit={submit}>
+            <div>
+              <span className="mb-1.5 block text-xs font-extrabold text-muted">Your rating</span>
+              <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                    onClick={() => setRating(n)}
+                    className={`transition hover:scale-110 ${n <= rating ? "text-amber" : "text-line"}`}>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7" aria-hidden="true"><path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9Z" /></svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <input className="input" placeholder="Headline (optional), e.g. “Perfect for campus”" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <textarea className="input !h-28 !py-2.5" placeholder={`What should other shoppers know about the ${p.name}?`} value={text} onChange={(e) => setText(e.target.value)} />
+            {err && <p className="animate-pop text-[12px] font-extrabold text-error">{err}</p>}
+            <button type="submit" className="btn btn-amber">Publish verified review</button>
+            <p className="text-[11px] font-bold text-muted">Linked to order {qualifying.id} · stored in this browser until a live backend is connected.</p>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }

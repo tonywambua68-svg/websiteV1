@@ -197,6 +197,20 @@ export function seedIfEmpty(): void {
 seedIfEmpty();
 
 /* ---------------- aggregates (admin NOVA + dashboard) ---------------- */
+
+/** Most recent unique product views (for the "Recently viewed" rail). */
+export function recentlyViewedIds(limit = 12): string[] {
+  const events = load();
+  const seen: string[] = [];
+  for (let i = events.length - 1; i >= 0 && seen.length < limit; i--) {
+    const e = events[i];
+    if (e.kind === "view" && e.productId && !seen.includes(e.productId)) {
+      seen.push(e.productId);
+    }
+  }
+  return seen;
+}
+
 export function eventsInDays(days: number): BehaviorEvent[] {
   const cutoff = Date.now() - days * DAY;
   return load().filter((e) => e.ts >= cutoff);

@@ -105,6 +105,8 @@ export interface Order {
   payment: string;
   status: OrderStatus;
   address: string;
+  /** Optional note from the customer to the seller (added at checkout). */
+  note?: string;
   demo?: boolean;
 }
 

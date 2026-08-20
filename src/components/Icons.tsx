@@ -52,6 +52,7 @@ export const IcCpu = (p: P) => <S {...p}><rect x="7" y="7" width="10" height="10
 export const IcSend = (p: P) => <S {...p}><path d="M20.5 3.5 3.5 10.2l6.2 2.6 2.7 6.7Z" /><path d="M20.5 3.5 9.7 12.8" /></S>;
 export const IcEye = (p: P) => <S {...p}><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.8" /></S>;
 export const IcPercent = (p: P) => <S {...p}><path d="M18.5 5.5 5.5 18.5" /><circle cx="7.5" cy="7.5" r="2.2" /><circle cx="16.5" cy="16.5" r="2.2" /></S>;
+export const IcShare = (p: P) => <S {...p}><circle cx="6" cy="12" r="2.6" /><circle cx="17.5" cy="5.5" r="2.6" /><circle cx="17.5" cy="18.5" r="2.6" /><path d="m8.4 10.8 6.8-4M8.4 13.2l6.8 4" /></S>;
 
 // Category line icons (slightly chunkier, drawn for Imara)
 export const IcCatLaptop = (p: P) => <S {...p}><rect x="4.5" y="5" width="15" height="10" rx="1.6" /><path d="M3 18.5h18l-1.2-2H4.2Z" /></S>;

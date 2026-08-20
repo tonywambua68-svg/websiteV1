@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fmt, type ArtKind } from "../data/products";
+import { byId, fmt, type ArtKind } from "../data/products";
 import { KENYA_COUNTIES, type Order } from "../data/content";
 import { useStore } from "../lib/store";
 import { useAuth } from "../lib/AuthContext";
@@ -8,6 +8,7 @@ import { DELIVERY_OPTIONS, FREE_DELIVERY_AT } from "../config";
 import ProductArt from "../components/ProductArt";
 import { Crumbs, DemoPill, Empty } from "../components/ui";
 import { HowToPay, PayBillBox, WhatsAppButton } from "../components/Contact";
+import { logCheckout } from "../lib/nova/analytics";
 import { IcCart, IcCheck, IcChevD, IcPhone, IcTruck } from "../components/Icons";
 
 export default function Checkout() {
@@ -23,6 +24,7 @@ export default function Checkout() {
   const [county, setCounty] = useState("Nairobi");
   const [details, setDetails] = useState(addresses[0]?.details ?? "");
   const [deliveryId, setDeliveryId] = useState(DELIVERY_OPTIONS[0]?.id ?? "standard");
+  const [note, setNote] = useState("");
   const [errs, setErrs] = useState<string[]>([]);
 
   const discount = promo === "IMARA5" ? Math.round(cartSubtotal * 0.05) : 0;
@@ -65,11 +67,13 @@ export default function Checkout() {
   const submit = () => {
     const e = validate();
     if (e.length) { setErrs(e); return; }
+    logCheckout(total); // NOVA behaviour log
     const order = placeOrder({
       delivery: deliveryFee,
       payment: "M-PESA PayBill",
       address: `${name} · ${details}, ${county}`,
       discount,
+      note,
     });
     setDone(order);
     window.scrollTo({ top: 0 });
@@ -129,6 +133,9 @@ export default function Checkout() {
                 </Field>
                 <Field label="Estate / street / building" wide>
                   <input className="input" value={details} onChange={(e) => setDetails(e.target.value)} placeholder="e.g. Rosecourt Apartments, Gitanga Rd, Lavington" />
+                </Field>
+                <Field label="Note to seller (optional)" wide>
+                  <textarea className="input !h-20 !py-2.5" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Call before delivery · gift-wrap it · deliver after 5 PM" />
                 </Field>
                 <div className="flex justify-end sm:col-span-2">
                   <button type="button" className="btn btn-amber" onClick={next}>Continue to delivery</button>
@@ -274,6 +281,12 @@ function Confirmation({ order, totalPaid, onContinue, onTrack }: { order: Order;
             <PayBillBox reference={order.id} amount={totalPaid} />
           </div>
 
+          {order.note && (
+            <p className="mt-3 rounded-lg bg-mist px-3.5 py-2.5 text-[12.5px] font-semibold text-ink/80">
+              <b>Your note to us:</b> {order.note}
+            </p>
+          )}
+
           <div className="mt-4 rounded-xl border border-line p-4">
             <HowToPay />
           </div>
@@ -284,6 +297,14 @@ function Confirmation({ order, totalPaid, onContinue, onTrack }: { order: Order;
             </WhatsAppButton>
             <button type="button" className="btn btn-outline" onClick={onTrack}>Track order</button>
           </div>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="mt-2.5 flex w-full items-center justify-center gap-2 text-center text-xs font-extrabold text-ink underline-offset-2 hover:underline"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+            Print / save receipt
+          </button>
           <button type="button" className="mt-2.5 w-full text-center text-xs font-extrabold text-teal underline-offset-2 hover:underline" onClick={onContinue}>
             Continue shopping
           </button>
@@ -293,6 +314,37 @@ function Confirmation({ order, totalPaid, onContinue, onTrack }: { order: Order;
             Tracking becomes live once orders run through the real backend (WooCommerce).
           </p>
         </div>
+      </div>
+
+      {/* Printable receipt — only visible when printing */}
+      <div id="print-receipt">
+        <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 20, fontWeight: 700 }}>Imara Tech — Order receipt (demo)</p>
+        <p>Reference: {order.id} · Date: {order.date} · Status: Payment Pending</p>
+        <p>Deliver to: {order.address}</p>
+        {order.note && <p>Note: {order.note}</p>}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12 }}>
+          <thead>
+            <tr style={{ textAlign: "left", borderBottom: "1px solid #999" }}>
+              <th>Item</th><th>Qty</th><th style={{ textAlign: "right" }}>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((it) => {
+              const prod = byId(it.id);
+              return (
+                <tr key={it.id} style={{ borderBottom: "1px solid #ddd" }}>
+                  <td>{prod ? prod.name : it.id}</td>
+                  <td>{it.qty}</td>
+                  <td style={{ textAlign: "right" }}>{fmt(it.price * it.qty)}</td>
+                </tr>
+              );
+            })}
+            <tr><td colSpan={2}>Delivery</td><td style={{ textAlign: "right" }}>{order.delivery === 0 ? "FREE" : fmt(order.delivery)}</td></tr>
+            {order.discount > 0 && <tr><td colSpan={2}>Discount</td><td style={{ textAlign: "right" }}>−{fmt(order.discount)}</td></tr>}
+            <tr style={{ fontWeight: 700 }}><td colSpan={2}>Total (pay via M-PESA PayBill)</td><td style={{ textAlign: "right" }}>{fmt(order.total)}</td></tr>
+          </tbody>
+        </table>
+        <p style={{ marginTop: 12, fontSize: 11 }}>Design demo — not a tax invoice. No payment was processed.</p>
       </div>
     </div>
   );
