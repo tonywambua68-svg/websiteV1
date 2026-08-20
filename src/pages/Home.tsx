@@ -269,9 +269,9 @@ function FinderSection() {
           <div>
             <SectionHead
               light
-              eyebrow="Meet Zuri · demo AI"
+              eyebrow="Meet NOVA · demo AI"
               title="Not sure what to buy?"
-              sub="Tell Zuri what you need and roughly what you want to spend — she'll shortlist the best matches with clear reasons, in seconds."
+              sub="Tell NOVA what you need and roughly what you want to spend — it shortlists the best real matches from our live catalogue, with clear reasons, in seconds."
             />
             <ul className="space-y-3">
               {["Understands Kenyan budgets — “under 80k” just works", "Explains why each pick fits, spec by spec", "Recommendations link straight to the product page"].map((f) => (

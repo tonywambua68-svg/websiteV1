@@ -229,6 +229,7 @@ export function getOwnOrderStatus(user: SafeUser | null, orders: Order[], ref: s
   } else {
     order = orders[0]; // most recent
   }
+  const items = order.items.reduce((s, i) => s + i.qty, 0);
   const label = statusLabel(order.status);
   const hint =
     order.status === "payment-pending"
@@ -242,9 +243,9 @@ export function getOwnOrderStatus(user: SafeUser | null, orders: Order[], ref: s
     found: true,
     order: {
       id: order.id, date: order.date, status: order.status, statusLabel: label,
-      total: fmt(order.total), itemCount: order.items.reduce((s, i) => s + i.qty, 0),
+      total: fmt(order.total), itemCount: items,
     },
-    message: `Order ${order.id} (${order.itemCount} item${order.itemCount > 1 ? "s" : ""}, ${order.total}) is currently: ${label}.${hint}`,
+    message: `Order ${order.id} (${items} item${items > 1 ? "s" : ""}, ${fmt(order.total)}) is currently: ${label}.${hint}`,
   };
 }
 
