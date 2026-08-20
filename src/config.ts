@@ -81,6 +81,22 @@ export const PAYMENT_WORDS = {
 };
 
 /* ----------------------------------------------------------------------------
+   STRUCTURED KNOWLEDGE — `mpesa_payment_steps`
+   NOVA (the store AI) answers payment questions ONLY from this list.
+   Edit the wording here; the AI never invents payment instructions.
+   -------------------------------------------------------------------------- */
+export const MPESA_PAYMENT_STEPS: string[] = [
+  "Open M-PESA on your phone.",
+  "Select Lipa na M-PESA.",
+  "Select PayBill.",
+  "Enter our PayBill number.",
+  "Enter your order reference as the Account Number.",
+  "Enter the amount.",
+  "Enter your M-PESA PIN.",
+  "Confirm the payment.",
+];
+
+/* ----------------------------------------------------------------------------
    ACCOUNTS & SECURITY (demo-grade, browser-only)
    These tune the built-in account system. When you connect a real backend
    (Supabase / Firebase / WooCommerce), delete this block and swap

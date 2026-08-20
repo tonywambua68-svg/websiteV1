@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { BottomNav, CartDrawer, CompareTray, Toasts } from "./components/Overlays";
+import NovaChat from "./components/NovaChat";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import ProductPage from "./pages/Product";
@@ -19,6 +20,7 @@ import Compare from "./pages/Compare";
 import Support from "./pages/Support";
 import About from "./pages/About";
 import Policies from "./pages/Policies";
+import NovaInsights from "./pages/NovaInsights";
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -68,7 +70,9 @@ export default function App() {
               <Route path="/compare" element={<Compare />} />
           <Route path="/support" element={<Support />} />
           <Route path="/about" element={<About />} />
-          <Route path="/policy/:slug" element={<Policies />} />              <Route path="*" element={<NotFound />} />
+          <Route path="/policy/:slug" element={<Policies />} />
+          <Route path="/nova-insights" element={<NovaInsights />} />
+          <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
           <Footer />
@@ -76,6 +80,7 @@ export default function App() {
         </div>
         <CartDrawer />
         <CompareTray />
+        <NovaChat />
         <Toasts />
       </StoreProvider>
       </AuthProvider>

@@ -7,7 +7,7 @@ import { useAuth } from "../lib/AuthContext";
 import ProductArt from "./ProductArt";
 import { SocialRow, WhatsAppButton } from "./Contact";
 import {
-  IcBolt, IcCart, IcChevD, IcHeart, IcMenu, IcSearch, IcSwap, IcUser, IcX,
+  IcBolt, IcCart, IcChevD, IcHeart, IcMenu, IcSearch, IcSpark, IcSwap, IcUser, IcX,
 } from "./Icons";
 
 export function Logo({ light = false }: { light?: boolean }) {
@@ -106,6 +106,16 @@ export default function Header() {
                 <span className="absolute -right-0.5 -top-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-teal px-1 text-[10px] font-extrabold text-white">{compare.length}</span>
               )}
             </Link>
+
+            {user?.role === "admin" && (
+              <Link
+                to="/nova-insights"
+                className="hidden h-10 items-center gap-1.5 rounded-lg bg-ink px-3 font-display text-xs font-bold text-amber transition hover:bg-pine lg:flex"
+                aria-label="NOVA admin insights"
+              >
+                <IcSpark className="h-3.5 w-3.5" /> NOVA Insights
+              </Link>
+            )}
 
             <button type="button" onClick={() => setDrawerOpen(true)} className="relative flex h-10 items-center gap-2 rounded-lg bg-amber px-3 font-display text-sm font-bold text-ink transition hover:bg-[#ffb538] active:scale-95" aria-label={`Open cart, ${cartCount} items`}>
               <IcCart className="h-5 w-5" />
