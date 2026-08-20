@@ -6,6 +6,7 @@ import { WhatsAppButton } from "../components/Contact";
 import { useStore } from "../lib/store";
 import ProductArt from "../components/ProductArt";
 import ProductCard from "../components/ProductCard";
+import RecentlyViewed from "../components/RecentlyViewed";
 import AIFinder from "../components/AIFinder";
 import { Price, Reveal, SectionHead, useCountdown } from "../components/ui";
 import { CAT_ICONS, TRUST_ICONS, IcArrowR, IcBolt, IcCheck, IcChevD, IcSwap } from "../components/Icons";
@@ -31,6 +32,9 @@ export default function Home() {
       <FeaturedSection items={featured} />
       <FinderSection />
       <TrustBand />
+      <div className="wrap">
+        <RecentlyViewed />
+      </div>
       <FreshSection items={fresh} />
       <CompareTeaser />
       <GuidesSection />
@@ -228,7 +232,21 @@ function DealsSection({ deals }: { deals: ReturnType<typeof PRODUCTS.filter> }) 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {deals.map((p, i) => (
             <Reveal key={p.id} delay={i * 70}>
-              <ProductCard p={p} />
+              <div className="flex h-full flex-col">
+                <ProductCard p={p} />
+                {/* Live stock-pressure bar — a real marketplace signal */}
+                <div className="mt-2 rounded-xl border border-white/10 bg-pine/70 px-3.5 py-2.5 backdrop-blur">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber to-[#ff7a3d] transition-all duration-700"
+                      style={{ width: p.stock === 0 ? "100%" : `${Math.min(92, 100 - p.stock * 3)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[10px] font-extrabold uppercase tracking-wider text-amber">
+                    {p.stock === 0 ? "Sold out — deal claimed" : p.stock <= 5 ? `Only ${p.stock} left — going fast` : `${p.stock} still available`}
+                  </p>
+                </div>
+              </div>
             </Reveal>
           ))}
         </div>

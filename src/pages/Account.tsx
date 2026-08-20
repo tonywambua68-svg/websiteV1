@@ -233,6 +233,9 @@ function OrderCard({ o }: { o: Order }) {
                   </li>
                 ) : null;
               })}
+              <li className="pt-1">
+                <ReorderButton order={o} />
+              </li>
               <li className="flex justify-between border-t border-line pt-1.5 text-[13px] font-semibold text-muted"><span>Delivery</span><span>{o.delivery === 0 ? "FREE" : fmt(o.delivery)}</span></li>
               {o.discount > 0 && <li className="flex justify-between text-[13px] font-semibold text-success"><span>Discount</span><span>−{fmt(o.discount)}</span></li>}
             </ul>
@@ -244,6 +247,35 @@ function OrderCard({ o }: { o: Order }) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ---------- Reorder (one-tap buy-again) ---------- */
+function ReorderButton({ order }: { order: Order }) {
+  const { addToCart, setDrawerOpen, toast } = useStore();
+  const [busy, setBusy] = useState(false);
+  const available = order.items.filter((it) => {
+    const p = byId(it.id);
+    return p && p.stock > 0;
+  });
+  if (available.length === 0) return null;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        setBusy(true);
+        available.forEach((it) => addToCart(it.id, it.qty, true));
+        window.setTimeout(() => {
+          setBusy(false);
+          setDrawerOpen(true);
+          toast(`${available.length} item${available.length > 1 ? "s" : ""} added back to your cart.`);
+        }, 350);
+      }}
+      className="btn btn-teal btn-sm"
+    >
+      {busy ? "Adding…" : "Order again"}
+    </button>
   );
 }
 

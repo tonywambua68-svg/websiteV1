@@ -2,6 +2,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from "react";
 import { byId, type Product } from "../data/products";
+import { logCartAdd, logOrder } from "./nova/analytics";
 import {
   SEED_ADDRESSES, SEED_ORDERS, SEED_TICKETS, statusLabel,
   type Address, type Order, type OrderStatus, type Ticket,
@@ -32,7 +33,7 @@ interface StoreShape {
   drawerOpen: boolean;
   setDrawerOpen: (v: boolean) => void;
   orders: Order[];
-  placeOrder: (meta: { delivery: number; payment: string; address: string; discount: number }) => Order;
+  placeOrder: (meta: { delivery: number; payment: string; address: string; discount: number; note?: string }) => Order;
   addresses: Address[];
   addAddress: (a: Omit<Address, "id">) => void;
   removeAddress: (id: string) => void;
@@ -89,6 +90,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const p = byId(id);
     if (!p || p.stock === 0) return;
     setCart((c) => ({ ...c, [id]: Math.min((c[id] ?? 0) + qty, p.stock) }));
+    logCartAdd(id); // NOVA behaviour log
     if (!silent) toast(`${p.name} added to cart.`);
   }, [setCart, toast]);
 
@@ -146,7 +148,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [cartItems],
   );
 
-  const placeOrder = useCallback((meta: { delivery: number; payment: string; address: string; discount: number }) => {
+  const placeOrder = useCallback((meta: { delivery: number; payment: string; address: string; discount: number; note?: string }) => {
     const items = Object.entries(cart).map(([id, qty]) => ({ id, qty, price: byId(id)?.price ?? 0 }));
     const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
     const order: Order = {
@@ -160,7 +162,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       payment: meta.payment,
       status: "payment-pending" as OrderStatus,
       address: meta.address,
+      note: meta.note?.trim() || undefined,
     };
+    logOrder(order.total); // NOVA behaviour log
     setOrders((o) => [order, ...o]);
     clearCart();
     setPromo(null);

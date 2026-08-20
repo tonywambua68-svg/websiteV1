@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CATEGORIES, PRODUCTS, discountOf, type CategoryId, type Product } from "../data/products";
+import { logSearch } from "../lib/nova/analytics";
 import ProductCard from "../components/ProductCard";
 import { Crumbs, Empty, Reveal } from "../components/ui";
 import { IcChevD, IcFilter, IcX } from "../components/Icons";
@@ -29,6 +30,11 @@ export default function Shop() {
   const q = (params.get("q") ?? "").trim();
   const urlCat = params.get("cat") as CategoryId | null;
   const urlTag = params.get("tag");
+
+  // NOVA behaviour log — what shoppers search for feeds admin insights.
+  useEffect(() => {
+    if (q) logSearch(q);
+  }, [q]);
 
   const [f, setF] = useState<Filters>(EMPTY);
   const [sort, setSort] = useState<SortKey>("featured");

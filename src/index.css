@@ -259,3 +259,21 @@ body {
   .reveal { opacity: 1; transform: none; transition: none; }
   .animate-floaty, .animate-marquee, .animate-ping-soft { animation: none; }
 }
+
+/* ---------- printable order receipt ---------- */
+#print-receipt { display: none; }
+@media print {
+  /* Hide the whole app shell; show only the receipt block. */
+  body * { visibility: hidden; }
+  #print-receipt, #print-receipt * { visibility: visible; }
+  #print-receipt {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 24px;
+    font-family: "Manrope", sans-serif;
+    font-size: 13px;
+    color: #000;
+    background: #fff;
+  }
+}
