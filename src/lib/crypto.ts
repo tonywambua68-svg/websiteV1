@@ -13,6 +13,21 @@
 
 const enc = new TextEncoder();
 
+/** Marker prefix the auth layer detects to show a friendly, actionable message. */
+export const SECURE_CONTEXT_REQUIRED = "SECURE_CONTEXT_REQUIRED";
+
+function subtleCrypto(): SubtleCrypto {
+  const subtle = typeof crypto !== "undefined" ? crypto.subtle : undefined;
+  if (!subtle) {
+    // Web Crypto only exists in secure contexts (https, or http on localhost/127.0.0.1).
+    throw new Error(
+      `${SECURE_CONTEXT_REQUIRED}: This browser can't hash passwords on the current page. ` +
+        `Open the site at http://localhost:3000 (run "npm run dev") — not a file:// path or a non-localhost address.`,
+    );
+  }
+  return subtle;
+}
+
 /** Cryptographically random token, base64url-encoded. */
 export function randomToken(bytes = 32): string {
   const buf = new Uint8Array(bytes);
@@ -27,8 +42,9 @@ export function newSalt(): string {
 
 /** PBKDF2-SHA-256 password hash → base64url string. */
 export async function hashPassword(password: string, saltB64: string, iterations: number): Promise<string> {
-  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits(
+  const subtle = subtleCrypto();
+  const keyMaterial = await subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: fromB64Url(saltB64) as unknown as BufferSource, iterations },
     keyMaterial,
     256,
@@ -61,7 +77,13 @@ function toB64Url(buf: Uint8Array): string {
 }
 
 function fromB64Url(s: string): Uint8Array {
-  const b64 = s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (s.length % 4)) % 4);
+  const str = typeof s === "string" ? s : "";
+  if (!/^[A-Za-z0-9_-]*$/.test(str)) {
+    // A record from an older engine version or tampered storage — fail with a
+    // clean, catchable error instead of letting atob blow up.
+    throw new Error("Invalid stored credential format.");
+  }
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (str.length % 4)) % 4);
   const bin = atob(b64);
   const buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);

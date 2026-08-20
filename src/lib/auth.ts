@@ -149,6 +149,40 @@ export function hasAdmin(): boolean {
   return loadUsers().some((u) => u.role === "admin");
 }
 
+/* ---------------- record integrity & self-healing ----------------
+   Older engine versions stored salt/hash differently. Rather than let a
+   stale localStorage record break sign-in forever, we detect unusable
+   records and — for the .env-seeded dev admin only — re-derive the hash
+   from the configured dev password so local logins keep working across
+   upgrades. Regular user records are never silently rewritten. */
+
+const B64URL_RE = /^[A-Za-z0-9_-]+$/;
+function isUsableRecord(u: StoredUser): boolean {
+  return (
+    typeof u.salt === "string" && typeof u.hash === "string" &&
+    B64URL_RE.test(u.salt) && B64URL_RE.test(u.hash) && u.salt.length >= 16
+  );
+}
+async function repairRecord(u: StoredUser, password: string): Promise<StoredUser> {
+  const salt = newSalt();
+  const hash = await hashPassword(password, salt, AUTH.pbkdf2Iterations);
+  const users = loadUsers();
+  const idx = users.findIndex((x) => x.id === u.id);
+  const fixed: StoredUser = { ...u, salt, hash };
+  if (idx >= 0) users[idx] = fixed;
+  else users.push(fixed);
+  saveUsers(users);
+  return fixed;
+}
+function convertCryptoError(err: unknown): AuthError | null {
+  if (err instanceof Error && err.message.startsWith("SECURE_CONTEXT_REQUIRED")) {
+    return new AuthError(
+      "Your browser blocked password verification on this page. Open the site at http://localhost:3000 (run “npm run dev”) — signing in doesn't work from a file:// path or a non-localhost address.",
+    );
+  }
+  return null;
+}
+
 async function createUser(
   input: { name: string; email: string; phone: string; password: string },
   role: Role,
@@ -250,12 +284,42 @@ export async function login(input: { email: string; password: string }): Promise
 
   checkLock(email);
 
-  const user = findUser(email);
+  let user = findUser(email);
+
+  // Self-heal the dev admin seeded from .env: if the stored record is from an
+  // older engine version, or the env password no longer verifies, re-derive
+  // the hash from the .env password. .env is gitignored and dev-only, so this
+  // never affects production/template builds (no env → no self-heal).
+  const envAdminEmail = normalizeEmail(env.VITE_DEMO_ADMIN_EMAIL ?? "");
+  const envAdminPw = env.VITE_DEMO_ADMIN_PASSWORD;
+  if (user && user.role === "admin" && user.email === envAdminEmail && envAdminPw) {
+    try {
+      const stillValid =
+        isUsableRecord(user) &&
+        (await verifyPassword(envAdminPw, user.salt, user.hash, AUTH.pbkdf2Iterations));
+      if (!stillValid) user = await repairRecord(user, envAdminPw);
+    } catch {
+      /* fall through — handled below */
+    }
+  } else if (user && !isUsableRecord(user)) {
+    // A corrupted non-admin record can never verify; treat as unknown.
+    user = undefined;
+  }
+
   // Always verify against *something* so unknown emails take the same time
   // as known ones (no user-enumeration via timing).
-  const ok = user
-    ? await verifyPassword(input.password, user.salt, user.hash, AUTH.pbkdf2Iterations)
-    : await verifyPassword(input.password, newSalt(), randomToken(32), AUTH.pbkdf2Iterations).then(() => false);
+  let ok = false;
+  try {
+    ok = user
+      ? await verifyPassword(input.password, user.salt, user.hash, AUTH.pbkdf2Iterations)
+      : await verifyPassword(input.password, newSalt(), randomToken(32), AUTH.pbkdf2Iterations).then(() => false);
+  } catch (err) {
+    const friendly = convertCryptoError(err);
+    if (friendly) throw friendly;
+    throw new AuthError(
+      "We couldn't verify that sign-in on this device. Open the site at http://localhost:3000 and try again — if it persists, clear this site's browser data and re-register.",
+    );
+  }
 
   if (!ok || !user) {
     recordFailure(email);
@@ -292,7 +356,14 @@ export async function register(input: {
   // store administrator. Every account after that is a customer.
   const role: Role = hasAdmin() ? "customer" : "admin";
 
-  const user = await createUser({ name, email, phone, password: input.password }, role);
+  let user: StoredUser;
+  try {
+    user = await createUser({ name, email, phone, password: input.password }, role);
+  } catch (err) {
+    const friendly = convertCryptoError(err);
+    if (friendly) throw friendly;
+    throw new AuthError("Couldn't create the account on this device. Make sure you're on http://localhost:3000 and try again.");
+  }
   startSession(user.id); // auto sign-in after registration
   return toSafe(user);
 }
@@ -339,7 +410,14 @@ export async function changePassword(currentPw: string, nextPw: string): Promise
   if (idx === -1) throw new AuthError("You are signed out. Please sign in again.");
 
   const u = users[idx];
-  const ok = await verifyPassword(currentPw, u.salt, u.hash, AUTH.pbkdf2Iterations);
+  let ok = false;
+  try {
+    ok = isUsableRecord(u) && (await verifyPassword(currentPw, u.salt, u.hash, AUTH.pbkdf2Iterations));
+  } catch (err) {
+    const friendly = convertCryptoError(err);
+    if (friendly) throw friendly;
+    ok = false;
+  }
   if (!ok) throw new AuthError("Your current password is incorrect.");
 
   const issues = passwordIssues(nextPw);
@@ -362,16 +440,30 @@ void (async () => {
   try {
     const email = env.VITE_DEMO_ADMIN_EMAIL;
     const password = env.VITE_DEMO_ADMIN_PASSWORD;
-    if (email && password && !findUser(email)) {
-      await createUser(
-        {
-          name: env.VITE_DEMO_ADMIN_NAME || "Store Admin",
-          email,
-          phone: env.VITE_DEMO_ADMIN_PHONE || "0143198930",
-          password,
-        },
-        "admin",
-      );
+    if (email && password) {
+      const existing = findUser(email);
+      if (!existing) {
+        await createUser(
+          {
+            name: env.VITE_DEMO_ADMIN_NAME || "Store Admin",
+            email,
+            phone: env.VITE_DEMO_ADMIN_PHONE || "0143198930",
+            password,
+          },
+          "admin",
+        );
+      } else if (existing.role === "admin") {
+        // Dev-only self-heal: keep the .env admin working across engine
+        // upgrades even if an older/stale record sits in localStorage.
+        try {
+          const valid =
+            isUsableRecord(existing) &&
+            (await verifyPassword(password, existing.salt, existing.hash, AUTH.pbkdf2Iterations));
+          if (!valid) await repairRecord(existing, password);
+        } catch {
+          /* seeding must never break the app */
+        }
+      }
     }
   } catch {
     /* seeding must never break the app */
