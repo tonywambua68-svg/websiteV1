@@ -14,6 +14,8 @@ import {
   topComparePairs, topProducts, topQueries, weeklyOrderTrend,
 } from "./analytics";
 import { churnRisks, insightsSnapshot, segmentSummary, deriveCustomers } from "./customerService";
+import { getStockIntelligence, getMarketSignals, runSeoAudit } from "./intelligence";
+import { INTEGRATIONS, isConnected } from "./integrations";
 
 export interface AdminAnswer { text: string; chips?: string[] }
 
@@ -177,15 +179,62 @@ export function adminAsk(raw: string): AdminAnswer {
     return { text: `Products getting the most attention (30 days):\n\n${lines}`, chips: viewed.map((v) => name(v.id)) };
   }
 
-  if (/recommend|campaign|what should|insight|marketing|strategy/i.test(t)) {
+  if (/recommend|campaign|what should|insight|marketing|strategy|advertise|ads|promote.*next|what to do/i.test(t)) {
     const recs = getMarketingInsights();
-    const lines = recs.map((r, i) => `${i + 1}. ${r.title}\n   Why: ${r.why}`).join("\n\n");
-    return { text: `Data-backed marketing recommendations:\n\n${lines}`, chips: recs.map((r) => r.title) };
+    const lines = recs.map((r, i) => `${i + 1}. ${r.title}\n   Why: ${r.why}\n   Data: ${r.data.join(" · ")}`).join("\n\n");
+    return { text: `Here's what the data says you should do next (every point is data-cited):\n\n${lines}`, chips: recs.map((r) => r.title) };
+  }
+
+  if (/seo|google|ranking|search engine|organic|meta/i.test(t)) {
+    const seo = runSeoAudit();
+    const worst = [...seo.checks].sort((a, b) => a.score / a.max - b.score / b.max).slice(0, 3);
+    const lines = worst.map((c) => `• ${c.label}: ${c.score}/${c.max}\n  Fix: ${c.fix}`).join("\n\n");
+    return {
+      text: `SEO audit — overall grade ${seo.grade} (${seo.total}/${seo.max}). Fix these first:\n\n${lines}\n\nFull audit is in the “SEO” tab.`,
+      chips: [`Grade ${seo.grade}`, ...worst.map((c) => c.label)],
+    };
+  }
+
+  if (/stock|inventory|restock|out of|add product|what to sell|sourcing/i.test(t)) {
+    const recs = getStockIntelligence();
+    if (!recs.length) return { text: "No urgent stock signals right now — demand and supply look balanced. I'll flag it when a fast mover runs low or a budget band goes undersupplied." };
+    const lines = recs.map((r, i) => `${i + 1}. [${r.priority.toUpperCase()}] ${r.title}\n   Why: ${r.why}\n   Data: ${r.data.join(" · ")}`).join("\n\n");
+    return { text: `Stock & merchandising signals:\n\n${lines}`, chips: recs.map((r) => r.title) };
+  }
+
+  if (/social|tiktok|instagram|facebook|x\.com|twitter|content|post|reel|video|caption/i.test(t)) {
+    const sig = getMarketSignals().find((s) => s.label.includes("short video"));
+    return {
+      text:
+        `For this market, short-form video (TikTok/Reels) outperforms static posts for electronics. ${sig ? sig.detail : ""}\n\n` +
+        `Open the “Content” tab: pick any product and NOVA writes a ready TikTok script, Instagram caption, X post or WhatsApp broadcast — built from the real spec sheet and price, with hashtags and the best posting time. There's also a 7-day calendar.`,
+      chips: ["Open Content tab", "TikTok script", "IG caption", "7-day calendar"],
+    };
+  }
+
+  if (/zapier|integrat|connect|webhook|automat|api|sheets|mailchimp|pixel|ga4|google analytics|twilio/i.test(t)) {
+    const connected = INTEGRATIONS.filter((i) => isConnected(i.id)).map((i) => i.name);
+    const lines = INTEGRATIONS.map((i) => `• ${i.name} — ${isConnected(i.id) ? "✅ connected" : "not connected"} · ${i.tagline}`).join("\n");
+    return {
+      text:
+        `NOVA connects to the outside world through webhooks & APIs (the “Connect” tab). ${connected.length ? `Currently connected: ${connected.join(", ")}.` : "Nothing connected yet."}\n\n${lines}\n\n` +
+        `How it works: NOVA builds a standard JSON payload (e.g. on every new order) and POSTs it to your Zapier/Sheets webhook — the automation service does the rest. Keys are stored only in this browser, never committed to Git.`,
+      chips: ["Open Connect tab", "Zapier", "Meta Pixel", "GA4"],
+    };
+  }
+
+  if (/competitor|market|trend|demand|kenya|industry/i.test(t)) {
+    const sigs = getMarketSignals();
+    const lines = sigs.map((s) => `• ${s.label}\n  ${s.detail}`).join("\n\n");
+    return {
+      text: `Market intelligence (labelled as external context — it never overrides your own store data):\n\n${lines}`,
+      chips: sigs.map((s) => s.label),
+    };
   }
 
   return {
     text:
-      `I can analyse this store's behaviour data. Try:\n` +
-      `• “Which customers are at risk of churning?”\n• “What budgets are customers mentioning?”\n• “What are customers asking repeatedly?”\n• “Which products are compared most?”\n• “Why aren't customers buying?”\n• “What should we market next?”`,
+      `I'm your business copilot — I read this store's live behaviour data. Try:\n` +
+      `• “What should I advertise next?”\n• “How's my SEO? What should I fix?”\n• “What should I add to stock?”\n• “Write me social content ideas”\n• “Connect Zapier / Meta Pixel / GA4”\n• “Which customers are at risk of churning?”\n• “What budgets are customers mentioning?”\n• “Why aren't customers buying?”\n• “What are the market trends?”`,
   };
 }
