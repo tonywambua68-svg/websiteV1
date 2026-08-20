@@ -113,6 +113,41 @@ src/
   lib/store.tsx        ← cart / wishlist / orders state (localStorage)
 ```
 
+## 🔐 Accounts & security
+
+The store has a real authentication layer (`src/lib/auth.ts` + `src/lib/crypto.ts`):
+
+- **Passwords** — hashed with PBKDF2-SHA-256 (120,000 iterations, random per-user
+  salt, Web Crypto API). Plaintext is never stored; only hash + salt persist.
+- **Sessions** — random 256-bit tokens, expire after `AUTH.sessionDays` (config.ts).
+- **Brute-force lockout** — 5 failures per email → temporary lock (`AUTH.*` in config.ts).
+- **Safe errors** — "Invalid email or password" never reveals whether an email exists.
+- **Protected routes** — `/account` redirects to `/auth` when signed out.
+- **First account = administrator** (WordPress-style installer rule); later accounts are customers.
+
+### Development demo admin
+
+Create a `.env` file (already gitignored — see `.env.example`):
+
+```env
+VITE_DEMO_ADMIN_NAME=Tony (Admin)
+VITE_DEMO_ADMIN_EMAIL=tony@example.com
+VITE_DEMO_ADMIN_PASSWORD=tony@123
+VITE_DEMO_ADMIN_PHONE=0143198930
+```
+
+Restart `npm run dev` — the admin is seeded (hashed) on first load. Sign in at **/auth**.
+
+### Before selling/deploying the template
+
+1. **Delete `.env`** and rebuild — no credentials are shipped; the first person to
+   register becomes the administrator.
+2. Never commit `.env` (`.gitignore` already protects it).
+3. Connect a real backend (Supabase / Firebase / WooCommerce) — swap **only**
+   `src/lib/auth.ts`; every page and guard keeps working unchanged. Until then:
+   *"Demo accounts — passwords are hashed and stored in this browser only.
+   Connect a backend before going live."*
+
 ## License
 
 Prototype created for design exploration and learning. Product brands and demo data are fictional.

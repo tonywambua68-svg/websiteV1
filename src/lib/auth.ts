@@ -1,64 +1,73 @@
-/* ============================================================================
-   AUTH SERVICE — accounts, sessions, password management
-   ----------------------------------------------------------------------------
-   Single source of truth for authentication. The rest of the app only ever
-   talks to this module (via AuthContext), which makes it the ONE file to
-   replace when a real backend (Supabase / Firebase / WooCommerce) is added.
-
-   Security properties (demo-grade, browser-enforced):
-   • Passwords hashed with PBKDF2-SHA-256 + random per-user salt — never plain
-   • Session tokens from a CSPRNG, with expiry
-   • Brute-force lockout after repeated failures (per email)
-   • Generic error messages — login never reveals whether the email exists
-   • Profile data is only ever exposed for the CURRENT session's user
-   • No hard-coded credentials, no hidden admin accounts, no backdoors
-
-   STORAGE KEYS (versioned so a future backend migration can ignore them):
-   imara.users.v1   → { [userId]: StoredUser }
-   imara.session.v1 → { token, userId, expiresAt }
-   imara.lockout.v1 → { [email]: { fails, until } }
-   ========================================================================== */
+/**
+ * Imara Tech — authentication engine (client-side layer).
+ *
+ * HOW PASSWORDS ARE PROTECTED
+ * ---------------------------
+ * • Plaintext passwords are NEVER persisted. Every password is stretched with
+ *   PBKDF2-SHA-256 (see AUTH.pbkdf2Iterations in src/config.ts) using a random
+ *   per-user salt, via the browser's Web Crypto API (src/lib/crypto.ts).
+ * • Verification uses a constant-time comparison (no timing shortcuts).
+ * • Login failures return one generic message ("Invalid email or password")
+ *   so attackers cannot discover which emails are registered.
+ * • Brute-force protection: AUTH.maxFailedAttempts failures per email →
+ *   temporary lockout of AUTH.lockoutSeconds.
+ * • Sessions are CSPRNG tokens with an expiry (AUTH.sessionDays); expired
+ *   sessions are discarded on read. Responses (SafeUser) never expose the
+ *   stored hash or salt.
+ *
+ * HONEST LIMITATION — this project has no server, so the user database lives
+ * in this browser's localStorage and the enforcement boundary is the device.
+ * Every function below maps 1-to-1 onto a real backend (Supabase / Firebase /
+ * Node+PostgreSQL / WooCommerce): when you deploy, swap ONLY this file —
+ * AuthContext, pages and guards keep working unchanged.
+ */
 
 import { AUTH, AVATAR_HUES } from "../config";
 import { hashPassword, newSalt, randomToken, verifyPassword } from "./crypto";
 
+/* ---------------- types ---------------- */
+
+export type Role = "admin" | "customer";
+
 export interface StoredUser {
+  id: string;
+  name: string;
+  email: string; // normalised lowercase
+  phone: string;
+  role: Role;
+  avatarHue: string;
+  salt: string; // base64url
+  hash: string; // base64url — PBKDF2-SHA-256, never plaintext
+  createdAt: string; // ISO
+}
+
+/** Everything the UI may see. Deliberately excludes salt/hash. */
+export interface SafeUser {
   id: string;
   name: string;
   email: string;
   phone: string;
-  salt: string;
-  hash: string;
+  role: Role;
   avatarHue: string;
   createdAt: string;
 }
 
-/** What the UI is allowed to see — credentials stripped at the boundary. */
-export type SafeUser = Omit<StoredUser, "salt" | "hash">;
-
-interface SessionRecord { token: string; userId: string; expiresAt: number }
-interface LockoutRecord { fails: number; until: number }
-
-export type AuthErrorCode =
-  | "invalid-input" | "email-exists" | "bad-credentials" | "locked-out"
-  | "session-expired" | "wrong-password" | "weak-password" | "no-session";
-
+/** Thrown for every user-facing auth failure (safe messages only). */
 export class AuthError extends Error {
-  code: AuthErrorCode;
-  retryAfterSec?: number;
-  constructor(code: AuthErrorCode, message: string, retryAfterSec?: number) {
+  constructor(message: string) {
     super(message);
-    this.code = code;
-    this.retryAfterSec = retryAfterSec;
+    this.name = "AuthError";
   }
 }
 
+/* ---------------- storage keys (AuthContext syncs on these) ---------------- */
 const USERS_KEY = "imara.users.v1";
 const SESSION_KEY = "imara.session.v1";
-const LOCKOUT_KEY = "imara.lockout.v1";
+const LOCKS_KEY = "imara.locks.v1";
 
-/* ---------- storage helpers ---------- */
+const env = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env) ?? {};
 
+/* ---------------- small helpers ---------------- */
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -67,206 +76,305 @@ function read<T>(key: string, fallback: T): T {
     return fallback;
   }
 }
-
 function write(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* storage unavailable (private mode) — session simply won't persist */
+    /* storage full/blocked — fail soft */
   }
 }
+function newId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `u_${randomToken(12)}`;
+  }
+}
+function toSafe(u: StoredUser): SafeUser {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    role: u.role,
+    avatarHue: u.avatarHue,
+    createdAt: u.createdAt,
+  };
+}
 
-const getUsers = () => read<Record<string, StoredUser>>(USERS_KEY, {});
-const saveUsers = (u: Record<string, StoredUser>) => write(USERS_KEY, u);
+export function normalizeEmail(e: string): string {
+  return e.trim().toLowerCase();
+}
+export function normalizePhone(p: string): string {
+  return p.replace(/[\s\-().]/g, "");
+}
 
-/* ---------- validation ---------- */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_RE = /^(?:\+?254|0)(?:7|1)\d{8}$/;
 
-export const normalizeEmail = (email: string) => email.trim().toLowerCase();
+/* ---------------- password policy ---------------- */
 
-export const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizeEmail(email));
-
+/** Human-readable missing requirements, e.g. ["At least 8 characters", "A number"]. */
 export function passwordIssues(pw: string): string[] {
   const issues: string[] = [];
   if (pw.length < 8) issues.push("At least 8 characters");
-  if (!/[a-zA-Z]/.test(pw)) issues.push("At least one letter");
-  if (!/\d/.test(pw)) issues.push("At least one number");
+  if (!/[a-zA-Z]/.test(pw)) issues.push("A letter");
+  if (!/\d/.test(pw)) issues.push("A number");
   return issues;
 }
 
-/** 0–4 strength score for the UI meter. */
+/** 0 (empty) … 4 (strong) — drives the strength meter on the register form. */
 export function passwordStrength(pw: string): number {
   if (!pw) return 0;
-  let s = 0;
-  if (pw.length >= 8) s++;
-  if (pw.length >= 12) s++;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
-  if (/\d/.test(pw) && /[^a-zA-Z0-9]/.test(pw)) s++;
-  return Math.min(4, s);
+  let pts = 0;
+  if (pw.length >= 8) pts++;
+  if (pw.length >= 12) pts++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) pts++;
+  if (/\d/.test(pw)) pts++;
+  if (/[^A-Za-z0-9]/.test(pw)) pts++;
+  return Math.max(1, Math.min(4, pts));
 }
 
-const assertName = (name: string) => {
-  if (name.trim().length < 2) throw new AuthError("invalid-input", "Enter your full name.");
-};
-const assertEmail = (email: string) => {
-  if (!isValidEmail(email)) throw new AuthError("invalid-input", "Enter a valid email address.");
-};
-const assertPassword = (pw: string) => {
-  const issues = passwordIssues(pw);
-  if (issues.length) throw new AuthError("weak-password", `Password needs: ${issues.join(", ").toLowerCase()}.`);
-};
-
-/* ---------- lockout ---------- */
-
-function lockoutFor(email: string): LockoutRecord {
-  return read<Record<string, LockoutRecord>>(LOCKOUT_KEY, {})[normalizeEmail(email)] ?? { fails: 0, until: 0 };
+/* ---------------- users ---------------- */
+function loadUsers(): StoredUser[] {
+  return read<StoredUser[]>(USERS_KEY, []);
+}
+function saveUsers(list: StoredUser[]) {
+  write(USERS_KEY, list);
+}
+function findUser(email: string): StoredUser | undefined {
+  return loadUsers().find((u) => u.email === normalizeEmail(email));
+}
+export function hasAdmin(): boolean {
+  return loadUsers().some((u) => u.role === "admin");
 }
 
-function setLockout(email: string, rec: LockoutRecord) {
-  const all = read<Record<string, LockoutRecord>>(LOCKOUT_KEY, {});
-  all[normalizeEmail(email)] = rec;
-  write(LOCKOUT_KEY, all);
+async function createUser(
+  input: { name: string; email: string; phone: string; password: string },
+  role: Role,
+): Promise<StoredUser> {
+  const salt = newSalt();
+  const hash = await hashPassword(input.password, salt, AUTH.pbkdf2Iterations);
+  const user: StoredUser = {
+    id: newId(),
+    name: input.name.trim(),
+    email: normalizeEmail(input.email),
+    phone: normalizePhone(input.phone),
+    role,
+    avatarHue: AVATAR_HUES[Math.floor(Math.random() * AVATAR_HUES.length)],
+    salt,
+    hash,
+    createdAt: new Date().toISOString(),
+  };
+  const users = loadUsers();
+  users.push(user);
+  saveUsers(users);
+  return user;
 }
 
-/* ---------- internals ---------- */
-
-const toSafe = (u: StoredUser): SafeUser => {
-  const { salt: _s, hash: _h, ...safe } = u;
-  return safe;
-};
-
-function currentSession(): SessionRecord | null {
-  const s = read<SessionRecord | null>(SESSION_KEY, null);
+/* ---------------- sessions ---------------- */
+interface Session {
+  token: string;
+  userId: string;
+  createdAt: number;
+  expiresAt: number;
+}
+function loadSession(): Session | null {
+  const s = read<Session | null>(SESSION_KEY, null);
   if (!s) return null;
   if (Date.now() > s.expiresAt) {
-    localStorage.removeItem(SESSION_KEY);
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      /* noop */
+    }
     return null;
   }
   return s;
 }
-
-/* ---------- public API ---------- */
-
-export async function register(input: { name: string; email: string; phone: string; password: string }): Promise<SafeUser> {
-  assertName(input.name);
-  assertEmail(input.email);
-  assertPassword(input.password);
-
-  const email = normalizeEmail(input.email);
-  const users = getUsers();
-  if (Object.values(users).some((u) => u.email === email)) {
-    throw new AuthError("email-exists", "An account with this email already exists. Try signing in.");
-  }
-
-  const salt = newSalt();
-  const hash = await hashPassword(input.password, salt, AUTH.pbkdf2Iterations);
-  const user: StoredUser = {
-    id: `u_${randomToken(12)}`,
-    name: input.name.trim(),
-    email,
-    phone: input.phone.trim(),
-    salt,
-    hash,
-    avatarHue: AVATAR_HUES[Object.keys(users).length % AVATAR_HUES.length],
-    createdAt: new Date().toISOString(),
-  };
-  users[user.id] = user;
-  saveUsers(users);
-  startSession(user.id);
-  return toSafe(user);
-}
-
-export async function login(input: { email: string; password: string }): Promise<SafeUser> {
-  const email = normalizeEmail(input.email);
-
-  const lock = lockoutFor(email);
-  if (lock.until > Date.now()) {
-    const secs = Math.ceil((lock.until - Date.now()) / 1000);
-    throw new AuthError("locked-out", `Too many failed attempts. Try again in ${secs}s.`, secs);
-  }
-
-  const users = getUsers();
-  const user = Object.values(users).find((u) => u.email === email);
-
-  // Hash even when the user is missing so timing stays uniform.
-  const ok = user
-    ? await verifyPassword(input.password, user.salt, user.hash, AUTH.pbkdf2Iterations)
-    : ((await verifyPassword(input.password, newSalt(), randomToken(32), AUTH.pbkdf2Iterations)), false);
-
-  if (!user || !ok) {
-    const fails = lock.fails + 1;
-    const until = fails >= AUTH.maxFailedAttempts ? Date.now() + AUTH.lockoutSeconds * 1000 : 0;
-    setLockout(email, { fails: until ? 0 : fails, until });
-    throw new AuthError(
-      until ? "locked-out" : "bad-credentials",
-      until
-        ? `Too many failed attempts. Locked for ${AUTH.lockoutSeconds}s.`
-        : "Incorrect email or password.",
-      until ? AUTH.lockoutSeconds : undefined,
-    );
-  }
-
-  setLockout(email, { fails: 0, until: 0 });
-  startSession(user.id);
-  return toSafe(user);
-}
-
 function startSession(userId: string) {
-  const session: SessionRecord = {
+  const now = Date.now();
+  const session: Session = {
     token: randomToken(32),
     userId,
-    expiresAt: Date.now() + AUTH.sessionDays * 24 * 60 * 60 * 1000,
+    createdAt: now,
+    expiresAt: now + AUTH.sessionDays * 24 * 60 * 60 * 1000,
   };
   write(SESSION_KEY, session);
 }
 
-export function logout(): void {
-  localStorage.removeItem(SESSION_KEY);
+/* ---------------- lockout (brute-force protection) ---------------- */
+type Locks = Record<string, { count: number; until: number }>;
+
+function checkLock(email: string) {
+  const locks = read<Locks>(LOCKS_KEY, {});
+  const lock = locks[email];
+  if (lock && lock.until > Date.now()) {
+    const secs = Math.ceil((lock.until - Date.now()) / 1000);
+    const label = secs > 90 ? `${Math.ceil(secs / 60)} minutes` : `${secs} seconds`;
+    throw new AuthError(`Too many failed attempts. Try again in ${label}.`);
+  }
+}
+function recordFailure(email: string) {
+  const locks = read<Locks>(LOCKS_KEY, {});
+  const prev = locks[email];
+  const count = (prev && prev.until <= Date.now() ? 0 : prev?.count ?? 0) + 1;
+  locks[email] = { count, until: count >= AUTH.maxFailedAttempts ? Date.now() + AUTH.lockoutSeconds * 1000 : 0 };
+  write(LOCKS_KEY, locks);
+  if (count >= AUTH.maxFailedAttempts) {
+    throw new AuthError(`Too many failed attempts. This account is locked for ${AUTH.lockoutSeconds} seconds.`);
+  }
+}
+function clearFailures(email: string) {
+  const locks = read<Locks>(LOCKS_KEY, {});
+  if (locks[email]) {
+    locks[email] = { count: 0, until: 0 };
+    write(LOCKS_KEY, locks);
+  }
 }
 
-/** The only way the app reads user data — always the CURRENT session's user. */
+/* ---------------- public API (used by AuthContext) ---------------- */
+
 export function currentUser(): SafeUser | null {
-  const s = currentSession();
+  const s = loadSession();
   if (!s) return null;
-  const user = getUsers()[s.userId];
+  const user = loadUsers().find((u) => u.id === s.userId);
   return user ? toSafe(user) : null;
 }
 
-/** Update the current user's allowed profile fields. Nothing else can be touched. */
+export async function login(input: { email: string; password: string }): Promise<SafeUser> {
+  await authReady;
+  const email = normalizeEmail(input.email);
+  if (!email || !input.password) throw new AuthError("Enter your email and password.");
+  if (!EMAIL_RE.test(email)) throw new AuthError("Enter a valid email address.");
+
+  checkLock(email);
+
+  const user = findUser(email);
+  // Always verify against *something* so unknown emails take the same time
+  // as known ones (no user-enumeration via timing).
+  const ok = user
+    ? await verifyPassword(input.password, user.salt, user.hash, AUTH.pbkdf2Iterations)
+    : await verifyPassword(input.password, newSalt(), randomToken(32), AUTH.pbkdf2Iterations).then(() => false);
+
+  if (!ok || !user) {
+    recordFailure(email);
+    // Deliberately generic — never reveal whether the email exists.
+    throw new AuthError("Invalid email or password.");
+  }
+
+  clearFailures(email);
+  startSession(user.id);
+  return toSafe(user);
+}
+
+export async function register(input: {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+}): Promise<SafeUser> {
+  await authReady;
+  const name = input.name.trim();
+  const email = normalizeEmail(input.email);
+  const phone = normalizePhone(input.phone ?? "");
+
+  if (name.length < 2) throw new AuthError("Enter your full name.");
+  if (!EMAIL_RE.test(email)) throw new AuthError("Enter a valid email address.");
+  if (phone && !PHONE_RE.test(phone)) {
+    throw new AuthError("Enter a valid Kenyan phone number, e.g. 0712 345 678 or +254712345678.");
+  }
+  const issues = passwordIssues(input.password);
+  if (issues.length) throw new AuthError(`Password needs: ${issues.join(", ").toLowerCase()}.`);
+  if (findUser(email)) throw new AuthError("An account with this email already exists. Try signing in instead.");
+
+  // Installer rule (like WordPress): the very first account becomes the
+  // store administrator. Every account after that is a customer.
+  const role: Role = hasAdmin() ? "customer" : "admin";
+
+  const user = await createUser({ name, email, phone, password: input.password }, role);
+  startSession(user.id); // auto sign-in after registration
+  return toSafe(user);
+}
+
+export function logout(): void {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
+/** Edit the signed-in user's own profile. Only their own record is touched. */
 export function updateProfile(patch: { name?: string; phone?: string; avatarHue?: string }): SafeUser {
-  const s = currentSession();
-  const user = s ? getUsers()[s.userId] : null;
-  if (!s || !user) throw new AuthError("no-session", "You are signed out.");
-  if (patch.name !== undefined) assertName(patch.name);
-  const next: StoredUser = {
-    ...user,
-    name: patch.name !== undefined ? patch.name.trim() : user.name,
-    phone: patch.phone !== undefined ? patch.phone.trim() : user.phone,
-    avatarHue: patch.avatarHue ?? user.avatarHue,
-  };
-  const users = getUsers();
-  users[user.id] = next;
+  const session = loadSession();
+  const users = loadUsers();
+  const idx = users.findIndex((u) => u.id === session?.userId);
+  if (idx === -1) throw new AuthError("You are signed out. Please sign in again.");
+
+  const u = users[idx];
+  if (patch.name !== undefined) {
+    if (patch.name.trim().length < 2) throw new AuthError("Enter your full name.");
+    u.name = patch.name.trim();
+  }
+  if (patch.phone !== undefined) {
+    const phone = normalizePhone(patch.phone);
+    if (phone && !PHONE_RE.test(phone)) {
+      throw new AuthError("Enter a valid Kenyan phone number, e.g. 0712 345 678.");
+    }
+    u.phone = phone;
+  }
+  if (patch.avatarHue !== undefined) {
+    u.avatarHue = patch.avatarHue;
+  }
+  users[idx] = u;
   saveUsers(users);
-  return toSafe(next);
+  return toSafe(u);
 }
 
-/** Change password — requires proving knowledge of the current one. */
 export async function changePassword(currentPw: string, nextPw: string): Promise<void> {
-  const s = currentSession();
-  const user = s ? getUsers()[s.userId] : null;
-  if (!s || !user) throw new AuthError("no-session", "You are signed out.");
+  const session = loadSession();
+  const users = loadUsers();
+  const idx = users.findIndex((u) => u.id === session?.userId);
+  if (idx === -1) throw new AuthError("You are signed out. Please sign in again.");
 
-  const ok = await verifyPassword(currentPw, user.salt, user.hash, AUTH.pbkdf2Iterations);
-  if (!ok) throw new AuthError("wrong-password", "Current password is incorrect.");
-  assertPassword(nextPw);
+  const u = users[idx];
+  const ok = await verifyPassword(currentPw, u.salt, u.hash, AUTH.pbkdf2Iterations);
+  if (!ok) throw new AuthError("Your current password is incorrect.");
 
-  const salt = newSalt(); // always rotate the salt
-  const hash = await hashPassword(nextPw, salt, AUTH.pbkdf2Iterations);
-  const users = getUsers();
-  users[user.id] = { ...user, salt, hash };
+  const issues = passwordIssues(nextPw);
+  if (issues.length) throw new AuthError(`New password needs: ${issues.join(", ").toLowerCase()}.`);
+
+  const salt = newSalt();
+  u.salt = salt;
+  u.hash = await hashPassword(nextPw, salt, AUTH.pbkdf2Iterations);
+  users[idx] = u;
   saveUsers(users);
 }
 
-/** Signed-in user count — used only for the demo dashboard badge. */
-export function demoUserCount(): number {
-  return Object.keys(getUsers()).length;
-}
+/* ---------------- dev demo-admin bootstrap (from the gitignored .env) ---------------- */
+let resolveReady: () => void = () => {};
+export const authReady: Promise<void> = new Promise<void>((res) => {
+  resolveReady = res;
+});
+
+void (async () => {
+  try {
+    const email = env.VITE_DEMO_ADMIN_EMAIL;
+    const password = env.VITE_DEMO_ADMIN_PASSWORD;
+    if (email && password && !findUser(email)) {
+      await createUser(
+        {
+          name: env.VITE_DEMO_ADMIN_NAME || "Store Admin",
+          email,
+          phone: env.VITE_DEMO_ADMIN_PHONE || "0143198930",
+          password,
+        },
+        "admin",
+      );
+    }
+  } catch {
+    /* seeding must never break the app */
+  }
+  resolveReady();
+})();
