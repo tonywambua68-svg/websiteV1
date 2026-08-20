@@ -307,3 +307,50 @@ export function weeklyOrderTrend(events: BehaviorEvent[], weeks = 8): { week: st
   }
   return out;
 }
+
+/* ---------------- demand / velocity (stock + SEO intelligence) ---------------- */
+
+export interface ProductVelocity { id: string; views: number; carts: number; orders: number; interest: number }
+/** Per-product attention vs. conversion, for stock & merchandising decisions. */
+export function productVelocity(events: BehaviorEvent[]): ProductVelocity[] {
+  const map = new Map<string, ProductVelocity>();
+  const get = (id: string) => {
+    if (!map.has(id)) map.set(id, { id, views: 0, carts: 0, orders: 0, interest: 0 });
+    return map.get(id)!;
+  };
+  for (const e of events) {
+    if (!e.productId) continue;
+    const v = get(e.productId);
+    if (e.kind === "view") v.views++;
+    else if (e.kind === "cart_add") v.carts++;
+    else if (e.kind === "order") v.orders++;
+    else if (e.kind === "compare") v.interest++;
+  }
+  return [...map.values()].sort((a, b) => b.views + b.carts * 3 - (a.views + a.carts * 3));
+}
+
+export interface CategoryDemand { category: string; mentions: number; views: number; score: number }
+/** Which categories shoppers talk about / browse most (drives stock + content). */
+export function categoryDemand(events: BehaviorEvent[], catOf: (id: string) => string | undefined): CategoryDemand[] {
+  const map = new Map<string, CategoryDemand>();
+  const get = (c: string) => {
+    if (!map.has(c)) map.set(c, { category: c, mentions: 0, views: 0, score: 0 });
+    return map.get(c)!;
+  };
+  for (const e of events) {
+    if (e.kind === "view" && e.productId) {
+      const c = catOf(e.productId);
+      if (c) get(c).views++;
+    } else if ((e.kind === "conversation" || e.kind === "search") && e.query) {
+      const q = e.query.toLowerCase();
+      const c = q.includes("laptop") ? "laptops" : q.includes("phone") ? "phones" : q.includes("gaming") ? "gaming"
+        : q.includes("audio") || q.includes("headphone") || q.includes("earbud") ? "audio"
+        : q.includes("monitor") || q.includes("tv") ? "monitors" : q.includes("wifi") || q.includes("router") ? "networking"
+        : q.includes("watch") || q.includes("camera") ? "smart" : q.includes("ssd") || q.includes("charger") || q.includes("power") ? "accessories" : null;
+      if (c) get(c).mentions++;
+    }
+  }
+  return [...map.values()]
+    .map((c) => ({ ...c, score: c.views + c.mentions * 2 }))
+    .sort((a, b) => b.score - a.score);
+}

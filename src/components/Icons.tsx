@@ -43,6 +43,7 @@ export const IcTag = (p: P) => <S {...p}><path d="m12.5 3 8.5.5.5 8.5-9 9-8.9-8.
 export const IcRefresh = (p: P) => <S {...p}><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.5V8h-4.5" /></S>;
 export const IcHome = (p: P) => <S {...p}><path d="m4 11 8-7 8 7v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20Z" /><path d="M9.5 21.5v-6h5v6" /></S>;
 export const IcGrid = (p: P) => <S {...p}><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></S>;
+export const IcPlug = (p: P) => <S {...p}><path d="M9 3.5V8M15 3.5V8M7 8h10v3a5 5 0 0 1-10 0Z" /><path d="M12 16v4.5" /></S>;
 export const IcFlame = (p: P) => <S {...p}><path d="M12 3c.5 3-1 4.5-2.6 6.2C7.8 10.9 7 12.3 7 14a5 5 0 0 0 10 0c0-1.4-.5-2.7-1.3-3.9-.4 1-1 1.7-1.9 2.2.4-3.4-.4-6.8-1.8-9.3Z" /></S>;
 export const IcPhone = (p: P) => <S {...p}><path d="M6.5 3.5h3l1.5 4-2 1.5a12.5 12.5 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" /></S>;
 export const IcWallet = (p: P) => <S {...p}><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5Z" /><path d="M15 12h5v3h-5a1.5 1.5 0 0 1 0-3Z" /></S>;
