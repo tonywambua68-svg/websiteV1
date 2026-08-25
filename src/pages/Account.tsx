@@ -5,15 +5,17 @@ import { KENYA_COUNTIES, ORDER_FLOW, statusLabel, type Order } from "../data/con
 import { useStore } from "../lib/store";
 import { useAuth } from "../lib/AuthContext";
 import { AuthError, passwordIssues } from "../lib/auth";
-import { AVATAR_HUES, AUTH } from "../config";
+import {
+  AVATAR_HUES, AUTH, getBizSettings, saveBizSettings, waHref, whatsappDisplay,
+} from "../config";
 import ProductArt from "../components/ProductArt";
 import { Crumbs, DemoPill } from "../components/ui";
 import { WhatsAppButton } from "../components/Contact";
 import {
-  IcBox, IcCard, IcCheck, IcChevD, IcHeadset, IcHeart, IcLock, IcPin, IcRefresh, IcTrash, IcUser,
+  IcBox, IcCard, IcCheck, IcChevD, IcHeadset, IcHeart, IcLock, IcPin, IcPlug, IcRefresh, IcTrash, IcUser,
 } from "../components/Icons";
 
-const TABS = [
+const TABS: { id: string; label: string; icon: typeof IcUser; to?: string; adminOnly?: boolean }[] = [
   { id: "dashboard", label: "Dashboard", icon: IcUser },
   { id: "orders", label: "Orders", icon: IcBox },
   { id: "wishlist", label: "Wishlist", icon: IcHeart, to: "/wishlist" },
@@ -21,6 +23,7 @@ const TABS = [
   { id: "profile", label: "Profile", icon: IcCard },
   { id: "support", label: "Support tickets", icon: IcHeadset },
   { id: "returns", label: "Returns", icon: IcRefresh },
+  { id: "connections", label: "Store connections", icon: IcPlug, adminOnly: true },
 ];
 
 
@@ -56,7 +59,7 @@ export default function Account() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="h-fit lg:sticky lg:top-40">
           <nav className="card flex gap-1 overflow-x-auto p-2 no-scrollbar lg:flex-col" aria-label="Account sections">
-            {TABS.map((t) => {
+            {TABS.filter((t) => !t.adminOnly || user?.role === "admin").map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               const cls = `flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] font-extrabold transition ${active ? "bg-ink text-amber" : "text-muted hover:bg-mist hover:text-ink"}`;
@@ -80,6 +83,7 @@ export default function Account() {
           {tab === "profile" && <Profile />}
           {tab === "support" && <Support />}
           {tab === "returns" && <Returns />}
+          {tab === "connections" && user?.role === "admin" && <StoreConnections />}
         </div>
       </div>
     </div>
@@ -502,6 +506,86 @@ function Returns() {
           <li>M-Pesa refunds land within 24 hours of approval.</li>
         </ul>
         <button type="button" className="btn btn-outline btn-sm mt-4" onClick={() => toast("Return request form would open here (demo).", "info")}>Request a return</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Store connections (ADMIN ONLY) ---------- */
+function StoreConnections() {
+  const { toast } = useStore();
+  const saved = getBizSettings();
+  const [wa, setWa] = useState(saved.whatsapp ?? "");
+  const [pb, setPb] = useState(saved.paybill ?? "");
+  const [note, setNote] = useState(saved.accountNote ?? "");
+  const [, force] = useState(0);
+
+  const liveNumber = whatsappDisplay();
+  const active = liveNumber !== null;
+
+  const save = () => {
+    const cleanWa = wa.replace(/[^\d+]/g, "");
+    if (wa && !/^\+?\d{10,15}$/.test(cleanWa)) {
+      toast("WhatsApp number should be digits only, international format, e.g. 254712345678.", "error");
+      return;
+    }
+    saveBizSettings({ whatsapp: cleanWa, paybill: pb.trim(), accountNote: note.trim() });
+    force((n) => n + 1);
+    toast("Saved. Every “Order via WhatsApp” button on the store now uses this number.");
+  };
+
+  const test = () => {
+    const href = waHref("Hello! This is a test message from my Imara Tech store — WhatsApp ordering is connected. 🎉");
+    if (href) window.open(href, "_blank", "noopener");
+    else toast("No WhatsApp number configured yet — save one above first.", "info");
+  };
+
+  return (
+    <div>
+      <h2 className="font-display text-xl font-bold">Store connections</h2>
+      <p className="mt-1 text-xs font-semibold text-muted">
+        Where customer orders & payments land. Changes apply to the whole store instantly — no rebuild needed.
+      </p>
+
+      <div className="card mt-4 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm font-extrabold"><IcPlug className="h-4.5 w-4.5 text-teal" /> WhatsApp ordering</p>
+          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${active ? "bg-success/15 text-success" : "bg-error/10 text-error"}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-success" : "bg-error"}`} />
+            {active ? `Live · ${liveNumber}` : "Not configured"}
+          </span>
+        </div>
+        <label className="mt-4 block text-xs font-extrabold text-muted">
+          WhatsApp number (international format, digits only — e.g. 254712345678)
+          <input className="input mt-1.5" value={wa} onChange={(e) => setWa(e.target.value)} placeholder="254712345678" inputMode="tel" />
+        </label>
+        <p className="mt-2 text-[11.5px] font-semibold leading-relaxed text-muted">
+          Customers' “Order via WhatsApp” buttons (product page, cart, checkout) open a chat with this number,
+          pre-filled with the product, price, quantity and product link.
+        </p>
+
+        <div className="mt-5 border-t border-line pt-5">
+          <p className="text-sm font-extrabold">M-PESA PayBill</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-extrabold text-muted">
+              PayBill number
+              <input className="input mt-1.5" value={pb} onChange={(e) => setPb(e.target.value)} placeholder="e.g. 522123" inputMode="numeric" />
+            </label>
+            <label className="block text-xs font-extrabold text-muted">
+              “Account Number” instruction
+              <input className="input mt-1.5" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Your order reference number" />
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button type="button" className="btn btn-amber" onClick={save}>Save connections</button>
+          <button type="button" className="btn btn-outline" onClick={test}>Send test WhatsApp message</button>
+        </div>
+        <p className="mt-3 rounded-lg bg-mist px-3 py-2 text-[11px] font-bold text-muted">
+          Stored in this browser for the demo. When you connect the WordPress/WooCommerce backend, these move to
+          the WooCommerce settings screen — the buttons keep working exactly the same.
+        </p>
       </div>
     </div>
   );

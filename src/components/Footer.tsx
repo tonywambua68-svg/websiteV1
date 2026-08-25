@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Logo } from "./Header";
-import { BUSINESS, MPESA_PAYBILL_NUMBER } from "../config";
+import { BUSINESS, getPayBill, whatsappDisplay } from "../config";
 import { SocialRow, WhatsAppButton } from "./Contact";
 import { IcChat, IcClock, IcMail, IcPhone } from "./Icons";
 
@@ -68,9 +68,12 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm font-semibold">
               <li className="flex items-center gap-2.5">
                 <IcChat className="h-4 w-4 shrink-0 text-teal" />
-                <WhatsAppButton message="Hello! I have a question about your products." className="!h-auto !border-0 !bg-transparent !p-0 !text-[13px] !font-bold !text-white/80 shadow-none hover:!text-amber hover:!bg-transparent">
-                  Chat with us on WhatsApp
-                </WhatsAppButton>
+                <span>
+                  <WhatsAppButton message="Hello! I have a question about your products." className="!h-auto !border-0 !bg-transparent !p-0 !text-[13px] !font-bold !text-white/80 shadow-none hover:!text-amber hover:!bg-transparent">
+                    Chat with us on WhatsApp
+                  </WhatsAppButton>
+                  {whatsappDisplay() && <span className="block text-[11px] font-semibold text-white/45">{whatsappDisplay()}</span>}
+                </span>
               </li>
               {BUSINESS.phone && <li className="flex items-center gap-2.5"><IcPhone className="h-4 w-4 shrink-0 text-teal" /> {BUSINESS.phone}</li>}
               {BUSINESS.email && <li className="flex items-center gap-2.5"><IcMail className="h-4 w-4 shrink-0 text-teal" /> {BUSINESS.email}</li>}
@@ -116,7 +119,7 @@ export default function Footer() {
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/40">We accept</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="rounded-md bg-[#1b9e4b] px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white">M-PESA PAYBILL{MPESA_PAYBILL_NUMBER ? ` · ${MPESA_PAYBILL_NUMBER}` : ""}</span>
+              <span className="rounded-md bg-[#1b9e4b] px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white">M-PESA PAYBILL{getPayBill() ? ` · ${getPayBill()}` : ""}</span>
               <span className="rounded-md border border-dashed border-white/25 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-white/45">CARDS — COMING SOON</span>
             </div>
           </div>
