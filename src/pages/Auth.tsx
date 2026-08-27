@@ -33,6 +33,22 @@ export default function AuthPage() {
   const [pw2, setPw2] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [fieldErr, setFieldErr] = useState<Record<string, string>>({});
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
+
+  /** One-click entry for the seeded demo accounts. */
+  const oneClick = async (demo: (typeof AUTH.demoAccounts)[number]) => {
+    setFormError(null);
+    setDemoBusy(demo.email);
+    try {
+      await login(demo.email, demo.password);
+      const target = demo.role === "admin" && redirect === "/account" ? "/nova-insights" : redirect;
+      nav(target, { replace: true });
+    } catch (err) {
+      fail(err instanceof AuthError ? err.message : "Demo sign-in failed — please try again.");
+    } finally {
+      setDemoBusy(null);
+    }
+  };
 
   // Already signed in? Straight through.
   if (user) {
@@ -286,6 +302,38 @@ export default function AuthPage() {
                 </>
               )}
             </p>
+
+            {/* ---------- Demo access ---------- */}
+            <div className="mt-6 rounded-xl border border-dashed border-teal/40 bg-mint/40 p-4">
+              <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-teal">
+                <IcShield className="h-4 w-4" /> Demo access — try it instantly
+              </p>
+              <div className="mt-3 grid gap-2.5">
+                {AUTH.demoAccounts.map((d) => (
+                  <div key={d.email} className="flex items-center gap-3 rounded-lg border border-line bg-card px-3 py-2.5">
+                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg font-display text-[10px] font-bold ${d.role === "admin" ? "bg-ink text-amber" : "bg-teal text-white"}`}>
+                      {d.role === "admin" ? "ADMIN" : "USER"}
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">
+                      <span className="block truncate font-mono text-[12px] font-bold text-ink">{d.email}</span>
+                      <span className="block font-mono text-[11px] font-semibold text-muted">pw: {d.password}</span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={demoBusy !== null}
+                      onClick={() => oneClick(d)}
+                      className={`btn btn-sm shrink-0 ${d.role === "admin" ? "btn-amber" : "btn-teal"}`}
+                    >
+                      {demoBusy === d.email ? "Signing in…" : "One-click sign in"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2.5 text-[10.5px] font-bold leading-relaxed text-muted">
+                Seeded locally (hashed) for testing · admin opens the NOVA Insights dashboard · change or
+                remove them in <code className="rounded bg-mint px-1 py-0.5">src/config.ts</code> before launch.
+              </p>
+            </div>
 
             <div className="mt-6 flex items-center justify-center gap-4 border-t border-line pt-5 text-[11px] font-bold text-muted">
               <span className="flex items-center gap-1.5"><IcCheck className="h-3.5 w-3.5 text-success" /> Hashed passwords</span>

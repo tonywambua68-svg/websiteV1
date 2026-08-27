@@ -286,18 +286,16 @@ export async function login(input: { email: string; password: string }): Promise
 
   let user = findUser(email);
 
-  // Self-heal the dev admin seeded from .env: if the stored record is from an
-  // older engine version, or the env password no longer verifies, re-derive
-  // the hash from the .env password. .env is gitignored and dev-only, so this
-  // never affects production/template builds (no env → no self-heal).
-  const envAdminEmail = normalizeEmail(env.VITE_DEMO_ADMIN_EMAIL ?? "");
-  const envAdminPw = env.VITE_DEMO_ADMIN_PASSWORD;
-  if (user && user.role === "admin" && user.email === envAdminEmail && envAdminPw) {
+  // Self-heal seeded demo accounts: if the stored record is from an older
+  // engine version, or the password no longer verifies, re-derive the hash
+  // from the configured demo password so the demo login keeps working.
+  const demo = effectiveDemoAccounts().find((d) => d.email === email);
+  if (user && demo && user.role === demo.role) {
     try {
       const stillValid =
         isUsableRecord(user) &&
-        (await verifyPassword(envAdminPw, user.salt, user.hash, AUTH.pbkdf2Iterations));
-      if (!stillValid) user = await repairRecord(user, envAdminPw);
+        (await verifyPassword(demo.password, user.salt, user.hash, AUTH.pbkdf2Iterations));
+      if (!stillValid) user = await repairRecord(user, demo.password);
     } catch {
       /* fall through — handled below */
     }
@@ -436,30 +434,42 @@ export const authReady: Promise<void> = new Promise<void>((res) => {
   resolveReady = res;
 });
 
+/**
+ * Demo accounts to seed on first load — from AUTH.demoAccounts in config.ts.
+ * The admin entry can be overridden privately via .env (gitignored), so the
+ * shipped template never has to carry your real dev password.
+ */
+function effectiveDemoAccounts(): (typeof AUTH.demoAccounts)[number][] {
+  return AUTH.demoAccounts.map((a) =>
+    a.role === "admin" && env.VITE_DEMO_ADMIN_EMAIL && env.VITE_DEMO_ADMIN_PASSWORD
+      ? {
+          ...a,
+          name: env.VITE_DEMO_ADMIN_NAME || a.name,
+          email: env.VITE_DEMO_ADMIN_EMAIL,
+          password: env.VITE_DEMO_ADMIN_PASSWORD,
+          phone: env.VITE_DEMO_ADMIN_PHONE || a.phone,
+        }
+      : a,
+  );
+}
+
 void (async () => {
   try {
-    const email = env.VITE_DEMO_ADMIN_EMAIL;
-    const password = env.VITE_DEMO_ADMIN_PASSWORD;
-    if (email && password) {
-      const existing = findUser(email);
+    for (const demo of effectiveDemoAccounts()) {
+      const existing = findUser(demo.email);
       if (!existing) {
         await createUser(
-          {
-            name: env.VITE_DEMO_ADMIN_NAME || "Store Admin",
-            email,
-            phone: env.VITE_DEMO_ADMIN_PHONE || "0143198930",
-            password,
-          },
-          "admin",
+          { name: demo.name, email: demo.email, phone: demo.phone, password: demo.password },
+          demo.role,
         );
-      } else if (existing.role === "admin") {
-        // Dev-only self-heal: keep the .env admin working across engine
-        // upgrades even if an older/stale record sits in localStorage.
+      } else {
+        // Self-heal: keep demo accounts working across engine upgrades even
+        // if an older/stale record sits in localStorage.
         try {
           const valid =
             isUsableRecord(existing) &&
-            (await verifyPassword(password, existing.salt, existing.hash, AUTH.pbkdf2Iterations));
-          if (!valid) await repairRecord(existing, password);
+            (await verifyPassword(demo.password, existing.salt, existing.hash, AUTH.pbkdf2Iterations));
+          if (!valid) await repairRecord(existing, demo.password);
         } catch {
           /* seeding must never break the app */
         }
