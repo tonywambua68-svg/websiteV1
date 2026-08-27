@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { fmt, PRODUCTS } from "../data/products";
 import { useStore } from "../lib/store";
@@ -40,6 +41,14 @@ export function CartDrawer() {
   const { drawerOpen, setDrawerOpen, cartItems, cartSubtotal, setQty, removeFromCart, cartSavings, toast } = useStore();
   const nav = useNavigate();
   const loc = useLocation();
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawerOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen, setDrawerOpen]);
+
   if (!drawerOpen) return null;
 
   const go = (to: string) => { setDrawerOpen(false); nav(to); };

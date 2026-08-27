@@ -39,7 +39,7 @@ export default function Deals() {
           </div>
           <div className="rounded-2xl border border-amber/30 bg-amber/10 px-6 py-4 text-center">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/50">Ends in</p>
-            <p className="font-display text-4xl font-bold tracking-widest text-amber" aria-live="off">{t}</p>
+            <p className="tabular font-display text-4xl font-bold tracking-widest text-amber" aria-live="off">{t}</p>
           </div>
         </div>
       </section>
