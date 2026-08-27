@@ -51,10 +51,10 @@ function Hero() {
   const buds = byId("p18")!;
 
   return (
-    <section className="relative overflow-hidden bg-ink text-white">
+    <section className="noise relative overflow-hidden bg-ink text-white">
       <div className="grid-lines pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-teal/25 blur-[140px]" />
-      <div className="pointer-events-none absolute -bottom-52 -right-32 h-[30rem] w-[30rem] rounded-full bg-amber/15 blur-[140px]" />
+      <div className="animate-drift pointer-events-none absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-teal/25 blur-[140px]" />
+      <div className="animate-drift pointer-events-none absolute -bottom-52 -right-32 h-[30rem] w-[30rem] rounded-full bg-amber/15 blur-[140px]" style={{ animationDelay: "-5s" }} />
 
       <div className="wrap relative grid items-center gap-12 py-14 md:py-20 lg:grid-cols-12 lg:gap-8">
         {/* Left */}
@@ -79,7 +79,7 @@ function Hero() {
             <Link to="/shop" className="btn btn-amber !h-12 !px-7 !text-[15px]">Shop now <IcArrowR className="h-4.5 w-4.5" /></Link>
             <Link to="/deals" className="btn btn-light !h-12 !px-7 !text-[15px]">Explore deals</Link>
           </div>
-          <div className="mt-9 flex flex-wrap items-center gap-2.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em]">
+          <div className="stagger mt-9 flex flex-wrap items-center gap-2.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em]">
             <span className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-white/75">New store · honest prices</span>
             <span className="rounded-lg border border-[#3ddc84]/35 bg-[#1b9e4b]/15 px-3 py-1.5 text-[#7be3a8]">M-PESA PayBill</span>
             <span className="rounded-lg border border-[#3ddc84]/35 bg-[#25d366]/10 px-3 py-1.5 text-[#8ef0b6]">Order via WhatsApp</span>
@@ -211,7 +211,7 @@ function Categories() {
 function DealsSection({ deals }: { deals: ReturnType<typeof PRODUCTS.filter> }) {
   const t = useCountdown();
   return (
-    <section className="relative overflow-hidden bg-ink py-14 text-white md:py-20">
+    <section className="noise relative overflow-hidden bg-ink py-14 text-white md:py-20">
       <div className="grid-lines pointer-events-none absolute inset-0" />
       <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-amber/12 blur-[120px]" />
       <div className="wrap relative">
@@ -222,7 +222,7 @@ function DealsSection({ deals }: { deals: ReturnType<typeof PRODUCTS.filter> }) 
           sub="Hand-picked discounts, refreshed daily at midnight. When they're gone, they're gone."
           right={
             <div className="flex flex-wrap items-center gap-3">
-              <span className="flex items-center gap-2 rounded-xl border border-amber/30 bg-amber/10 px-4 py-2 font-display text-lg font-bold tracking-widest text-amber" aria-label={`Deals end in ${t}`}>
+              <span className="tabular flex items-center gap-2 rounded-xl border border-amber/30 bg-amber/10 px-4 py-2 font-display text-lg font-bold tracking-widest text-amber" aria-label={`Deals end in ${t}`}>
                 <IcBolt className="h-5 w-5" /> {t}
               </span>
               <Link to="/deals" className="btn btn-amber btn-sm">All deals <IcArrowR className="h-3.5 w-3.5" /></Link>
@@ -279,7 +279,7 @@ function FeaturedSection({ items }: { items: typeof PRODUCTS }) {
 /* ================= 6. AI FINDER ================= */
 function FinderSection() {
   return (
-    <section id="finder" className="relative overflow-hidden bg-ink py-14 text-white md:py-20">
+    <section id="finder" className="noise relative overflow-hidden bg-ink py-14 text-white md:py-20">
       <div className="grid-lines pointer-events-none absolute inset-0" />
       <div className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-teal/20 blur-[130px]" />
       <div className="wrap relative grid items-center gap-10 lg:grid-cols-2">

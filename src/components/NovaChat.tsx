@@ -31,6 +31,14 @@ export default function NovaChat() {
   const memory = useRef(createMemory());
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Escape closes the assistant
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, typing, open]);
@@ -55,7 +63,7 @@ export default function NovaChat() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Close NOVA assistant" : "Open NOVA assistant"}
-        className="group fixed bottom-20 right-4 z-[64] flex h-14 items-center gap-2 rounded-full bg-teal pl-4 pr-5 font-display text-sm font-bold text-white shadow-[0_14px_34px_-10px_rgba(11,122,99,0.6)] transition hover:bg-tealdeep md:bottom-6 md:right-6"
+        className="animate-pop group fixed bottom-20 right-4 z-[64] flex h-14 items-center gap-2 rounded-full bg-teal pl-4 pr-5 font-display text-sm font-bold text-white shadow-[0_14px_34px_-10px_rgba(11,122,99,0.6)] transition hover:-translate-y-0.5 hover:bg-tealdeep md:bottom-6 md:right-6"
       >
         <span className="relative grid h-7 w-7 place-items-center">
           {!open && <span className="absolute inset-0 animate-ping-soft rounded-full bg-amber/70" />}

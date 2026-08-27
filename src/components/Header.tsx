@@ -46,11 +46,19 @@ export default function Header() {
   const { cartCount, wishlist, compare, setDrawerOpen } = useStore();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const loc = useLocation();
 
   useEffect(() => {
     setMenuOpen(false);
   }, [loc.pathname, loc.search]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <header className="sticky top-0 z-40">
@@ -63,7 +71,7 @@ export default function Header() {
       </div>
 
       {/* Main bar */}
-      <div className="border-b border-line bg-card/95 backdrop-blur">
+      <div className={`border-b border-line bg-card/95 backdrop-blur transition-shadow duration-300 ${scrolled ? "shadow-[0_10px_30px_-18px_rgba(10,31,28,0.35)]" : ""}`}>
         <div className="wrap flex h-16 items-center gap-3 md:gap-6">
           <button type="button" className="btn btn-sm btn-outline !px-2.5 md:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <IcMenu className="h-5 w-5" />
@@ -121,7 +129,7 @@ export default function Header() {
               <IcCart className="h-5 w-5" />
               <span className="hidden sm:inline">Cart</span>
               {cartCount > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-[10px] font-extrabold text-amber">{cartCount}</span>
+                <span key={cartCount} className="animate-badge grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-[10px] font-extrabold text-amber">{cartCount}</span>
               )}
             </button>
           </nav>
@@ -206,6 +214,7 @@ function SearchBar() {
         <div className="flex h-11 items-center overflow-hidden rounded-xl border border-line bg-mist transition focus-within:border-teal focus-within:bg-card focus-within:shadow-[0_0_0_3px_rgba(11,122,99,0.12)]">
           <IcSearch className="ml-3.5 h-4.5 w-4.5 shrink-0 text-muted" />
           <input
+            id="site-search"
             value={q}
             onChange={(e) => { setQ(e.target.value); setOpen(true); }}
             onFocus={() => { setOpen(true); window.clearTimeout(blurTimer.current); }}
@@ -213,7 +222,8 @@ function SearchBar() {
             aria-label="Search products"
             className="h-full w-full bg-transparent px-2.5 text-sm font-semibold outline-none placeholder:font-medium placeholder:text-muted/70"
           />
-          <button type="submit" className="m-1.5 grid h-8 shrink-0 place-items-center rounded-lg bg-teal px-3.5 text-xs font-extrabold text-white transition hover:bg-tealdeep">
+          <span className="kbd mr-1.5 hidden shrink-0 md:inline-grid" aria-hidden="true">/</span>
+          <button type="submit" className="m-1.5 grid h-8 shrink-0 place-items-center rounded-lg bg-teal px-3.5 text-xs font-extrabold text-white transition hover:bg-tealdeep active:scale-95">
             Search
           </button>
         </div>
@@ -282,6 +292,13 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
   const { wishlist, compare } = useStore();
   const { user, logout } = useAuth();
   const nav = useNavigate();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
       <button type="button" className="animate-fade absolute inset-0 bg-ink/60" onClick={onClose} aria-label="Close menu" />
