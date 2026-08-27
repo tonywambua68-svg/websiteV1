@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FAQS } from "../data/content";
 import { useStore } from "../lib/store";
-import { BUSINESS } from "../config";
+import { BUSINESS, whatsappDisplay } from "../config";
 import { Crumbs, Reveal } from "../components/ui";
 import { SocialRow, WhatsAppButton } from "../components/Contact";
 import { IcCheck, IcChevD, IcClock, IcHeadset, IcMail, IcPhone, IcTruck, IcRefresh, IcShield } from "../components/Icons";
@@ -36,7 +36,7 @@ export default function Support() {
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-5.5 w-5.5" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.96L2 22l5.18-1.5A9.93 9.93 0 1 0 12.04 2Zm5.84 14.13c-.25.7-1.45 1.33-2 1.38-.53.05-1.03.24-3.47-.72-2.93-1.15-4.78-4.16-4.92-4.35-.14-.2-1.16-1.55-1.16-2.96 0-1.4.74-2.1 1-2.38.26-.29.57-.36.76-.36h.55c.18 0 .42-.07.66.5.25.6.84 2.07.91 2.22.07.14.12.31.02.5-.09.2-.14.31-.28.48-.14.17-.3.38-.42.51-.14.14-.29.3-.12.58.16.29.73 1.2 1.57 1.95 1.08.96 1.99 1.26 2.27 1.4.29.14.45.12.62-.07.16-.19.7-.82.89-1.1.19-.29.38-.24.64-.14.26.09 1.65.78 1.93.92.29.14.48.22.55.34.07.12.07.7-.18 1.4Z" /></svg>
             </span>
             <h2 className="mt-3 font-display text-lg font-bold">WhatsApp</h2>
-            <p className="text-[13px] font-extrabold text-[#128C7E]">The fastest way to reach us</p>
+            <p className="text-[13px] font-extrabold text-[#128C7E]">{whatsappDisplay() ?? "The fastest way to reach us"}</p>
             <p className="mt-1 text-xs font-semibold text-muted">Orders, availability, payments, warranty — all of it.</p>
             <WhatsAppButton message="Hello! I need some help." className="btn-sm mt-4">
               Chat with us on WhatsApp

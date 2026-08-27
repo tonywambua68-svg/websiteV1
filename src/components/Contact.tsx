@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { fmt, type Product } from "../data/products";
 import { useStore } from "../lib/store";
 import {
-  BUSINESS, MPESA_ACCOUNT_NOTE, MPESA_PAYBILL_NUMBER, PAYMENT_WORDS, SOCIALS, waHref,
+  BUSINESS, getAccountNote, getPayBill, PAYMENT_WORDS, SOCIALS, waHref,
 } from "../config";
 
 /* ============================================================================
@@ -132,7 +132,8 @@ export function WhatsAppButton({ message, children, className = "btn !bg-[#128C7
    M-PESA PayBill box + step-by-step instructions
    ========================================================================== */
 export function PayBillBox({ reference, amount, compact = false }: { reference?: string; amount?: number; compact?: boolean }) {
-  const configured = MPESA_PAYBILL_NUMBER.trim() !== "";
+  const paybill = getPayBill();
+  const configured = paybill !== "";
   return (
     <div className={`rounded-xl border border-[#1b9e4b]/30 bg-[#1b9e4b]/[0.06] ${compact ? "p-4" : "p-5"}`}>
       <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#14713a]">
@@ -143,12 +144,12 @@ export function PayBillBox({ reference, amount, compact = false }: { reference?:
         <div className="rounded-lg bg-card px-3 py-2.5">
           <dt className="text-[10px] font-extrabold uppercase tracking-wider text-muted">PayBill number</dt>
           <dd className={`font-display ${compact ? "text-lg" : "text-xl"} ${configured ? "text-ink" : "text-warning"}`}>
-            {configured ? MPESA_PAYBILL_NUMBER : "Add in src/config.ts"}
+            {configured ? paybill : "Set it in Account → Store connections"}
           </dd>
         </div>
         <div className="rounded-lg bg-card px-3 py-2.5">
           <dt className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Account number</dt>
-          <dd className="font-display text-[13px] leading-snug text-ink">{reference ?? MPESA_ACCOUNT_NOTE}</dd>
+          <dd className="font-display text-[13px] leading-snug text-ink">{reference ?? getAccountNote()}</dd>
         </div>
         {typeof amount === "number" && (
           <div className="rounded-lg bg-card px-3 py-2.5 sm:col-span-2">

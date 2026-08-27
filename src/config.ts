@@ -26,11 +26,12 @@ export const BUSINESS = {
 
 /* ----------------------------------------------------------------------------
    WHATSAPP ORDERING
-   Enter your WhatsApp number in INTERNATIONAL format, digits only,
-   starting with the country code (254 for Kenya) and WITHOUT the "+".
-   Example: "254712345678"
+   International format, digits only, country code first (254 for Kenya),
+   no "+". This default is the owner's demo number (0143 198 930).
+   The store owner can ALSO override this at runtime from
+   Account → Store connections (saved in the browser; no rebuild needed).
    -------------------------------------------------------------------------- */
-export const WHATSAPP_NUMBER = "";
+export const WHATSAPP_NUMBER = "254143198930";
 
 /* ----------------------------------------------------------------------------
    M-PESA PAYBILL
@@ -123,9 +124,66 @@ export const AUTH = {
 /** Brand accent hues offered as avatar colours in the profile editor. */
 export const AVATAR_HUES = ["#0b7a63", "#b45309", "#0369a1", "#7c3aed", "#be185d", "#c2410c"];
 
+/* ----------------------------------------------------------------------------
+   RUNTIME BUSINESS SETTINGS
+   Owner-editable from Account → Store connections. Stored in the browser's
+   localStorage so the whole shop picks changes up immediately — no code
+   edits, no rebuild. Values here WIN over the compile-time defaults above.
+   (In a real deployment these move to server-side settings; the interface
+   stays identical.)
+   -------------------------------------------------------------------------- */
+const SETTINGS_KEY = "imara.biz.settings.v1";
+
+export interface BizSettings {
+  whatsapp?: string;
+  paybill?: string;
+  accountNote?: string;
+}
+
+export function getBizSettings(): BizSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? (JSON.parse(raw) as BizSettings) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveBizSettings(s: BizSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  } catch {
+    /* storage unavailable — settings stay in-memory for this visit */
+  }
+}
+
+/** Effective WhatsApp number (runtime override → config default), digits only. */
+export function getWhatsAppNumber(): string {
+  const n = (getBizSettings().whatsapp?.trim() || WHATSAPP_NUMBER).replace(/[^\d]/g, "");
+  return /^\d{10,15}$/.test(n) ? n : "";
+}
+
+/** Human-friendly number for display, e.g. "+254 143 198 930". */
+export function whatsappDisplay(): string | null {
+  const n = getWhatsAppNumber();
+  if (!n) return null;
+  const parts = [n.slice(0, 3), n.slice(3, 6), n.slice(6, 9), n.slice(9)].filter(Boolean);
+  return `+${parts.join(" ")}`;
+}
+
+/** Effective M-PESA PayBill number (runtime override → config default). */
+export function getPayBill(): string {
+  return getBizSettings().paybill?.trim() || MPESA_PAYBILL_NUMBER.trim();
+}
+
+/** Effective PayBill "Account Number" instruction shown to customers. */
+export function getAccountNote(): string {
+  return getBizSettings().accountNote?.trim() || MPESA_ACCOUNT_NOTE;
+}
+
 /* Helper: clean WhatsApp link, or null when the number is not configured. */
 export function waHref(message: string): string | null {
-  const n = WHATSAPP_NUMBER.replace(/[^\d]/g, "");
+  const n = getWhatsAppNumber();
   if (!n) return null;
   return `https://wa.me/${n}?text=${encodeURIComponent(message)}`;
 }
