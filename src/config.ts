@@ -119,6 +119,16 @@ export const AUTH = {
   /** Notice shown on the sign-in screen — edit to match your store. */
   demoNotice:
     "Demo accounts — passwords are hashed and stored in this browser only. Connect a backend before going live.",
+
+  /**
+   * DEMO ACCOUNTS — seeded (hashed) on first load so the login works instantly.
+   * ★ Change or delete these before a public launch ★ (or override the admin
+   * one privately via .env: VITE_DEMO_ADMIN_EMAIL / VITE_DEMO_ADMIN_PASSWORD).
+   */
+  demoAccounts: [
+    { role: "admin" as const, name: "Tony Wambua", email: "tony@example.com", password: "tony@123", phone: "0143198930" },
+    { role: "customer" as const, name: "Amina Wanjiku", email: "amina@example.com", password: "amina@123", phone: "0712345678" },
+  ],
 };
 
 /** Brand accent hues offered as avatar colours in the profile editor. */
