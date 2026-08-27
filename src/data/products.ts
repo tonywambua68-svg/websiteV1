@@ -398,7 +398,20 @@ export const PRODUCTS: Product[] = [
   }),
 ];
 
-export const byId = (id: string) => PRODUCTS.find((p) => p.id === id);
+/* ------------------------------------------------------------------
+ * Published imports (Product Importer) join the live catalogue through
+ * this single choke point. `getAllProducts()` feeds every list surface
+ * (Shop, search, NOVA, deals) and `byId()` resolves imported products for
+ * detail pages, cart, orders and reviews — no consumer changes needed.
+ * ------------------------------------------------------------------ */
+import { getPublished } from "../lib/importer/registry";
+
+/** Base catalogue + products the admin has APPROVED & PUBLISHED. */
+export function getAllProducts(): Product[] {
+  return [...PRODUCTS, ...getPublished()];
+}
+
+export const byId = (id: string) => getAllProducts().find((p) => p.id === id);
 
 export const discountOf = (p: Product) =>
   p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;

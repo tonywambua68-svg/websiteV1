@@ -16,7 +16,7 @@
  * running against PostgreSQL instead of the local catalogue.
  */
 
-import { PRODUCTS, byId, discountOf, fmt, type Product } from "../../data/products";
+import { getAllProducts, byId, discountOf, fmt, type Product } from "../../data/products";
 import {
   DELIVERY_OPTIONS, FREE_DELIVERY_AT, MPESA_ACCOUNT_NOTE, MPESA_PAYBILL_NUMBER,
   MPESA_PAYMENT_STEPS, PAYMENT_WORDS,
@@ -72,7 +72,7 @@ export interface SearchOpts {
   limit?: number;
 }
 export function searchProducts(opts: SearchOpts): PublicProduct[] {
-  let list = PRODUCTS.slice();
+  let list = getAllProducts();
   if (opts.inStockOnly !== false) list = list.filter((p) => p.stock > 0);
   if (opts.category) list = list.filter((p) => p.category === opts.category);
   if (typeof opts.maxPrice === "number") list = list.filter((p) => p.price <= opts.maxPrice!);
@@ -99,11 +99,12 @@ export function getProductSpecs(idOrName: string): PublicProduct | null {
 export function findProductByName(text: string): Product | null {
   const t = text.toLowerCase();
   // exact-ish name match first, then token overlap
-  const exact = PRODUCTS.find((p) => t.includes(p.name.toLowerCase()));
+  const all = getAllProducts();
+  const exact = all.find((p) => t.includes(p.name.toLowerCase()));
   if (exact) return exact;
   let best: Product | null = null;
   let bestScore = 0;
-  for (const p of PRODUCTS) {
+  for (const p of all) {
     const tokens = `${p.brand} ${p.name}`.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
     const score = tokens.filter((w) => t.includes(w)).length;
     if (score > bestScore) {
