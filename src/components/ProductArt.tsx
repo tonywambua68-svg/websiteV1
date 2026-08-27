@@ -1,10 +1,32 @@
 import type { ArtKind } from "../data/products";
 
 /**
- * Imara's in-house product illustration system.
- * Every product renders as a consistent flat-vector device on a tinted tile,
- * so the catalogue looks like one designed brand rather than mixed stock photos.
+ * Imara's product imagery system.
+ *
+ * Real studio photography is used wherever available (KIND_PHOTO below). Each
+ * shot is a transparent PNG, so it floats on the same tinted studio gradient
+ * the brand uses everywhere — light or dark — keeping the catalogue cohesive.
+ *
+ * Any product type WITHOUT a photo falls back to the in-house flat-vector
+ * illustration, so nothing ever renders empty.
+ *
+ * TO USE YOUR OWN PHOTOS: save each shot to public/products/<kind>.png and
+ * change the matching value below to "/products/<kind>.png".
  */
+
+/** Real photography, keyed by product type. */
+const KIND_PHOTO: Partial<Record<ArtKind, string>> = {
+  laptop: "https://image.qwenlm.ai/generated-images/7b9aa60d-45d7-49a3-b759-157870bcaff0/_result.png",
+  headphones: "https://image.qwenlm.ai/generated-images/9e468c35-cd6b-4b5b-b3ad-26b20ec5556e/_result.png",
+  phone: "https://image.qwenlm.ai/generated-images/4f368810-1673-40ec-b27c-a54cef33f04f/_result.png",
+  monitor: "https://image.qwenlm.ai/generated-images/f2f9a723-7cec-4a91-ba98-8bc4108791f0/_result.png",
+  keyboard: "https://image.qwenlm.ai/generated-images/ff23bda5-d9e3-4f59-8a0d-941f464a6333/_result.png",
+  speaker: "https://image.qwenlm.ai/generated-images/9aede0ed-66e4-42c9-8f32-bc830f69020c/_result.png",
+  router: "https://image.qwenlm.ai/generated-images/fd036293-2b2d-4145-b494-cc686a2550ce/_result.png",
+  earbuds: "https://image.qwenlm.ai/generated-images/6de62aa5-ac00-4b96-bccc-46afd1d9b5dd/_result.png",
+  mouse: "https://image.qwenlm.ai/generated-images/6bde7622-93a0-4d41-bc9b-0ac8e9390187/_result.png",
+  watch: "https://image.qwenlm.ai/generated-images/c742e17e-5f3b-425c-9e83-ef469f8483e1/_result.png",
+};
 
 const INK = "#0a1f1c";
 const PINE = "#10312c";
@@ -18,6 +40,20 @@ interface Props {
 }
 
 export default function ProductArt({ kind, accent = "#0b7a63", className = "" }: Props) {
+  const photo = KIND_PHOTO[kind];
+  if (photo) {
+    return (
+      <span className={`block aspect-[4/3] overflow-hidden ${className}`} aria-hidden="true">
+        <img
+          src={photo}
+          alt=""
+          loading="lazy"
+          draggable={false}
+          className="h-full w-full select-none object-contain drop-shadow-[0_16px_22px_rgba(10,31,28,0.22)]"
+        />
+      </span>
+    );
+  }
   return (
     <svg viewBox="0 0 240 180" className={className} role="img" aria-hidden="true">
       <ellipse cx="120" cy="160" rx="66" ry="8" fill="rgba(10,31,28,0.10)" />
