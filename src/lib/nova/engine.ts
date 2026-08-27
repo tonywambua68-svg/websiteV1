@@ -13,7 +13,7 @@
  * reach the recommendation logic.
  */
 
-import { fmt, PRODUCTS, type Product } from "../../data/products";
+import { fmt, getAllProducts, type Product } from "../../data/products";
 import { FAQS, type Order } from "../../data/content";
 import type { SafeUser } from "../auth";
 import {
@@ -78,7 +78,7 @@ function findTwoProducts(t: string): [Product | null, Product | null] {
   }
   // fallback: first two distinct product-name matches anywhere in the text
   const found: Product[] = [];
-  for (const p of PRODUCTS) {
+  for (const p of getAllProducts()) {
     if (found.length === 2) break;
     const tokens = `${p.brand} ${p.name}`.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
     if (tokens.filter((w) => t.includes(w)).length >= 2 && !found.some((f) => f.id === p.id)) {
@@ -115,7 +115,7 @@ function recommend(input: string, mem: NovaMemory): NovaResponse {
   if (/charger|power ?bank|ssd|storage|keyboard|mouse|accessor/i.test(input)) cats.add("accessories");
   if (cats.size === 0) { cats.add("laptops"); cats.add("phones"); }
 
-  const pool = PRODUCTS.filter((p) => cats.has(p.category) && p.stock > 0);
+  const pool = getAllProducts().filter((p) => cats.has(p.category) && p.stock > 0);
   const scored = pool.map((p) => {
     let s = 30;
     const labels: string[] = [];
