@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CATEGORIES, PRODUCTS, discountOf, type CategoryId, type Product } from "../data/products";
+import { CATEGORIES, getAllProducts, discountOf, type CategoryId, type Product } from "../data/products";
+import { catalogSource, getCatalogVersion, subscribeCatalog } from "../lib/productApi";
 import { logSearch } from "../lib/nova/analytics";
 import ProductCard from "../components/ProductCard";
 import { Crumbs, Empty, Reveal } from "../components/ui";
@@ -49,12 +50,16 @@ export default function Shop() {
   const set = (patch: Partial<Filters>) => setF((prev) => ({ ...prev, ...patch }));
   const toggleIn = <T,>(arr: T[], v: T): T[] => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-  const allBrands = useMemo(() => [...new Set(PRODUCTS.map((p) => p.brand))].sort(), []);
-  const allRams = useMemo(() => [...new Set(PRODUCTS.map((p) => p.ram).filter(Boolean))] as string[], []);
-  const allStorages = useMemo(() => [...new Set(PRODUCTS.map((p) => p.storage).filter(Boolean))] as string[], []);
+  // Re-render when the live API catalogue arrives (or falls back to local).
+  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion);
+  const liveSource = catalogSource();
+
+  const allBrands = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.brand))].sort(), [catalogVersion]);
+  const allRams = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.ram).filter(Boolean))] as string[], [catalogVersion]);
+  const allStorages = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.storage).filter(Boolean))] as string[], [catalogVersion]);
 
   const filtered = useMemo(() => {
-    let list = PRODUCTS.slice();
+    let list: Product[] = getAllProducts().slice();
     const term = q.toLowerCase();
     if (term) {
       list = list.filter(
@@ -97,7 +102,7 @@ export default function Shop() {
       default: list.sort((a, b) => Number(b.tags.includes("bestseller")) - Number(a.tags.includes("bestseller")));
     }
     return list;
-  }, [q, urlTag, f, sort]);
+  }, [q, urlTag, f, sort, catalogVersion]);
 
   const activeChips: { label: string; clear: () => void }[] = [
     ...f.cats.map((c) => ({ label: CATEGORIES.find((x) => x.id === c)?.name ?? c, clear: () => set({ cats: f.cats.filter((x) => x !== c) }) })),
@@ -130,7 +135,18 @@ export default function Shop() {
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
           {subtitle && <p className="mt-1.5 max-w-xl text-sm font-semibold text-muted">{subtitle}</p>}
-          <p className="mt-2 text-[13px] font-bold text-teal">{filtered.length} product{filtered.length === 1 ? "" : "s"} · prices in KSh, VAT inclusive</p>
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-bold text-teal">
+            {filtered.length} product{filtered.length === 1 ? "" : "s"} · prices in KSh, VAT inclusive
+            <span
+              title={liveSource === "api" ? "Served by the live product database (GET /api/products)" : "API offline — using the bundled catalogue. Run: node server.mjs"}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                liveSource === "api" ? "bg-success/15 text-success" : "bg-mist text-muted"
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${liveSource === "api" ? "animate-ping-soft bg-success" : "bg-muted/50"}`} />
+              {liveSource === "api" ? "Live API" : "Local data"}
+            </span>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" className="btn btn-outline btn-sm lg:hidden" onClick={() => setSheetOpen(true)}>
@@ -257,7 +273,7 @@ function FilterPanel({ f, set, toggleIn, allBrands, allRams, allStorages, onClea
     <div>
       <FSection id="cat" title="Category" {...sec("cat")}>
         {CATEGORIES.map((c) => (
-          <Check key={c.id} on={f.cats.includes(c.id)} label={c.name} count={PRODUCTS.filter((p) => p.category === c.id).length}
+          <Check key={c.id} on={f.cats.includes(c.id)} label={c.name} count={getAllProducts().filter((p: Product) => p.category === c.id).length}
             onClick={() => set({ cats: toggleIn(f.cats, c.id) })} />
         ))}
       </FSection>
@@ -278,7 +294,7 @@ function FilterPanel({ f, set, toggleIn, allBrands, allRams, allStorages, onClea
 
       <FSection id="brand" title="Brand" {...sec("brand")}>
         {allBrands.map((b) => (
-          <Check key={b} on={f.brands.includes(b)} label={b} count={PRODUCTS.filter((p) => p.brand === b).length}
+          <Check key={b} on={f.brands.includes(b)} label={b} count={getAllProducts().filter((p: Product) => p.brand === b).length}
             onClick={() => set({ brands: toggleIn(f.brands, b) })} />
         ))}
       </FSection>
