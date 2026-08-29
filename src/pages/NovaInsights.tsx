@@ -18,13 +18,14 @@ import LiveActivityFeed from "../components/nova/LiveActivityFeed";
 import SeoPanel from "../components/nova/SeoPanel";
 import ContentStudio from "../components/nova/ContentStudio";
 import IntegrationsPanel from "../components/nova/IntegrationsPanel";
+import PricingPanel from "../components/nova/PricingPanel";
 import {
   IcArrowR, IcBolt, IcBox, IcCard, IcChat, IcGrid, IcPlug, IcSpark, IcTag, IcTruck, IcUser,
 } from "../components/Icons";
 
 const money = (n: number) => (n >= 1000 ? `KSh ${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : fmt(n));
 
-type Tab = "overview" | "live" | "customers" | "marketing" | "seo" | "stock" | "content" | "connect";
+type Tab = "overview" | "live" | "customers" | "marketing" | "seo" | "stock" | "content" | "pricing" | "connect";
 
 const TABS: { id: Tab; label: string; icon: (p: { className?: string }) => React.ReactElement }[] = [
   { id: "overview", label: "Overview", icon: IcGrid },
@@ -34,6 +35,7 @@ const TABS: { id: Tab; label: string; icon: (p: { className?: string }) => React
   { id: "seo", label: "SEO", icon: IcSpark },
   { id: "stock", label: "Stock", icon: IcBox },
   { id: "content", label: "Content", icon: IcChat },
+  { id: "pricing", label: "Pricing", icon: IcCard },
   { id: "connect", label: "Connect", icon: IcPlug },
 ];
 
@@ -100,6 +102,7 @@ function InsightsBody() {
           {tab === "seo" && <SeoTab />}
           {tab === "stock" && <StockTab />}
           {tab === "content" && <Reveal><ContentStudio /></Reveal>}
+          {tab === "pricing" && <Reveal><PricingPanel /></Reveal>}
           {tab === "connect" && <Reveal><IntegrationsPanel /></Reveal>}
         </div>
       </div>

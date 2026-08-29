@@ -14,7 +14,10 @@ import { CATEGORIES, PRODUCTS, type ArtKind, type CategoryId, type Product } fro
 import { getAllProducts } from "../../data/products";
 import { currentUser } from "../auth";
 import { registerPublished, unregisterPublished } from "./registry";
-import { calcPrice, DEFAULT_PRICING } from "./pricing";
+import {
+  calcProductPricing, DEFAULT_CATEGORY_RULES, DEFAULT_PRICING, ruleFor,
+  type CategoryPricingRule, type ProductPricingResult,
+} from "./pricing";
 import { cleanProduct } from "./clean";
 import { findDuplicate, type DuplicateHit } from "./dedupe";
 import { SAMPLE_FEED } from "./adapters";
@@ -26,6 +29,7 @@ const P_KEY = "imara.importer.products.v1";
 const L_KEY = "imara.importer.logs.v1";
 const M_KEY = "imara.importer.maps.v1";
 const S_KEY = "imara.importer.settings.v1";
+const R_KEY = "imara.importer.rules.v1";
 
 /* ---------------- default category mappings ---------------- */
 const DEFAULT_MAPPINGS: CategoryMapping[] = [
@@ -80,11 +84,13 @@ export function useImporter() {
   const [logs, setLogs] = useState<ImportLogEntry[]>(() => read(L_KEY, []));
   const [mappings, setMappings] = useState<CategoryMapping[]>(() => read(M_KEY, DEFAULT_MAPPINGS));
   const [settings, setSettings] = useState<PricingSettings>(() => ({ ...DEFAULT_PRICING, ...read<Partial<PricingSettings>>(S_KEY, {}) }));
+  const [rules, setRules] = useState<CategoryPricingRule[]>(() => read(R_KEY, DEFAULT_CATEGORY_RULES));
 
   useEffect(() => write(P_KEY, items), [items]);
   useEffect(() => write(L_KEY, logs.slice(0, 300)), [logs]);
   useEffect(() => write(M_KEY, mappings), [mappings]);
   useEffect(() => write(S_KEY, settings), [settings]);
+  useEffect(() => write(R_KEY, rules), [rules]);
 
   const actor = () => currentUser()?.email ?? "unknown";
   const log = useCallback((source: ImportLogEntry["source"], ref: string, status: ImportLogEntry["status"], message: string) => {
@@ -97,6 +103,27 @@ export function useImporter() {
       return hit ? { cat: hit.storeCategory, automatic: true } : { cat: null, automatic: false };
     },
     [mappings],
+  );
+
+  /** Run the pricing engine over an item → full cost/profit breakdown. */
+  const priceOf = useCallback(
+    (it: ImportedProduct): ProductPricingResult => {
+      const supplierCostKes = it.supplierPrice * it.exchangeRate;
+      return calcProductPricing({
+        supplierCostKes,
+        pricingMethod: it.pricingMethod,
+        fixedMarkupKes: it.fixedMarkupKes,
+        markupPct: it.markupPct,
+        customPriceKes: it.customPriceKes,
+        categoryRule: ruleFor(rules, it.storeCategory),
+        deliveryCostKes: it.deliveryCostKes,
+        paymentFeesKes: it.paymentFeesKes,
+        adCostKes: it.adCostKes,
+        otherCostsKes: it.otherCostsKes,
+        roundTo: settings.roundTo,
+      });
+    },
+    [rules, settings],
   );
 
   /** Build an ImportedProduct from a raw feed item (clean + price + dedupe). */
@@ -114,30 +141,31 @@ export function useImporter() {
       if (!cat) flags.push("Unmapped category — assign before publishing");
       if (!raw.imageUrls?.length) flags.push("No source images (reference) — store art will be used");
 
-      const base = {
-        currency: raw.currency, supplierPrice: raw.price,
-        shippingKes: settings.defaultShippingKes, otherCostsKes: settings.defaultOtherCostsKes,
-        markupPct: settings.defaultMarkupPct, exchangeRate: raw.currency === "USD" ? settings.usdToKes : raw.currency === "CNY" ? settings.cnyToKes : 1,
-      };
-      const calc = calcPrice(base, settings);
-      const stock = raw.stock ?? 20;
-
-      const item: ImportedProduct = {
+      const exchangeRate = raw.currency === "USD" ? settings.usdToKes : raw.currency === "CNY" ? settings.cnyToKes : 1;
+      const draft: ImportedProduct = {
         id: newId(), status: "imported", source,
         sourceProductId: raw.sourceProductId, sourceUrl: raw.sourceUrl, seller: raw.seller,
         importedAt: new Date().toISOString(),
         rawName: raw.name, name: cleaned.name, brand: raw.brand ?? "Unknown", model: raw.model, sku: raw.sku,
         rawDescription: raw.description ?? "", description: cleaned.description,
         specs: cleaned.specs, sourceCategory: raw.sourceCategory, storeCategory: cat, mappedAutomatically: automatic,
-        ...base, recommendedKes: calc.recommendedKes, sellingPriceKes: calc.recommendedKes,
-        moq: raw.moq ?? 1, stock, stockStatus: stock === 0 ? "out" : stock <= 10 ? "low" : "in_stock",
+        currency: raw.currency, supplierPrice: raw.price, exchangeRate,
+        moq: raw.moq ?? 1,
+        pricingMethod: settings.defaultPricingMethod,
+        fixedMarkupKes: 0, markupPct: settings.defaultMarkupPct, customPriceKes: 0,
+        deliveryCostKes: settings.defaultShippingKes, paymentFeesKes: settings.defaultPaymentFeesKes,
+        adCostKes: settings.defaultAdCostKes, otherCostsKes: settings.defaultOtherCostsKes,
+        sellingPriceKes: 0,
+        stock: raw.stock ?? 20, stockStatus: "in_stock",
         shippingInfo: raw.shippingInfo, etaDays: raw.etaDays,
         images: (raw.imageUrls ?? []).map((url) => ({ url, selected: false, note: "Reference only — not republished without permission" })),
         flags,
       };
-      return { item, errors };
+      draft.stockStatus = draft.stock === 0 ? "out" : draft.stock <= 10 ? "low" : "in_stock";
+      draft.sellingPriceKes = priceOf(draft).sellingPriceKes;
+      return { item: draft, errors };
     },
-    [items, mapCategory, settings],
+    [items, mapCategory, settings, priceOf],
   );
 
   /** Import a batch of raw items. Returns a summary (never throws). */
@@ -177,13 +205,38 @@ export function useImporter() {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }, []);
 
-  /** Recalculate recommended price for an item from its cost inputs. */
-  const recalc = useCallback(
-    (it: ImportedProduct): ImportedProduct => {
-      const calc = calcPrice(it, settings);
-      return { ...it, recommendedKes: calc.recommendedKes, exchangeRate: it.currency === "USD" ? settings.usdToKes : it.currency === "CNY" ? settings.cnyToKes : 1 };
+  /** Recompute an item's selling price with the engine and persist it. */
+  const reprice = useCallback(
+    (id: string, patch: Partial<ImportedProduct>) => {
+      setItems((prev) =>
+        prev.map((it) => {
+          if (it.id !== id) return it;
+          const next = { ...it, ...patch };
+          next.exchangeRate = next.currency === "USD" ? settings.usdToKes : next.currency === "CNY" ? settings.cnyToKes : 1;
+          next.sellingPriceKes = priceOf(next).sellingPriceKes;
+          return next;
+        }),
+      );
     },
-    [settings],
+    [settings, priceOf],
+  );
+
+  /** Recalculate selling price for an item from its current cost inputs. */
+  const recalc = useCallback(
+    (it: ImportedProduct): ImportedProduct => ({ ...it, sellingPriceKes: priceOf(it).sellingPriceKes }),
+    [priceOf],
+  );
+
+  /* ---------------- category pricing rules CRUD ---------------- */
+  const setRule = useCallback(
+    (categoryId: CategoryId, method: "fixed" | "percent", value: number) => {
+      setRules((prev) => {
+        const rest = prev.filter((r) => r.categoryId !== categoryId);
+        return [...rest, { categoryId, method, value }];
+      });
+      log("system", `Rule: ${categoryId}`, "info", `Category rule set → ${method === "fixed" ? `KSh ${value}` : `${value}%`}`);
+    },
+    [log],
   );
 
   const setStatus = useCallback((id: string, status: ImportedProduct["status"], note?: string) => {
@@ -261,16 +314,22 @@ export function useImporter() {
     setItems((prev) => prev.map((it) => {
       if (it.storeCategory) return it;
       const { cat, automatic } = mapCategory(it.sourceCategory);
-      if (cat) { changed++; return { ...it, storeCategory: cat, mappedAutomatically: automatic }; }
+      if (cat) {
+        changed++;
+        const next = { ...it, storeCategory: cat, mappedAutomatically: automatic };
+        next.sellingPriceKes = priceOf(next).sellingPriceKes; // category rule may now apply
+        return next;
+      }
       return it;
     }));
     log("system", "Category mappings", "info", "Re-applied mappings to unmapped imports");
     return changed;
-  }, [mapCategory, log]);
+  }, [mapCategory, log, priceOf]);
 
   return {
-    items, logs, mappings, settings,
-    setSettings, update, recalc, importBatch, importSamples,
+    items, logs, mappings, settings, rules,
+    setSettings, setRule, update, reprice, recalc, priceOf,
+    importBatch, importSamples,
     setStatus, publish, unpublish, reject, remove, setMapping, reapplyMappings, log,
   };
 }
