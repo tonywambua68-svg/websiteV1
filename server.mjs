@@ -14,6 +14,7 @@
  * the real environment — it is never exposed to the browser bundle.
  */
 import http from "node:http";
+import { networkInterfaces } from "node:os";
 import { createServer as createViteServer } from "vite";
 import { loadEnvFile } from "./server/env.mjs";
 import { resolveApiKey, handleApi } from "./server/api.mjs";
@@ -50,12 +51,18 @@ const vite = await createViteServer({
 await initDb(vite);
 
 httpServer.listen(PORT, () => {
+  // First non-internal IPv4 address — the one a LAN scraper should target.
+  const lanIp = Object.values(networkInterfaces())
+    .flat()
+    .find((i) => i && (i.family === "IPv4" || i.family === 4) && !i.internal)?.address ?? "127.0.0.1";
+  const line = (label, value) => `  │  ${label.padEnd(15)}${value.padEnd(42)}│`;
   console.log("");
   console.log("  ┌─ Imara Tech · full-stack dev server ─────────────────────┐");
-  console.log(`  │  Website        http://localhost:${PORT}                    │`);
-  console.log(`  │  Product API    http://localhost:${PORT}/api/products       │`);
-  console.log(`  │  Health check   http://localhost:${PORT}/api/health         │`);
-  console.log(`  │  Database       ${dbPath().replace(process.cwd(), ".")}  │`.slice(0, 64).padEnd(64) + "│");
+  console.log(line("Website", `http://localhost:${PORT}`));
+  console.log(line("Product API", `http://localhost:${PORT}/api/products`));
+  console.log(line("Health check", `http://localhost:${PORT}/api/health`));
+  console.log(line("LAN (scraper)", `http://${lanIp}:${PORT}/api/products`));
+  console.log(`  │  ${"Database".padEnd(15)}${dbPath().replace(process.cwd(), ".").slice(0, 42).padEnd(42)}│`);
   console.log("  └──────────────────────────────────────────────────────────┘");
   console.log("");
 });
