@@ -405,10 +405,18 @@ export const PRODUCTS: Product[] = [
  * detail pages, cart, orders and reviews — no consumer changes needed.
  * ------------------------------------------------------------------ */
 import { getPublished } from "../lib/importer/registry";
+import { getApiProducts } from "../lib/productApi";
 
-/** Base catalogue + products the admin has APPROVED & PUBLISHED. */
+/**
+ * The live catalogue, in priority order:
+ *   1. Products served by the website API (server.mjs → /api/products), when online
+ *   2. The bundled seed catalogue (this file) as the offline fallback
+ * plus any imports the admin has PUBLISHED from the in-browser importer.
+ */
 export function getAllProducts(): Product[] {
-  return [...PRODUCTS, ...getPublished()];
+  const base = getApiProducts() ?? PRODUCTS;
+  const published = getPublished().filter((p) => !base.some((b) => b.id === p.id));
+  return [...base, ...published];
 }
 
 export const byId = (id: string) => getAllProducts().find((p) => p.id === id);

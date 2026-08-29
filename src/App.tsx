@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { HashRouter, Link, Route, Routes, useLocation } from "react-router-dom";
+import { initCatalog } from "./lib/productApi";
 import { StoreProvider } from "./lib/store";
 import { AuthProvider } from "./lib/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -123,6 +124,10 @@ function RouteShell({ children }: { children: React.ReactNode }) {
 
 function GlobalChrome() {
   useGlobalShortcuts();
+  // Upgrade the catalogue to the live API when the server is online.
+  useEffect(() => {
+    void initCatalog();
+  }, []);
   return <ScrollProgress />;
 }
 
