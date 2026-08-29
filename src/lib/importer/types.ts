@@ -9,6 +9,9 @@ import type { CategoryId } from "../../data/products";
 export type ImportSourceId = "aliexpress" | "alibaba" | "csv" | "sample";
 export type ImportStatus = "imported" | "review" | "approved" | "published" | "rejected";
 
+/** How a product's selling price is derived. */
+export type PricingMethod = "category-rule" | "fixed" | "percent" | "custom";
+
 export interface SourceImage {
   url: string;
   /** Kept for attribution/review only — never auto-republished. */
@@ -42,13 +45,18 @@ export interface ImportedProduct {
   // pricing (supplier side — INTERNAL, never shown to customers)
   currency: "USD" | "CNY" | "KES";
   supplierPrice: number; // in `currency`
-  moq: number; // minimum order quantity
-  shippingKes: number;
-  otherCostsKes: number;
   exchangeRate: number; // KES per 1 unit of `currency`
-  markupPct: number;
-  recommendedKes: number; // computed
-  sellingPriceKes: number; // admin's final decision (defaults to recommended)
+  moq: number; // minimum order quantity
+  pricingMethod: PricingMethod; // per-product override (default: category-rule)
+  fixedMarkupKes: number; // used when method = fixed
+  markupPct: number; // used when method = percent (and as category-rule fallback)
+  customPriceKes: number; // used when method = custom
+  // per-unit costs (KSh) feeding the net-profit calculation
+  deliveryCostKes: number; // inbound shipping / logistics
+  paymentFeesKes: number; // M-PESA / gateway fees
+  adCostKes: number; // marketing allocation per unit
+  otherCostsKes: number;
+  sellingPriceKes: number; // engine output / admin's final decision
 
   stock: number;
   stockStatus: "in_stock" | "low" | "out";
@@ -76,9 +84,12 @@ export interface CategoryMapping {
 export interface PricingSettings {
   usdToKes: number;
   cnyToKes: number;
-  defaultShippingKes: number;
+  defaultShippingKes: number; // default delivery/inbound cost per unit
   defaultOtherCostsKes: number;
-  defaultMarkupPct: number;
+  defaultPaymentFeesKes: number;
+  defaultAdCostKes: number;
+  defaultMarkupPct: number; // fallback % when no category rule matches
+  defaultPricingMethod: PricingMethod;
   roundTo: 50 | 100 | 500 | 999; // price rounding strategy
 }
 
