@@ -5,11 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: "0.0.0.0",
-    port: 3000,
-    strictPort: true,
-    hmr: {
-      port: 3000,
-    },
+    host: "0.0.0.0", // storefront reachable on localhost AND the LAN IP
+    port: 5173, // the Product API owns :3000 (node server.mjs) — never share it
+    strictPort: true, // fail loudly rather than silently picking another port
   },
 });

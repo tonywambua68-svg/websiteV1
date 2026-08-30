@@ -1,21 +1,31 @@
 # Imara Tech — Product API
 
-A dependency-free REST API that runs **on the same port as the website** (`:3000`),
-so the storefront and the API share one origin. The React frontend is unchanged —
-when the API is online the Shop transparently switches from the bundled catalogue
-to the live database (see the "Live API / Local data" badge on the Shop page).
+A dependency-free REST API on **port 3000**, bound to **all interfaces** — it answers
+identically on `localhost:3000` and on the machine's LAN IP (e.g. `192.168.0.107:3000`),
+which is how scrapers on other machines reach it.
 
-## Run it
+The Vite storefront runs **separately on port 5173** (`npm run dev`). The two processes
+never share a port, so there is never any ambiguity about which one answers. The React
+frontend is unchanged — when the API is online the Shop transparently switches from the
+bundled catalogue to the live database (see the "Live API / Local data" badge on the
+Shop page), resolving the API on the *same hostname* it was opened with, port 3000.
+
+## Run it — two terminals
 
 ```bash
+# Terminal 1 — the Product API (port 3000)
 node server.mjs
+
+# Terminal 2 — the storefront (port 5173)
+npm run dev
 ```
 
-- Website:  http://localhost:3000
-- API:      http://localhost:3000/api/products
-- Health:   http://localhost:3000/api/health
+- Storefront:  http://localhost:5173
+- API:         http://localhost:3000/api/products
+- Health:      http://localhost:3000/api/health
+- From a scraper on another machine: `http://<website-machine-LAN-IP>:3000/api/products`
 
-(`npm run dev` still works on its own — the site just uses the bundled catalogue.)
+(`npm run dev` also works alone — the site then uses the bundled catalogue.)
 
 ## Database
 
@@ -64,7 +74,18 @@ Set in `server/.env.local` (gitignored) — see `server/.env.example`.
 | `PRODUCTS_API_KEY` | yes (for writes) | Shared secret for POST/PUT/PATCH/DELETE. Random one printed at boot if unset. |
 | `CORS_ORIGIN` | no | Browser origin allowed cross-origin (default `*`). |
 | `PRODUCTS_DB` | no | Override database path. |
-| `PORT` | no | Server port (default `3000`). |
+| `PORT` | no | API port (default `3000`). |
+
+**Frontend overrides** (root `.env` — addresses only, never secrets):
+
+| Variable | Purpose |
+|---|---|
+| `VITE_PRODUCTS_API_URL` | Full API base, e.g. `http://192.168.0.107:3000/api` — overrides auto-detection. |
+| `VITE_PRODUCTS_API_PORT` | API port used in dev when auto-detecting (default `3000`). |
+
+By default the dev storefront derives the API base from its own hostname
+(`localhost` → `http://localhost:3000/api`, LAN IP → `http://<same-IP>:3000/api`),
+so opening the site from any machine on the network just works.
 
 ## Scraper
 
