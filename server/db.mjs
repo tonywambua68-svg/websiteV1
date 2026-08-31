@@ -85,9 +85,12 @@ function toApiRecord(p, now) {
 
 /**
  * Initialise the database.
- * @param {import("vite").ViteDevServer} [vite] used only for the one-time seed migration
+ *
+ * On first boot (no database file) the existing catalogue is migrated from
+ * src/data/products.ts. A headless Vite instance — middleware mode, NO port
+ * opened — is used purely to load the TypeScript module, then closed.
  */
-export async function initDb(vite) {
+export async function initDb() {
   if (ready) return;
 
   if (existsSync(DB_PATH)) {
@@ -106,18 +109,25 @@ export async function initDb(vite) {
 
   // ---- one-time migration from the real catalogue ----
   const now = new Date().toISOString();
-  if (vite) {
-    try {
-      const mod = await vite.ssrLoadModule("/src/data/products.ts");
-      const seeded = (mod.PRODUCTS || []).map((p) => toApiRecord(p, now));
-      state = { version: 1, migratedAt: now, products: seeded };
-      save();
-      ready = true;
-      console.log(`[db] Migration complete — imported ${seeded.length} products from src/data/products.ts into ${DB_PATH}`);
-      return;
-    } catch (err) {
-      console.warn("[db] Could not load src/data/products.ts for seeding:", err.message);
-    }
+  let vite = null;
+  try {
+    const { createServer } = await import("vite");
+    vite = await createServer({
+      server: { middlewareMode: true }, // headless — never listens on a port
+      appType: "custom",
+      logLevel: "error",
+    });
+    const mod = await vite.ssrLoadModule("/src/data/products.ts");
+    const seeded = (mod.PRODUCTS || []).map((p) => toApiRecord(p, now));
+    state = { version: 1, migratedAt: now, products: seeded };
+    save();
+    ready = true;
+    console.log(`[db] Migration complete — imported ${seeded.length} products from src/data/products.ts into ${DB_PATH}`);
+    return;
+  } catch (err) {
+    console.warn("[db] Could not load src/data/products.ts for seeding:", err.message);
+  } finally {
+    if (vite) await vite.close().catch(() => {});
   }
 
   state = { version: 1, migratedAt: null, products: [] };

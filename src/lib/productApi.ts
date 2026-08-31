@@ -1,11 +1,12 @@
 /**
  * Live product catalogue loader.
  *
- * On boot the storefront asks the website's own API (GET /api/products) for
- * the catalogue. When the API answers, those records REPLACE the bundled
- * seed data everywhere — Shop, Home, NOVA, compare, search — through the
- * existing `getAllProducts()` choke point. When the API is offline (plain
- * `npm run dev`), the bundled catalogue is used and nothing breaks.
+ * On boot the storefront asks the Product API (GET /api/products, on port
+ * 3000 — see `apiBase()` below) for the catalogue. When the API answers,
+ * those records REPLACE the bundled seed data everywhere — Shop, Home, NOVA,
+ * compare, search — through the existing `getAllProducts()` choke point.
+ * When the API is offline (storefront-only `npm run dev`), the bundled
+ * catalogue is used and nothing breaks.
  *
  * No secrets ever leave the server: this module only performs an
  * unauthenticated public GET (PUBLISHED products, internal costs stripped).
@@ -89,6 +90,26 @@ function toProduct(r: ApiRecord): Product {
   };
 }
 
+/* ---------------- API base resolution ----------------
+ * Dev:  the storefront runs on :5173 while the Product API owns :3000, so the
+ *       base is derived from the CURRENT hostname (localhost OR a LAN IP) —
+ *       e.g. http://localhost:5173 → http://localhost:3000/api
+ *            http://192.168.0.107:5173 → http://192.168.0.107:3000/api
+ * Prod: same-origin "/api" (assumes a reverse proxy), unless
+ *       VITE_PRODUCTS_API_URL explicitly overrides it.
+ */
+function apiBase(): string {
+  const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+  const override = env.VITE_PRODUCTS_API_URL;
+  if (override) return override.replace(/\/+$/, "");
+  const dev = env.DEV;
+  if (dev && typeof window !== "undefined") {
+    const port = env.VITE_PRODUCTS_API_PORT ?? "3000";
+    return `${window.location.protocol}//${window.location.hostname}:${port}/api`;
+  }
+  return "/api";
+}
+
 /* ---------------- live store ---------------- */
 
 let apiProducts: Product[] | null = null;
@@ -115,17 +136,18 @@ export async function initCatalog(): Promise<void> {
   if (apiProducts) return; // already live
   try {
     const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 1500);
-    const res = await fetch("/api/products", { signal: ctrl.signal });
+    const timer = window.setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(`${apiBase()}/products`, { signal: ctrl.signal });
     window.clearTimeout(timer);
     if (!res.ok) return;
     const data = (await res.json()) as { products?: ApiRecord[] };
-    if (!Array.isArray(data.products)) return;
+    if (!Array.isArray(data.products) || data.products.length === 0) return; // empty DB → keep bundled data
     apiProducts = data.products.map(toProduct);
     source = "api";
     version += 1;
     listeners.forEach((fn) => fn());
+    console.info(`[catalog] live — ${apiProducts.length} products from ${apiBase()}`);
   } catch {
-    /* API offline — keep the bundled catalogue. The site works either way. */
+    /* API offline or cross-origin blocked — keep the bundled catalogue. */
   }
 }
