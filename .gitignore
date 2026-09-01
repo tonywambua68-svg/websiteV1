@@ -1,18 +1,5 @@
-# Dependencies & build output
 node_modules/
 .next/
 dist/
 build/
 *.log
-
-# Environment secrets — NEVER commit (contains the demo admin password)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Product API — generated database & local server overrides
-server/.env.local
-server/data/products.json
-server/data/*.tmp
