@@ -1,338 +1,150 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { CATEGORIES, getAllProducts, discountOf, type CategoryId, type Product } from "../data/products";
-import { catalogSource, getCatalogVersion, subscribeCatalog } from "../lib/productApi";
-import { logSearch } from "../lib/nova/analytics";
-import ProductCard from "../components/ProductCard";
-import { Crumbs, Empty, Reveal } from "../components/ui";
-import { IcChevD, IcFilter, IcX } from "../components/Icons";
-
-type SortKey = "featured" | "price-asc" | "price-desc" | "discount" | "newest";
-
-interface Filters {
-  cats: CategoryId[];
-  brands: string[];
-  min: string;
-  max: string;
-  rating: number; // 0 = any
-  inStock: boolean;
-  condition: string[]; // 'New' | 'Certified Refurbished'
-  rams: string[];
-  storages: string[];
-  screens: string[];
-}
-
-const EMPTY: Filters = { cats: [], brands: [], min: "", max: "", rating: 0, inStock: false, condition: [], rams: [], storages: [], screens: [] };
-
-const screenNum = (s?: string) => (s ? parseFloat(s.replace('"', "")) : NaN);
+import { useEffect, useState } from 'react';
+import { useProductStore } from '@/store/productStore';
+import ProductCard from '@/components/ProductCard';
+import { Search, Filter } from 'lucide-react';
 
 export default function Shop() {
-  const [params, setParams] = useSearchParams();
-  const q = (params.get("q") ?? "").trim();
-  const urlCat = params.get("cat") as CategoryId | null;
-  const urlTag = params.get("tag");
+  const { products, fetchProducts, loading, filters, setFilters, resetFilters } = useProductStore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // NOVA behaviour log — what shoppers search for feeds admin insights.
   useEffect(() => {
-    if (q) logSearch(q);
-  }, [q]);
+    fetchProducts(filters);
+  }, [filters, fetchProducts]);
 
-  const [f, setF] = useState<Filters>(EMPTY);
-  const [sort, setSort] = useState<SortKey>("featured");
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFilters({ ...filters, search: searchTerm });
+  };
 
-  // Sync URL category into filters
-  useEffect(() => {
-    setF((prev) => ({ ...prev, cats: urlCat ? [urlCat] : prev.cats }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCat, q, urlTag]);
-
-  const set = (patch: Partial<Filters>) => setF((prev) => ({ ...prev, ...patch }));
-  const toggleIn = <T,>(arr: T[], v: T): T[] => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
-
-  // Re-render when the live API catalogue arrives (or falls back to local).
-  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion);
-  const liveSource = catalogSource();
-
-  const allBrands = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.brand))].sort(), [catalogVersion]);
-  const allRams = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.ram).filter(Boolean))] as string[], [catalogVersion]);
-  const allStorages = useMemo(() => [...new Set(getAllProducts().map((p: Product) => p.storage).filter(Boolean))] as string[], [catalogVersion]);
-
-  const filtered = useMemo(() => {
-    let list: Product[] = getAllProducts().slice();
-    const term = q.toLowerCase();
-    if (term) {
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(term) || p.brand.toLowerCase().includes(term) ||
-          p.category.includes(term) || p.tagline.toLowerCase().includes(term) ||
-          p.specs.some(([k, v]) => `${k} ${v}`.toLowerCase().includes(term)),
-      );
-    }
-    if (urlTag === "new") list = list.filter((p) => p.tags.includes("new"));
-    if (urlTag === "deal") list = list.filter((p) => p.oldPrice);
-    if (f.cats.length) list = list.filter((p) => f.cats.includes(p.category));
-    if (f.brands.length) list = list.filter((p) => f.brands.includes(p.brand));
-    const min = parseInt(f.min) || 0;
-    const max = parseInt(f.max) || Infinity;
-    list = list.filter((p) => p.price >= min && p.price <= max);
-
-    if (f.inStock) list = list.filter((p) => p.stock > 0);
-    if (f.condition.length) list = list.filter((p) => f.condition.includes(p.condition));
-    if (f.rams.length) list = list.filter((p) => p.ram && f.rams.includes(p.ram));
-    if (f.storages.length) list = list.filter((p) => p.storage && f.storages.includes(p.storage));
-    if (f.screens.length) {
-      list = list.filter((p) => {
-        const n = screenNum(p.screen);
-        if (Number.isNaN(n)) return false;
-        return f.screens.some((s) => {
-          if (s === "Under 14″") return n < 13.5;
-          if (s === "14–16″") return n >= 13.5 && n <= 16.5;
-          if (s === "Over 24″") return n > 24;
-          return false;
-        });
-      });
-    }
-    switch (sort) {
-      case "price-asc": list.sort((a, b) => a.price - b.price); break;
-      case "price-desc": list.sort((a, b) => b.price - a.price); break;
-
-      case "discount": list.sort((a, b) => discountOf(b) - discountOf(a)); break;
-      case "newest": list.sort((a, b) => Number(b.tags.includes("new")) - Number(a.tags.includes("new"))); break;
-      default: list.sort((a, b) => Number(b.tags.includes("bestseller")) - Number(a.tags.includes("bestseller")));
-    }
-    return list;
-  }, [q, urlTag, f, sort, catalogVersion]);
-
-  const activeChips: { label: string; clear: () => void }[] = [
-    ...f.cats.map((c) => ({ label: CATEGORIES.find((x) => x.id === c)?.name ?? c, clear: () => set({ cats: f.cats.filter((x) => x !== c) }) })),
-    ...f.brands.map((b) => ({ label: b, clear: () => set({ brands: f.brands.filter((x) => x !== b) }) })),
-    ...(f.min || f.max ? [{ label: `KSh ${f.min || "0"} – ${f.max || "∞"}`, clear: () => set({ min: "", max: "" }) }] : []),
-
-    ...(f.inStock ? [{ label: "In stock", clear: () => set({ inStock: false }) }] : []),
-    ...f.condition.map((c) => ({ label: c === "New" ? "New" : "Renewed", clear: () => set({ condition: f.condition.filter((x) => x !== c) }) })),
-    ...f.rams.map((r) => ({ label: `${r} RAM`, clear: () => set({ rams: f.rams.filter((x) => x !== r) }) })),
-    ...f.storages.map((s) => ({ label: s, clear: () => set({ storages: f.storages.filter((x) => x !== s) }) })),
-    ...f.screens.map((s) => ({ label: s, clear: () => set({ screens: f.screens.filter((x) => x !== s) }) })),
-  ];
-
-  const title = q
-    ? `Results for “${q}”`
-    : urlTag === "new" ? "New Arrivals"
-    : urlTag === "deal" ? "Deals & Offers"
-    : f.cats.length === 1 ? CATEGORIES.find((c) => c.id === f.cats[0])?.name ?? "Shop"
-    : "All Products";
-
-  const subtitle = f.cats.length === 1 && !q
-    ? CATEGORIES.find((c) => c.id === f.cats[0])?.short
-    : q ? "Search matches names, brands and full spec sheets." : undefined;
+  const categories = ['All', 'Electronics', 'Computers', 'Phones', 'Audio', 'Accessories'];
 
   return (
-    <div className="wrap py-8 md:py-12">
-      <Crumbs items={[{ label: "Home", to: "/" }, { label: "Shop", to: "/shop" }, ...(title !== "All Products" ? [{ label: title }] : [])]} />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Shop All Products</h1>
+        <p className="text-gray-600">Browse our complete collection of electronics</p>
+      </div>
 
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-1.5 max-w-xl text-sm font-semibold text-muted">{subtitle}</p>}
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-bold text-teal">
-            {filtered.length} product{filtered.length === 1 ? "" : "s"} · prices in KSh, VAT inclusive
-            <span
-              title={liveSource === "api" ? "Served by the live product database (GET /api/products)" : "API offline — using the bundled catalogue. Run: node server.mjs"}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
-                liveSource === "api" ? "bg-success/15 text-success" : "bg-mist text-muted"
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${liveSource === "api" ? "animate-ping-soft bg-success" : "bg-muted/50"}`} />
-              {liveSource === "api" ? "Live API" : "Local data"}
-            </span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className="btn btn-outline btn-sm lg:hidden" onClick={() => setSheetOpen(true)}>
-            <IcFilter className="h-4 w-4" /> Filters{activeChips.length > 0 && ` (${activeChips.length})`}
+      {/* Search and Filter Bar */}
+      <div className="mb-8">
+        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Search
           </button>
-          <label className="flex items-center gap-2 text-xs font-extrabold text-muted">
-            Sort
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="input !h-10 !w-44 !text-[13px] font-bold"
-              aria-label="Sort products"
-            >
-              <option value="featured">Featured</option>
-              <option value="price-asc">Price: low → high</option>
-              <option value="price-desc">Price: high → low</option>
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Filter className="w-5 h-5" />
+            Filters
+          </button>
+        </form>
 
-              <option value="discount">Biggest discount</option>
-              <option value="newest">Newest first</option>
-            </select>
-          </label>
-        </div>
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="bg-gray-50 p-6 rounded-lg mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={filters.category || ''}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                >
+                  <option value="">All Categories</option>
+                  {categories.slice(1).map((cat) => (
+                    <option key={cat} value={cat.toLowerCase()}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price Range */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filters.minPrice || ''}
+                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value ? Number(e.target.value) : undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filters.maxPrice || ''}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value ? Number(e.target.value) : undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* In Stock Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={filters.inStock || false}
+                    onChange={(e) => setFilters({ ...filters, inStock: e.target.checked || undefined })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-600"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">In Stock Only</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  resetFilters();
+                  setSearchTerm('');
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {activeChips.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {activeChips.map((c, i) => (
-            <button key={i} type="button" onClick={c.clear} className="chip chip-on" title="Remove filter">
-              {c.label} <IcX className="h-3 w-3" />
-            </button>
-          ))}
-          <button type="button" onClick={() => setF(EMPTY)} className="text-xs font-extrabold text-error underline-offset-2 hover:underline">Clear all</button>
+      {/* Products Grid */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading products...</p>
         </div>
-      )}
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-[250px_1fr]">
-        {/* Sidebar (desktop) */}
-        <aside className="hidden lg:block" aria-label="Filters">
-          <div className="sticky top-40 max-h-[calc(100vh-11rem)] overflow-y-auto pr-1 no-scrollbar">
-            <FilterPanel f={f} set={set} toggleIn={toggleIn} allBrands={allBrands} allRams={allRams} allStorages={allStorages} onClear={() => setF(EMPTY)} />
-          </div>
-        </aside>
-
-        {/* Grid */}
-        <div>
-          {filtered.length === 0 ? (
-            <Empty title="No products match those filters" sub="Try widening the price range or clearing a filter or two.">
-              <button type="button" className="btn btn-amber btn-sm" onClick={() => setF(EMPTY)}>Clear all filters</button>
-              <Link to="/shop" className="btn btn-outline btn-sm">Back to shop</Link>
-            </Empty>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((p, i) => (
-                <Reveal key={p.id} delay={(i % 3) * 60}>
-                  <ProductCard p={p} />
-                </Reveal>
-              ))}
-            </div>
-          )}
+      ) : products.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">No products found.</p>
         </div>
-      </div>
-
-      {/* Mobile filter sheet */}
-      {sheetOpen && (
-        <div className="fixed inset-0 z-[65] lg:hidden" role="dialog" aria-modal="true" aria-label="Filters">
-          <button type="button" className="animate-fade absolute inset-0 bg-ink/60" onClick={() => setSheetOpen(false)} aria-label="Close filters" />
-          <div className="animate-sheet absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-card p-5 pb-8 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-bold">Filters</h2>
-              <button type="button" onClick={() => setSheetOpen(false)} className="grid h-9 w-9 place-items-center rounded-lg border border-line" aria-label="Close filters"><IcX className="h-4 w-4" /></button>
-            </div>
-            <FilterPanel f={f} set={set} toggleIn={toggleIn} allBrands={allBrands} allRams={allRams} allStorages={allStorages} onClear={() => setF(EMPTY)} />
-            <button type="button" className="btn btn-amber mt-5 w-full" onClick={() => setSheetOpen(false)}>
-              Show {filtered.length} product{filtered.length === 1 ? "" : "s"}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ---------------- Filter panel ---------------- */
-function FSection({ id, title, collapsed, onToggle, children }: {
-  id: string; title: string; collapsed: boolean; onToggle: (id: string) => void; children: React.ReactNode;
-}) {
-  return (
-    <div className="border-b border-line py-4 first:pt-0">
-      <button type="button" className="flex w-full items-center justify-between text-left" onClick={() => onToggle(id)} aria-expanded={!collapsed}>
-        <span className="text-[13px] font-extrabold">{title}</span>
-        <IcChevD className={`h-4 w-4 text-muted transition-transform ${collapsed ? "-rotate-90" : ""}`} />
-      </button>
-      {!collapsed && <div className="mt-3">{children}</div>}
-    </div>
-  );
-}
-
-function FCheck({ on, label, onClick, count }: { on: boolean; label: string; onClick: () => void; count?: number }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 text-[13px] font-semibold transition hover:bg-mist">
-      <input type="checkbox" checked={on} onChange={onClick} className="peer sr-only" />
-      <span className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded border transition ${on ? "border-teal bg-teal text-white" : "border-line bg-card"}`}>
-        {on && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" className="h-3 w-3"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
-      </span>
-      <span className="flex-1">{label}</span>
-      {typeof count === "number" && <span className="text-[11px] font-bold text-muted">{count}</span>}
-    </label>
-  );
-}
-
-function FilterPanel({ f, set, toggleIn, allBrands, allRams, allStorages, onClear }: {
-  f: Filters;
-  set: (p: Partial<Filters>) => void;
-  toggleIn: <T,>(arr: T[], v: T) => T[];
-  allBrands: string[]; allRams: string[]; allStorages: string[];
-  onClear: () => void;
-}) {
-  const [collapsedId, setCollapsedId] = useState<string | null>(null);
-  const onToggle = (id: string) => setCollapsedId((c) => (c === id ? null : id));
-  const Check = FCheck;
-  const sec = (id: string) => ({ collapsed: collapsedId === id, onToggle });
-
-  return (
-    <div>
-      <FSection id="cat" title="Category" {...sec("cat")}>
-        {CATEGORIES.map((c) => (
-          <Check key={c.id} on={f.cats.includes(c.id)} label={c.name} count={getAllProducts().filter((p: Product) => p.category === c.id).length}
-            onClick={() => set({ cats: toggleIn(f.cats, c.id) })} />
-        ))}
-      </FSection>
-
-      <FSection id="price" title="Price (KSh)" {...sec("price")}>
-        <div className="flex items-center gap-2">
-          <input inputMode="numeric" placeholder="Min" value={f.min} onChange={(e) => set({ min: e.target.value.replace(/[^\d]/g, "") })} className="input !h-10 !text-[13px]" aria-label="Minimum price" />
-          <span className="text-muted">–</span>
-          <input inputMode="numeric" placeholder="Max" value={f.max} onChange={(e) => set({ max: e.target.value.replace(/[^\d]/g, "") })} className="input !h-10 !text-[13px]" aria-label="Maximum price" />
-        </div>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {[["Under 10k", "", "10000"], ["10–50k", "10000", "50000"], ["50–100k", "50000", "100000"], ["100k+", "100000", ""]].map(([l, mn, mx]) => (
-            <button key={l} type="button" onClick={() => set({ min: mn, max: mx })}
-              className={`chip ${f.min === mn && f.max === mx ? "chip-on" : ""}`}>{l}</button>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product: any) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
-      </FSection>
-
-      <FSection id="brand" title="Brand" {...sec("brand")}>
-        {allBrands.map((b) => (
-          <Check key={b} on={f.brands.includes(b)} label={b} count={getAllProducts().filter((p: Product) => p.brand === b).length}
-            onClick={() => set({ brands: toggleIn(f.brands, b) })} />
-        ))}
-      </FSection>
-
-      <FSection id="avail" title="Availability & condition" {...sec("avail")}>
-        <Check on={f.inStock} label="In stock only" onClick={() => set({ inStock: !f.inStock })} />
-        <Check on={f.condition.includes("New")} label="New" onClick={() => set({ condition: toggleIn(f.condition, "New") })} />
-        <Check on={f.condition.includes("Certified Refurbished")} label="Certified Refurbished" onClick={() => set({ condition: toggleIn(f.condition, "Certified Refurbished") })} />
-      </FSection>
-
-      {allRams.length > 0 && (
-        <FSection id="ram" title="RAM" {...sec("ram")}>
-          <div className="flex flex-wrap gap-1.5">
-            {allRams.map((r) => (
-              <button key={r} type="button" onClick={() => set({ rams: toggleIn(f.rams, r) })} className={`chip ${f.rams.includes(r) ? "chip-on" : ""}`}>{r}</button>
-            ))}
-          </div>
-        </FSection>
       )}
-
-      {allStorages.length > 0 && (
-        <FSection id="storage" title="Storage" {...sec("storage")}>
-          <div className="flex flex-wrap gap-1.5">
-            {allStorages.map((s) => (
-              <button key={s} type="button" onClick={() => set({ storages: toggleIn(f.storages, s) })} className={`chip ${f.storages.includes(s) ? "chip-on" : ""}`}>{s}</button>
-            ))}
-          </div>
-        </FSection>
-      )}
-
-      <FSection id="screen" title="Screen size" {...sec("screen")}>
-        {["Under 14″", "14–16″", "Over 24″"].map((s) => (
-          <button key={s} type="button" onClick={() => set({ screens: toggleIn(f.screens, s) })}
-            className={`chip mr-1.5 mb-1.5 ${f.screens.includes(s) ? "chip-on" : ""}`}>{s}</button>
-        ))}
-      </FSection>
-
-      <button type="button" onClick={onClear} className="btn btn-outline btn-sm mt-4 w-full">Reset all filters</button>
     </div>
   );
 }
