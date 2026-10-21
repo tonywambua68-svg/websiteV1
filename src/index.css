@@ -20,6 +20,9 @@
 @layer base {
   * {
     border-color: var(--color-line);
+
+    border-color: var(--color-gray-200);
+
   }
 
   body {
@@ -190,6 +193,7 @@
     color: #f4fbf9;
     border-color: var(--color-ink);
   }
+
 }
 
 @layer utilities {
@@ -340,3 +344,6 @@
     animation: none;
   }
 }
+=======
+}
+
