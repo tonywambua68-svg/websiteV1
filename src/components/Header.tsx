@@ -16,43 +16,64 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <header className="sticky top-0 z-40">
+      {/* Announcement Bar */}
+      <div className="bg-ink text-center text-[11px] font-bold tracking-wide text-white/85 md:text-xs">
+        <p className="wrap flex h-8 items-center justify-center gap-2">
+          <span>Fast delivery across Kenya · Pay with M-PESA PayBill · Order via WhatsApp</span>
+        </p>
+      </div>
+
+      {/* Main Navigation */}
+      <div className="border-b border-line bg-card/95 backdrop-blur">
+        <nav className="wrap flex h-16 items-center gap-3 md:gap-6">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">I</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Imara Tech</span>
+          <Link to="/" className="flex items-center gap-2.5" aria-label="Imara Tech home">
+            <svg viewBox="0 0 32 32" className="h-9 w-9 shrink-0" aria-hidden="true">
+              <rect width="32" height="32" rx="7" fill="#0a1f1c" />
+              <path d="M10 22V10h4v12z" fill="#f5a31a" />
+              <path d="M18 10l6 12h-4.5L15 13z" fill="#0b7a63" />
+            </svg>
+            <span className="leading-none">
+              <span className="block font-display text-[1.35rem] font-bold tracking-tight text-ink">
+                Imara<span className="text-teal">.</span>
+              </span>
+              <span className="block text-[9px] font-extrabold uppercase tracking-[0.32em] text-muted">
+                Tech · Kenya
+              </span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-primary-600 font-medium">
+          <div className="hidden ml-auto md:flex items-center gap-1">
+            <Link to="/" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
               Home
             </Link>
-            <Link to="/shop" className="text-gray-700 hover:text-primary-600 font-medium">
+            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
               Shop
             </Link>
-            <Link to="/categories" className="text-gray-700 hover:text-primary-600 font-medium">
-              Categories
+            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+              Laptops
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">
-              About
+            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+              Phones
             </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-primary-600 font-medium">
-              Contact
+            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+              Gaming
+            </Link>
+            <Link to="/shop" className="ml-auto flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-extrabold transition hover:text-amberdeep text-amberdeep/90">
+              Deals
             </Link>
           </div>
 
           {/* Right side actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2">
             {/* Cart */}
-            <Link to="/cart" className="relative text-gray-700 hover:text-primary-600">
-              <ShoppingCart className="w-6 h-6" />
+            <Link to="/cart" className="relative flex h-10 items-center gap-2 rounded-lg bg-amber px-3 font-display text-sm font-bold text-ink transition hover:bg-[#ffb538]">
+              <ShoppingCart className="h-5 w-5" />
+              <span className="hidden sm:inline">Cart</span>
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-[10px] font-extrabold text-amber">
                   {itemCount}
                 </span>
               )}
@@ -60,65 +81,76 @@ export default function Header() {
 
             {/* User Menu */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/account" className="flex items-center space-x-2 text-gray-700 hover:text-primary-600">
-                  <User className="w-6 h-6" />
-                  <span className="hidden md:inline">{user?.name}</span>
+              <div className="flex items-center gap-2">
+                <Link to="/account" className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-mist">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-mint text-teal transition group-hover:bg-teal group-hover:text-white">
+                    <User className="h-4 w-4" />
+                  </span>
+                  <span className="hidden text-left leading-tight lg:block">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted">Account</span>
+                    <span className="block text-xs font-extrabold">{user?.name}</span>
+                  </span>
                 </Link>
                 {user?.role === 'admin' && (
-                  <Link to="/admin" className="text-gray-700 hover:text-primary-600 font-medium">
+                  <Link to="/admin" className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-2 text-xs font-bold text-amber transition hover:bg-pine">
                     Admin
                   </Link>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="text-gray-700 hover:text-primary-600 font-medium"
+                  className="hidden md:inline-flex items-center rounded-lg px-3 py-2 text-xs font-bold text-muted transition hover:text-error"
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 font-medium"
-              >
+              <Link to="/login" className="btn btn-teal btn-sm hidden md:inline-flex">
                 Sign In
               </Link>
             )}
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden text-gray-700"
+              className="btn btn-sm btn-outline !px-2.5 md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
-        </div>
+        </nav>
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-4">
-              <Link to="/" className="text-gray-700 hover:text-primary-600 font-medium">
+          <div className="md:hidden border-t border-line bg-card">
+            <div className="wrap py-4 flex flex-col gap-2">
+              <Link to="/" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
                 Home
               </Link>
-              <Link to="/shop" className="text-gray-700 hover:text-primary-600 font-medium">
+              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
                 Shop
               </Link>
-              <Link to="/categories" className="text-gray-700 hover:text-primary-600 font-medium">
-                Categories
+              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
+                Laptops
               </Link>
-              <Link to="/about" className="text-gray-700 hover:text-primary-600 font-medium">
-                About
+              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
+                Phones
               </Link>
-              <Link to="/contact" className="text-gray-700 hover:text-primary-600 font-medium">
-                Contact
+              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
+                Gaming
               </Link>
+              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist text-amberdeep" onClick={() => setMobileMenuOpen(false)}>
+                Deals
+              </Link>
+              {!isAuthenticated && (
+                <Link to="/login" className="btn btn-teal mt-2" onClick={() => setMobileMenuOpen(false)}>
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         )}
-      </nav>
+      </div>
     </header>
   );
 }
