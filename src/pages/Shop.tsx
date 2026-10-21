@@ -17,7 +17,7 @@ export default function Shop() {
     setFilters({ ...filters, search: searchTerm });
   };
 
-  const categories = ['All', 'Electronics', 'Computers', 'Phones', 'Audio', 'Accessories'];
+  const categories = ['All', 'Laptops', 'Phones', 'Gaming'];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

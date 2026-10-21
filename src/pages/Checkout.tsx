@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
-import { useAuthStore } from '@/store/authStore';
+
+// ============================================
+// CONFIGURATION - Change this to your WhatsApp number
+// Format: Country code + number (no +, no spaces, no dashes)
+// Example for Kenya: 254712345678
+// ============================================
+const WHATSAPP_NUMBER = '254712345678';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    email: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -21,40 +25,66 @@ export default function Checkout() {
       zipCode: '',
       country: '',
     },
-    paymentMethod: 'card',
   });
-
-  if (!isAuthenticated) {
-    navigate('/login?redirect=/checkout');
-    return null;
-  }
 
   if (items.length === 0) {
     navigate('/cart');
     return null;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Here you would integrate with your payment processor
-      // For now, we'll simulate a successful order
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Build WhatsApp message
+      const customerName = `${formData.firstName} ${formData.lastName}`;
+      const customerPhone = formData.phone;
+      const deliveryAddress = `${formData.address.street}, ${formData.address.city}, ${formData.address.state} ${formData.address.zipCode}, ${formData.address.country}`;
+
+      let message = `🛒 *New Order from Imara Tech*\n\n`;
+      message += `*Customer Details:*\n`;
+      message += `Name: ${customerName}\n`;
+      message += `Phone: ${customerPhone}\n`;
+      message += `Address: ${deliveryAddress}\n\n`;
       
-      // Clear cart and redirect to success page
+      message += `*Order Items:*\n`;
+      items.forEach((item, index) => {
+        message += `${index + 1}. ${item.product.name}\n`;
+        message += `   Quantity: ${item.quantity}\n`;
+        message += `   Price: KSh ${item.product.price.toLocaleString()} each\n`;
+        message += `   Subtotal: KSh ${(item.product.price * item.quantity).toLocaleString()}\n\n`;
+      });
+
+      message += `*Total: KSh ${total.toLocaleString()}*\n\n`;
+      message += `Please confirm availability and delivery details. Thank you!`;
+
+      // Encode message for URL
+      const encodedMessage = encodeURIComponent(message);
+      
+      // Build WhatsApp URL
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+
+      // Clear cart and open WhatsApp
       clearCart();
-      navigate('/order-success');
+      
+      // Open WhatsApp in new tab
+      window.open(whatsappUrl, '_blank');
+      
+      // Show success message
+      alert('Order sent to WhatsApp! Please check your WhatsApp to complete the order.');
+      
+      // Navigate to home
+      navigate('/');
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('An error occurred during checkout. Please try again.');
+      alert('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -77,38 +107,9 @@ export default function Checkout() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Contact Information */}
+          {/* Customer Information */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Contact Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Shipping Address */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
+            <h2 className="text-xl font-bold mb-4">Customer Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
@@ -133,6 +134,25 @@ export default function Checkout() {
                 />
               </div>
               <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., 0712345678"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Address */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Delivery Address</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
                 <input
                   type="text"
@@ -140,6 +160,7 @@ export default function Checkout() {
                   value={formData.address.street}
                   onChange={handleChange}
                   required
+                  placeholder="Street name and number"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
@@ -190,44 +211,13 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Payment Method */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-            <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="card"
-                  checked={formData.paymentMethod === 'card'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">Credit/Debit Card</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="paypal"
-                  checked={formData.paymentMethod === 'paypal'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">PayPal</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="mpesa"
-                  checked={formData.paymentMethod === 'mpesa'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">M-Pesa</span>
-              </label>
-            </div>
+          {/* Payment Method Info */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <h2 className="text-xl font-bold mb-2 text-green-900">💬 Order via WhatsApp</h2>
+            <p className="text-green-800">
+              After submitting this form, you'll be redirected to WhatsApp with your order details. 
+              Our team will confirm availability, delivery time, and payment instructions.
+            </p>
           </div>
         </div>
 
@@ -250,7 +240,7 @@ export default function Checkout() {
                     <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.product.name}</p>
                     <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                     <p className="text-sm font-semibold text-primary-600">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      KSh {(item.product.price * item.quantity).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -260,24 +250,33 @@ export default function Checkout() {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${total.toFixed(2)}</span>
+                <span>KSh {total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>Free</span>
+                <span>Calculated on WhatsApp</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total</span>
-                <span className="text-primary-600">${total.toFixed(2)}</span>
+                <span className="text-primary-600">KSh {total.toLocaleString()}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6"
+              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
             >
-              {loading ? 'Processing...' : 'Place Order'}
+              {loading ? (
+                'Processing...'
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.485 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-2.662 2.172-4.833 4.833-4.833 1.292 0 2.506.503 3.417 1.415.911.911 1.415 2.125 1.415 3.417 0 2.661-2.172 4.832-4.833 4.832m6.045-2.838c-.264-.132-1.566-.772-1.811-.86-.245-.088-.423-.132-.6.132-.177.264-.684.86-.839 1.038-.155.177-.31.199-.574.066-.264-.133-1.115-.411-2.124-1.312-.786-.7-1.316-1.563-1.47-1.827-.155-.264-.017-.406.116-.539.119-.119.264-.306.396-.46.133-.154.177-.264.264-.44.088-.177.044-.331-.022-.464-.066-.132-.6-1.442-.824-1.98-.215-.519-.435-.448-.6-.455-.155-.007-.331-.009-.507-.009-.177 0-.464.066-.707.33-.242.264-.926.904-.926 2.196 0 1.292.948 2.54 1.081 2.717.133.177 1.867 2.852 4.522 3.997.633.272 1.127.434 1.511.556.635.202 1.214.173 1.664.106.508-.076 1.566-.64 1.791-1.262.224-.622.224-1.154.155-1.262-.066-.11-.242-.165-.507-.297"/>
+                  </svg>
+                  Order via WhatsApp
+                </>
+              )}
             </button>
           </div>
         </div>

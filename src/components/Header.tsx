@@ -1,19 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import { Link } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuthStore();
   const { itemCount } = useCartStore();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
 
   return (
     <header className="sticky top-0 z-40">
@@ -79,36 +71,6 @@ export default function Header() {
               )}
             </Link>
 
-            {/* User Menu */}
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <Link to="/account" className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-mist">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-mint text-teal transition group-hover:bg-teal group-hover:text-white">
-                    <User className="h-4 w-4" />
-                  </span>
-                  <span className="hidden text-left leading-tight lg:block">
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted">Account</span>
-                    <span className="block text-xs font-extrabold">{user?.name}</span>
-                  </span>
-                </Link>
-                {user?.role === 'admin' && (
-                  <Link to="/admin" className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-2 text-xs font-bold text-amber transition hover:bg-pine">
-                    Admin
-                  </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="hidden md:inline-flex items-center rounded-lg px-3 py-2 text-xs font-bold text-muted transition hover:text-error"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <Link to="/login" className="btn btn-teal btn-sm hidden md:inline-flex">
-                Sign In
-              </Link>
-            )}
-
             {/* Mobile menu button */}
             <button
               className="btn btn-sm btn-outline !px-2.5 md:hidden"
@@ -142,11 +104,6 @@ export default function Header() {
               <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist text-amberdeep" onClick={() => setMobileMenuOpen(false)}>
                 Deals
               </Link>
-              {!isAuthenticated && (
-                <Link to="/login" className="btn btn-teal mt-2" onClick={() => setMobileMenuOpen(false)}>
-                  Sign In
-                </Link>
-              )}
             </div>
           </div>
         )}
