@@ -1,60 +1,76 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
-import { useAuthStore } from '@/store/authStore';
+import { useOrderStore } from '@/store/orderStore';
+import { CheckCircle, Package, Truck, Phone } from 'lucide-react';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { addOrder } = useOrderStore();
   const [loading, setLoading] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
   const [formData, setFormData] = useState({
-    email: '',
     firstName: '',
     lastName: '',
+    email: '',
     phone: '',
     address: {
       street: '',
       city: '',
       state: '',
       zipCode: '',
-      country: '',
+      country: 'Kenya',
     },
-    paymentMethod: 'card',
+    notes: '',
   });
 
-  if (!isAuthenticated) {
-    navigate('/login?redirect=/checkout');
-    return null;
-  }
-
-  if (items.length === 0) {
+  if (items.length === 0 && !orderPlaced) {
     navigate('/cart');
     return null;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const shippingCost = total >= 30000 ? 0 : 300;
+  const orderTotal = total + shippingCost;
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Here you would integrate with your payment processor
-      // For now, we'll simulate a successful order
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const customerName = `${formData.firstName} ${formData.lastName}`;
       
-      // Clear cart and redirect to success page
+      const orderId = addOrder({
+        customerName,
+        customerPhone: formData.phone,
+        customerEmail: formData.email,
+        shippingAddress: formData.address,
+        items,
+        subtotal: total,
+        shippingCost,
+        total: orderTotal,
+        paymentMethod: 'M-PESA PayBill',
+        notes: formData.notes,
+      });
+
+      const order = useOrderStore.getState().getOrder(orderId);
+      if (order) {
+        setOrderNumber(order.orderNumber);
+      }
+
       clearCart();
-      navigate('/order-success');
+      setOrderPlaced(true);
+      setLoading(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('An error occurred during checkout. Please try again.');
-    } finally {
+      alert('An error occurred. Please try again.');
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -70,6 +86,67 @@ export default function Checkout() {
     }
   };
 
+  if (orderPlaced) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-12 h-12 text-green-600" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h1>
+          <p className="text-gray-600 mb-6">Thank you for your order. We've received your order and will process it shortly.</p>
+          
+          <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Order Details</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Order Number:</span>
+                <span className="font-bold text-primary-600">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="font-bold">KSh {orderTotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className="font-bold text-yellow-600">Pending Confirmation</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-left">
+            <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+              <Phone className="w-5 h-5" />
+              Next Steps
+            </h3>
+            <ol className="space-y-2 text-blue-800">
+              <li>1. Our team will contact you on <strong>{formData.phone}</strong> to confirm your order</li>
+              <li>2. You'll receive payment instructions via M-PESA PayBill</li>
+              <li>3. Once payment is confirmed, we'll prepare your order for delivery</li>
+              <li>4. You can track your order status using your order number</li>
+            </ol>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/order-tracking"
+              className="bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Track Your Order
+            </Link>
+            <Link
+              to="/shop"
+              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
@@ -77,38 +154,9 @@ export default function Checkout() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Contact Information */}
+          {/* Customer Information */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Contact Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Shipping Address */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
+            <h2 className="text-xl font-bold mb-4">Customer Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
@@ -132,6 +180,36 @@ export default function Checkout() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., 0712345678"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Address */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Delivery Address</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
                 <input
@@ -140,6 +218,7 @@ export default function Checkout() {
                   value={formData.address.street}
                   onChange={handleChange}
                   required
+                  placeholder="Street name and number"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
@@ -190,43 +269,29 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Payment Method */}
+          {/* Order Notes */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Payment Method</h2>
-            <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="card"
-                  checked={formData.paymentMethod === 'card'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">Credit/Debit Card</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="paypal"
-                  checked={formData.paymentMethod === 'paypal'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">PayPal</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="mpesa"
-                  checked={formData.paymentMethod === 'mpesa'}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-600"
-                />
-                <span className="ml-3 text-gray-700">M-Pesa</span>
-              </label>
+            <h2 className="text-xl font-bold mb-4">Order Notes (Optional)</h2>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Any special instructions for your order..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+            />
+          </div>
+
+          {/* Payment Method Info */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+            <h2 className="text-xl font-bold mb-2 text-green-900">💳 Payment Method</h2>
+            <p className="text-green-800 mb-3">
+              Payment will be made via <strong>M-PESA PayBill</strong>. After placing your order, our team will contact you with payment instructions.
+            </p>
+            <div className="text-sm text-green-700">
+              <p>✓ Free shipping on orders over KSh 30,000</p>
+              <p>✓ Secure M-PESA payment</p>
+              <p>✓ Delivery across Kenya</p>
             </div>
           </div>
         </div>
@@ -250,7 +315,7 @@ export default function Checkout() {
                     <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.product.name}</p>
                     <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                     <p className="text-sm font-semibold text-primary-600">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      KSh {(item.product.price * item.quantity).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -260,25 +325,36 @@ export default function Checkout() {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${total.toFixed(2)}</span>
+                <span>KSh {total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>Free</span>
+                <span>{shippingCost === 0 ? 'FREE' : `KSh ${shippingCost.toLocaleString()}`}</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total</span>
-                <span className="text-primary-600">${total.toFixed(2)}</span>
+                <span className="text-primary-600">KSh {orderTotal.toLocaleString()}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6"
+              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
             >
-              {loading ? 'Processing...' : 'Place Order'}
+              {loading ? (
+                'Processing...'
+              ) : (
+                <>
+                  <Package className="w-5 h-5" />
+                  Place Order
+                </>
+              )}
             </button>
+
+            <p className="text-xs text-gray-500 text-center mt-4">
+              By placing this order, you agree to our terms and conditions
+            </p>
           </div>
         </div>
       </form>

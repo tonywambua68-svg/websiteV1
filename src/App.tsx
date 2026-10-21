@@ -1,22 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Home from '@/pages/Home';
 import Shop from '@/pages/Shop';
 import ProductDetail from '@/pages/ProductDetail';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
-import Login from '@/pages/Login';
-import NovaChat from '@/components/NovaChat';
-import { useAuthStore } from '@/store/authStore';
+import OrderTracking from '@/pages/OrderTracking';
+import AdminPanel from '@/pages/AdminPanel';
 
 function App() {
-  const { checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
   return (
     <Router>
       <Routes>
@@ -26,10 +18,10 @@ function App() {
           <Route path="product/:id" element={<ProductDetail />} />
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />
+          <Route path="order-tracking" element={<OrderTracking />} />
+          <Route path="admin" element={<AdminPanel />} />
         </Route>
-        <Route path="/login" element={<Login />} />
       </Routes>
-      <NovaChat />
     </Router>
   );
 }

@@ -1,0 +1,116 @@
+[
+  {
+    "id": "laptop-001",
+    "name": "HP EliteBook 840 G8",
+    "category": "Laptops",
+    "brand": "HP",
+    "price": 85000,
+    "oldPrice": 95000,
+    "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop",
+    "description": "Professional business laptop with Intel Core i7, 16GB RAM, and 512GB SSD. Perfect for work and productivity.",
+    "specs": {
+      "Processor": "Intel Core i7-1165G7",
+      "RAM": "16GB DDR4",
+      "Storage": "512GB NVMe SSD",
+      "Display": "14\" FHD IPS",
+      "Graphics": "Intel Iris Xe",
+      "Battery": "Up to 12 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-001",
+    "name": "Samsung Galaxy S21",
+    "category": "Phones",
+    "brand": "Samsung",
+    "price": 45000,
+    "oldPrice": 52000,
+    "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&h=600&fit=crop",
+    "description": "Flagship smartphone with stunning display, powerful camera system, and all-day battery life.",
+    "specs": {
+      "Processor": "Exynos 2100",
+      "RAM": "8GB",
+      "Storage": "128GB",
+      "Display": "6.2\" Dynamic AMOLED",
+      "Camera": "64MP + 12MP + 12MP",
+      "Battery": "4000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "gaming-001",
+    "name": "ASUS ROG Strix G15",
+    "category": "Gaming",
+    "brand": "ASUS",
+    "price": 120000,
+    "oldPrice": 135000,
+    "image": "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&h=600&fit=crop",
+    "description": "High-performance gaming laptop with RTX graphics and high refresh rate display for ultimate gaming experience.",
+    "specs": {
+      "Processor": "AMD Ryzen 7 5800H",
+      "RAM": "16GB DDR4",
+      "Storage": "1TB NVMe SSD",
+      "Display": "15.6\" FHD 144Hz",
+      "Graphics": "NVIDIA RTX 3060 6GB",
+      "Battery": "Up to 8 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-002",
+    "name": "Dell Latitude 5520",
+    "category": "Laptops",
+    "brand": "Dell",
+    "price": 72000,
+    "oldPrice": null,
+    "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&h=600&fit=crop",
+    "description": "Reliable business laptop with excellent build quality and long battery life for professionals on the go.",
+    "specs": {
+      "Processor": "Intel Core i5-1135G7",
+      "RAM": "8GB DDR4",
+      "Storage": "256GB NVMe SSD",
+      "Display": "15.6\" FHD",
+      "Graphics": "Intel Iris Xe",
+      "Battery": "Up to 14 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-002",
+    "name": "iPhone 13",
+    "category": "Phones",
+    "brand": "Apple",
+    "price": 68000,
+    "oldPrice": 75000,
+    "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&h=600&fit=crop",
+    "description": "Apple's latest iPhone with A15 Bionic chip, advanced camera system, and stunning Super Retina display.",
+    "specs": {
+      "Processor": "A15 Bionic",
+      "RAM": "4GB",
+      "Storage": "128GB",
+      "Display": "6.1\" Super Retina XDR",
+      "Camera": "12MP + 12MP",
+      "Battery": "Up to 19 hours video"
+    },
+    "inStock": false
+  },
+  {
+    "id": "gaming-002",
+    "name": "PlayStation 5 Console",
+    "category": "Gaming",
+    "brand": "Sony",
+    "price": 65000,
+    "oldPrice": 72000,
+    "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&h=600&fit=crop",
+    "description": "Next-gen gaming console with ultra-high speed SSD, ray tracing, and 4K gaming capabilities.",
+    "specs": {
+      "Processor": "AMD Zen 2 8-core",
+      "RAM": "16GB GDDR6",
+      "Storage": "825GB SSD",
+      "Graphics": "AMD RDNA 2 10.28 TFLOPS",
+      "Resolution": "Up to 4K 120Hz",
+      "Audio": "Tempest 3D AudioTech"
+    },
+    "inStock": true
+  }
+]
