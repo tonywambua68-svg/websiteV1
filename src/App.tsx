@@ -7,6 +7,7 @@ import ProductDetail from '@/pages/ProductDetail';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import Login from '@/pages/Login';
+import NovaChat from '@/components/NovaChat';
 import { useAuthStore } from '@/store/authStore';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         </Route>
         <Route path="/login" element={<Login />} />
       </Routes>
+      <NovaChat />
     </Router>
   );
 }
