@@ -1,19 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   * {
-    border-color: theme('colors.gray.200');
+    border-color: var(--color-gray-200);
   }
   body {
     @apply bg-white text-gray-900;
     font-feature-settings: "rlig" 1, "calt" 1;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
   }
 }
