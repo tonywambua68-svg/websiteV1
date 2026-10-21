@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --color-ink: #0a1f1c;
-    --color-pine: #10312c;
-    --color-teal: #0b7a63;
-    --color-tealdeep: #075747;
-    --color-mint: #e3f2ed;
-    --color-amber: #f5a31a;
-    --color-amberdeep: #8a5a06;
-    --color-mist: #f1f5f3;
-    --color-card: #fcfdfd;
-    --color-line: #d9e4e0;
-    --color-muted: #5c716c;
-    --color-success: #1b9e4b;
-    --color-warning: #c97f10;
-    --color-error: #d64545;
-  }
+@theme {
+  --color-ink: #0a1f1c;
+  --color-pine: #10312c;
+  --color-teal: #0b7a63;
+  --color-tealdeep: #075747;
+  --color-mint: #e3f2ed;
+  --color-amber: #f5a31a;
+  --color-amberdeep: #8a5a06;
+  --color-mist: #f1f5f3;
+  --color-card: #fcfdfd;
+  --color-line: #d9e4e0;
+  --color-muted: #5c716c;
+  --color-success: #1b9e4b;
+  --color-warning: #c97f10;
+  --color-error: #d64545;
+}
 
+@layer base {
   * {
     border-color: var(--color-line);
   }
