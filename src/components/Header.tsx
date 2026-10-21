@@ -53,8 +53,11 @@ export default function Header() {
             <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
               Gaming
             </Link>
-            <Link to="/shop" className="ml-auto flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-extrabold transition hover:text-amberdeep text-amberdeep/90">
-              Deals
+            <Link to="/order-tracking" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+              Track Order
+            </Link>
+            <Link to="/admin" className="ml-auto flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-extrabold transition hover:text-amberdeep text-amberdeep/90">
+              Admin
             </Link>
           </div>
 

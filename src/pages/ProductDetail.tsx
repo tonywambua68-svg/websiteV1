@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProductStore } from '@/store/productStore';
 import { useCartStore } from '@/store/cartStore';
 import { ShoppingCart, Heart, Share2, Minus, Plus } from 'lucide-react';
+import NovaAssistant from '@/components/NovaAssistant';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -168,6 +169,9 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Nova Assistant for product-specific help */}
+      {product && <NovaAssistant product={product} />}
     </div>
   );
 }

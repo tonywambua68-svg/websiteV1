@@ -1,90 +1,76 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
-
-// ============================================
-// CONFIGURATION - Change this to your WhatsApp number
-// Format: Country code + number (no +, no spaces, no dashes)
-// Example for Kenya: 254712345678
-// ============================================
-const WHATSAPP_NUMBER = '254712345678';
+import { useOrderStore } from '@/store/orderStore';
+import { CheckCircle, Package, Truck, Phone } from 'lucide-react';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCartStore();
+  const { addOrder } = useOrderStore();
   const [loading, setLoading] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     phone: '',
     address: {
       street: '',
       city: '',
       state: '',
       zipCode: '',
-      country: '',
+      country: 'Kenya',
     },
+    notes: '',
   });
 
-  if (items.length === 0) {
+  if (items.length === 0 && !orderPlaced) {
     navigate('/cart');
     return null;
   }
+
+  const shippingCost = total >= 30000 ? 0 : 300;
+  const orderTotal = total + shippingCost;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Build WhatsApp message
       const customerName = `${formData.firstName} ${formData.lastName}`;
-      const customerPhone = formData.phone;
-      const deliveryAddress = `${formData.address.street}, ${formData.address.city}, ${formData.address.state} ${formData.address.zipCode}, ${formData.address.country}`;
-
-      let message = `🛒 *New Order from Imara Tech*\n\n`;
-      message += `*Customer Details:*\n`;
-      message += `Name: ${customerName}\n`;
-      message += `Phone: ${customerPhone}\n`;
-      message += `Address: ${deliveryAddress}\n\n`;
       
-      message += `*Order Items:*\n`;
-      items.forEach((item, index) => {
-        message += `${index + 1}. ${item.product.name}\n`;
-        message += `   Quantity: ${item.quantity}\n`;
-        message += `   Price: KSh ${item.product.price.toLocaleString()} each\n`;
-        message += `   Subtotal: KSh ${(item.product.price * item.quantity).toLocaleString()}\n\n`;
+      const orderId = addOrder({
+        customerName,
+        customerPhone: formData.phone,
+        customerEmail: formData.email,
+        shippingAddress: formData.address,
+        items,
+        subtotal: total,
+        shippingCost,
+        total: orderTotal,
+        paymentMethod: 'M-PESA PayBill',
+        notes: formData.notes,
       });
 
-      message += `*Total: KSh ${total.toLocaleString()}*\n\n`;
-      message += `Please confirm availability and delivery details. Thank you!`;
+      const order = useOrderStore.getState().getOrder(orderId);
+      if (order) {
+        setOrderNumber(order.orderNumber);
+      }
 
-      // Encode message for URL
-      const encodedMessage = encodeURIComponent(message);
-      
-      // Build WhatsApp URL
-      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-
-      // Clear cart and open WhatsApp
       clearCart();
-      
-      // Open WhatsApp in new tab
-      window.open(whatsappUrl, '_blank');
-      
-      // Show success message
-      alert('Order sent to WhatsApp! Please check your WhatsApp to complete the order.');
-      
-      // Navigate to home
-      navigate('/');
+      setOrderPlaced(true);
+      setLoading(false);
     } catch (error) {
       console.error('Checkout error:', error);
       alert('An error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -99,6 +85,67 @@ export default function Checkout() {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
+
+  if (orderPlaced) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-12 h-12 text-green-600" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h1>
+          <p className="text-gray-600 mb-6">Thank you for your order. We've received your order and will process it shortly.</p>
+          
+          <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Order Details</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Order Number:</span>
+                <span className="font-bold text-primary-600">{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="font-bold">KSh {orderTotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className="font-bold text-yellow-600">Pending Confirmation</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-left">
+            <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+              <Phone className="w-5 h-5" />
+              Next Steps
+            </h3>
+            <ol className="space-y-2 text-blue-800">
+              <li>1. Our team will contact you on <strong>{formData.phone}</strong> to confirm your order</li>
+              <li>2. You'll receive payment instructions via M-PESA PayBill</li>
+              <li>3. Once payment is confirmed, we'll prepare your order for delivery</li>
+              <li>4. You can track your order status using your order number</li>
+            </ol>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/order-tracking"
+              className="bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Track Your Order
+            </Link>
+            <Link
+              to="/shop"
+              className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -133,7 +180,18 @@ export default function Checkout() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
-              <div className="md:col-span-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                 <input
                   type="tel"
@@ -211,13 +269,30 @@ export default function Checkout() {
             </div>
           </div>
 
+          {/* Order Notes */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Order Notes (Optional)</h2>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Any special instructions for your order..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
+            />
+          </div>
+
           {/* Payment Method Info */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold mb-2 text-green-900">💬 Order via WhatsApp</h2>
-            <p className="text-green-800">
-              After submitting this form, you'll be redirected to WhatsApp with your order details. 
-              Our team will confirm availability, delivery time, and payment instructions.
+            <h2 className="text-xl font-bold mb-2 text-green-900">💳 Payment Method</h2>
+            <p className="text-green-800 mb-3">
+              Payment will be made via <strong>M-PESA PayBill</strong>. After placing your order, our team will contact you with payment instructions.
             </p>
+            <div className="text-sm text-green-700">
+              <p>✓ Free shipping on orders over KSh 30,000</p>
+              <p>✓ Secure M-PESA payment</p>
+              <p>✓ Delivery across Kenya</p>
+            </div>
           </div>
         </div>
 
@@ -254,30 +329,32 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>Calculated on WhatsApp</span>
+                <span>{shippingCost === 0 ? 'FREE' : `KSh ${shippingCost.toLocaleString()}`}</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t pt-2">
                 <span>Total</span>
-                <span className="text-primary-600">KSh {total.toLocaleString()}</span>
+                <span className="text-primary-600">KSh {orderTotal.toLocaleString()}</span>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
+              className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
             >
               {loading ? (
                 'Processing...'
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.485 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-2.662 2.172-4.833 4.833-4.833 1.292 0 2.506.503 3.417 1.415.911.911 1.415 2.125 1.415 3.417 0 2.661-2.172 4.832-4.833 4.832m6.045-2.838c-.264-.132-1.566-.772-1.811-.86-.245-.088-.423-.132-.6.132-.177.264-.684.86-.839 1.038-.155.177-.31.199-.574.066-.264-.133-1.115-.411-2.124-1.312-.786-.7-1.316-1.563-1.47-1.827-.155-.264-.017-.406.116-.539.119-.119.264-.306.396-.46.133-.154.177-.264.264-.44.088-.177.044-.331-.022-.464-.066-.132-.6-1.442-.824-1.98-.215-.519-.435-.448-.6-.455-.155-.007-.331-.009-.507-.009-.177 0-.464.066-.707.33-.242.264-.926.904-.926 2.196 0 1.292.948 2.54 1.081 2.717.133.177 1.867 2.852 4.522 3.997.633.272 1.127.434 1.511.556.635.202 1.214.173 1.664.106.508-.076 1.566-.64 1.791-1.262.224-.622.224-1.154.155-1.262-.066-.11-.242-.165-.507-.297"/>
-                  </svg>
-                  Order via WhatsApp
+                  <Package className="w-5 h-5" />
+                  Place Order
                 </>
               )}
             </button>
+
+            <p className="text-xs text-gray-500 text-center mt-4">
+              By placing this order, you agree to our terms and conditions
+            </p>
           </div>
         </div>
       </form>

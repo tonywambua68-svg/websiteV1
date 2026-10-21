@@ -13,6 +13,7 @@ export interface Product {
   url: string;
   status: 'active' | 'inactive';
   source?: string;
+  specs?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
