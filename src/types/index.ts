@@ -1,21 +1,23 @@
 // Product Types
 export interface Product {
   id: string;
-  sku: string;
+  sku?: string;
   name: string;
   brand: string;
   category: string;
   price: number;
-  oldPrice?: number;
-  images: string[];
-  stock: number;
+  oldPrice?: number | null;
+  image?: string;
+  images?: string[];
+  stock?: number;
+  inStock?: boolean;
   description: string;
-  url: string;
-  status: 'active' | 'inactive';
+  url?: string;
+  status?: 'active' | 'inactive';
   source?: string;
   specs?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // User Types
