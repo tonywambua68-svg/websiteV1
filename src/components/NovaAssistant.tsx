@@ -50,7 +50,8 @@ export default function NovaAssistant({ product }: NovaAssistantProps) {
     }
 
     if (q.includes('stock') || q.includes('available') || q.includes('in stock')) {
-      return product.stock > 0
+      const stock = product.stock ?? (product.inStock ? 10 : 0);
+      return stock > 0
         ? `Yes! The ${product.name} is currently in stock and ready to ship.`
         : `Sorry, the ${product.name} is currently out of stock. You can sign up to be notified when it's back, or check out similar products.`;
     }

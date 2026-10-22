@@ -6,7 +6,7 @@
     "brand": "HP",
     "price": 85000,
     "oldPrice": 95000,
-    "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop",
+    "image": "/images/products/laptop-placeholder.svg",
     "description": "Professional business laptop with Intel Core i7, 16GB RAM, and 512GB SSD. Perfect for work and productivity.",
     "specs": {
       "Processor": "Intel Core i7-1165G7",
@@ -19,51 +19,13 @@
     "inStock": true
   },
   {
-    "id": "phone-001",
-    "name": "Samsung Galaxy S21",
-    "category": "Phones",
-    "brand": "Samsung",
-    "price": 45000,
-    "oldPrice": 52000,
-    "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&h=600&fit=crop",
-    "description": "Flagship smartphone with stunning display, powerful camera system, and all-day battery life.",
-    "specs": {
-      "Processor": "Exynos 2100",
-      "RAM": "8GB",
-      "Storage": "128GB",
-      "Display": "6.2\" Dynamic AMOLED",
-      "Camera": "64MP + 12MP + 12MP",
-      "Battery": "4000mAh"
-    },
-    "inStock": true
-  },
-  {
-    "id": "gaming-001",
-    "name": "ASUS ROG Strix G15",
-    "category": "Gaming",
-    "brand": "ASUS",
-    "price": 120000,
-    "oldPrice": 135000,
-    "image": "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&h=600&fit=crop",
-    "description": "High-performance gaming laptop with RTX graphics and high refresh rate display for ultimate gaming experience.",
-    "specs": {
-      "Processor": "AMD Ryzen 7 5800H",
-      "RAM": "16GB DDR4",
-      "Storage": "1TB NVMe SSD",
-      "Display": "15.6\" FHD 144Hz",
-      "Graphics": "NVIDIA RTX 3060 6GB",
-      "Battery": "Up to 8 hours"
-    },
-    "inStock": true
-  },
-  {
     "id": "laptop-002",
     "name": "Dell Latitude 5520",
     "category": "Laptops",
     "brand": "Dell",
     "price": 72000,
     "oldPrice": null,
-    "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&h=600&fit=crop",
+    "image": "/images/products/laptop-placeholder.svg",
     "description": "Reliable business laptop with excellent build quality and long battery life for professionals on the go.",
     "specs": {
       "Processor": "Intel Core i5-1135G7",
@@ -76,14 +38,242 @@
     "inStock": true
   },
   {
+    "id": "laptop-003",
+    "name": "Lenovo ThinkPad X1 Carbon",
+    "category": "Laptops",
+    "brand": "Lenovo",
+    "price": 125000,
+    "oldPrice": 140000,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Premium ultrabook with carbon fiber construction, stunning display, and all-day battery life.",
+    "specs": {
+      "Processor": "Intel Core i7-1165G7",
+      "RAM": "16GB LPDDR4x",
+      "Storage": "512GB NVMe SSD",
+      "Display": "14\" 2K IPS",
+      "Graphics": "Intel Iris Xe",
+      "Battery": "Up to 16 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-004",
+    "name": "ASUS VivoBook 15",
+    "category": "Laptops",
+    "brand": "ASUS",
+    "price": 58000,
+    "oldPrice": null,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Affordable laptop for students and everyday use with solid performance and modern design.",
+    "specs": {
+      "Processor": "AMD Ryzen 5 5500U",
+      "RAM": "8GB DDR4",
+      "Storage": "512GB NVMe SSD",
+      "Display": "15.6\" FHD",
+      "Graphics": "AMD Radeon",
+      "Battery": "Up to 10 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-005",
+    "name": "MacBook Air M2",
+    "category": "Laptops",
+    "brand": "Apple",
+    "price": 145000,
+    "oldPrice": 160000,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Apple's thinnest laptop with M2 chip, incredible performance, and all-day battery life.",
+    "specs": {
+      "Processor": "Apple M2",
+      "RAM": "8GB Unified Memory",
+      "Storage": "256GB SSD",
+      "Display": "13.6\" Liquid Retina",
+      "Graphics": "Apple M2 GPU",
+      "Battery": "Up to 18 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-006",
+    "name": "Acer Aspire 5",
+    "category": "Laptops",
+    "brand": "Acer",
+    "price": 62000,
+    "oldPrice": null,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Versatile laptop with powerful performance for work, study, and entertainment.",
+    "specs": {
+      "Processor": "Intel Core i5-1235U",
+      "RAM": "8GB DDR4",
+      "Storage": "512GB NVMe SSD",
+      "Display": "15.6\" FHD IPS",
+      "Graphics": "Intel Iris Xe",
+      "Battery": "Up to 11 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-007",
+    "name": "HP Pavilion 15",
+    "category": "Laptops",
+    "brand": "HP",
+    "price": 68000,
+    "oldPrice": 75000,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Stylish laptop with great performance for everyday tasks and multimedia.",
+    "specs": {
+      "Processor": "AMD Ryzen 7 5700U",
+      "RAM": "16GB DDR4",
+      "Storage": "512GB NVMe SSD",
+      "Display": "15.6\" FHD IPS",
+      "Graphics": "AMD Radeon",
+      "Battery": "Up to 9 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "laptop-008",
+    "name": "Lenovo IdeaPad 3",
+    "category": "Laptops",
+    "brand": "Lenovo",
+    "price": 52000,
+    "oldPrice": null,
+    "image": "/images/products/laptop-placeholder.svg",
+    "description": "Budget-friendly laptop with reliable performance for students and home users.",
+    "specs": {
+      "Processor": "AMD Ryzen 3 5300U",
+      "RAM": "8GB DDR4",
+      "Storage": "256GB NVMe SSD",
+      "Display": "15.6\" FHD",
+      "Graphics": "AMD Radeon",
+      "Battery": "Up to 8 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-001",
+    "name": "Samsung Galaxy S23",
+    "category": "Phones",
+    "brand": "Samsung",
+    "price": 95000,
+    "oldPrice": 110000,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Flagship smartphone with stunning display, powerful camera system, and all-day battery life.",
+    "specs": {
+      "Processor": "Snapdragon 8 Gen 2",
+      "RAM": "8GB",
+      "Storage": "128GB",
+      "Display": "6.1\" Dynamic AMOLED 2X",
+      "Camera": "50MP + 12MP + 10MP",
+      "Battery": "3900mAh"
+    },
+    "inStock": true
+  },
+  {
     "id": "phone-002",
+    "name": "iPhone 14",
+    "category": "Phones",
+    "brand": "Apple",
+    "price": 115000,
+    "oldPrice": null,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Apple's latest iPhone with A15 Bionic chip, advanced camera system, and stunning Super Retina display.",
+    "specs": {
+      "Processor": "A15 Bionic",
+      "RAM": "6GB",
+      "Storage": "128GB",
+      "Display": "6.1\" Super Retina XDR",
+      "Camera": "12MP + 12MP",
+      "Battery": "Up to 20 hours video"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-003",
+    "name": "Tecno Camon 20 Pro",
+    "category": "Phones",
+    "brand": "Tecno",
+    "price": 32000,
+    "oldPrice": 38000,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Mid-range smartphone with excellent camera and great value for money.",
+    "specs": {
+      "Processor": "MediaTek Helio G99",
+      "RAM": "8GB",
+      "Storage": "256GB",
+      "Display": "6.67\" AMOLED",
+      "Camera": "64MP + 8MP + 2MP",
+      "Battery": "5000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-004",
+    "name": "Infinix Note 30",
+    "category": "Phones",
+    "brand": "Infinix",
+    "price": 28000,
+    "oldPrice": null,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Affordable smartphone with large display and long-lasting battery.",
+    "specs": {
+      "Processor": "MediaTek Helio G99",
+      "RAM": "8GB",
+      "Storage": "128GB",
+      "Display": "6.78\" IPS LCD",
+      "Camera": "64MP + 2MP",
+      "Battery": "5000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-005",
+    "name": "Xiaomi Redmi Note 12",
+    "category": "Phones",
+    "brand": "Xiaomi",
+    "price": 25000,
+    "oldPrice": 30000,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Budget-friendly smartphone with great features and solid performance.",
+    "specs": {
+      "Processor": "Snapdragon 685",
+      "RAM": "6GB",
+      "Storage": "128GB",
+      "Display": "6.67\" AMOLED",
+      "Camera": "50MP + 8MP + 2MP",
+      "Battery": "5000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-006",
+    "name": "Samsung Galaxy A54",
+    "category": "Phones",
+    "brand": "Samsung",
+    "price": 45000,
+    "oldPrice": null,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Mid-range smartphone with premium features and excellent camera.",
+    "specs": {
+      "Processor": "Exynos 1380",
+      "RAM": "8GB",
+      "Storage": "128GB",
+      "Display": "6.4\" Super AMOLED",
+      "Camera": "50MP + 12MP + 5MP",
+      "Battery": "5000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "phone-007",
     "name": "iPhone 13",
     "category": "Phones",
     "brand": "Apple",
-    "price": 68000,
-    "oldPrice": 75000,
-    "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&h=600&fit=crop",
-    "description": "Apple's latest iPhone with A15 Bionic chip, advanced camera system, and stunning Super Retina display.",
+    "price": 85000,
+    "oldPrice": 95000,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Previous generation iPhone with excellent performance and great value.",
     "specs": {
       "Processor": "A15 Bionic",
       "RAM": "4GB",
@@ -92,16 +282,35 @@
       "Camera": "12MP + 12MP",
       "Battery": "Up to 19 hours video"
     },
-    "inStock": false
+    "inStock": true
   },
   {
-    "id": "gaming-002",
+    "id": "phone-008",
+    "name": "Tecno Spark 10 Pro",
+    "category": "Phones",
+    "brand": "Tecno",
+    "price": 18000,
+    "oldPrice": null,
+    "image": "/images/products/phone-placeholder.svg",
+    "description": "Entry-level smartphone with modern design and essential features.",
+    "specs": {
+      "Processor": "MediaTek Helio G88",
+      "RAM": "8GB",
+      "Storage": "128GB",
+      "Display": "6.8\" IPS LCD",
+      "Camera": "50MP + 2MP",
+      "Battery": "5000mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "gaming-001",
     "name": "PlayStation 5 Console",
     "category": "Gaming",
     "brand": "Sony",
-    "price": 65000,
-    "oldPrice": 72000,
-    "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&h=600&fit=crop",
+    "price": 75000,
+    "oldPrice": 85000,
+    "image": "/images/products/gaming-placeholder.svg",
     "description": "Next-gen gaming console with ultra-high speed SSD, ray tracing, and 4K gaming capabilities.",
     "specs": {
       "Processor": "AMD Zen 2 8-core",
@@ -110,6 +319,139 @@
       "Graphics": "AMD RDNA 2 10.28 TFLOPS",
       "Resolution": "Up to 4K 120Hz",
       "Audio": "Tempest 3D AudioTech"
+    },
+    "inStock": true
+  },
+  {
+    "id": "gaming-002",
+    "name": "Xbox Series X",
+    "category": "Gaming",
+    "brand": "Microsoft",
+    "price": 72000,
+    "oldPrice": null,
+    "image": "/images/products/gaming-placeholder.svg",
+    "description": "Powerful gaming console with 4K gaming, fast loading, and Game Pass compatibility.",
+    "specs": {
+      "Processor": "AMD Zen 2 8-core",
+      "RAM": "16GB GDDR6",
+      "Storage": "1TB NVMe SSD",
+      "Graphics": "AMD RDNA 2 12 TFLOPS",
+      "Resolution": "Up to 4K 120Hz",
+      "Backward Compatible": "Yes"
+    },
+    "inStock": true
+  },
+  {
+    "id": "gaming-003",
+    "name": "ASUS ROG Strix G15",
+    "category": "Gaming",
+    "brand": "ASUS",
+    "price": 135000,
+    "oldPrice": 150000,
+    "image": "/images/products/gaming-placeholder.svg",
+    "description": "High-performance gaming laptop with RTX graphics and high refresh rate display.",
+    "specs": {
+      "Processor": "AMD Ryzen 7 5800H",
+      "RAM": "16GB DDR4",
+      "Storage": "1TB NVMe SSD",
+      "Display": "15.6\" FHD 144Hz",
+      "Graphics": "NVIDIA RTX 3060 6GB",
+      "Battery": "Up to 8 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "gaming-004",
+    "name": "Razer DeathAdder V2",
+    "category": "Gaming",
+    "brand": "Razer",
+    "price": 8500,
+    "oldPrice": null,
+    "image": "/images/products/gaming-placeholder.svg",
+    "description": "Professional gaming mouse with high precision sensor and ergonomic design.",
+    "specs": {
+      "Sensor": "Optical 20,000 DPI",
+      "Buttons": "5 programmable",
+      "Connectivity": "Wired USB",
+      "Weight": "82g",
+      "RGB": "Yes",
+      "Compatibility": "PC, Mac"
+    },
+    "inStock": true
+  },
+  {
+    "id": "deal-001",
+    "name": "HP EliteBook 840 G7",
+    "category": "Deals",
+    "brand": "HP",
+    "price": 65000,
+    "oldPrice": 85000,
+    "image": "/images/products/deal-placeholder.svg",
+    "description": "Previous generation business laptop at a great price. Excellent condition with warranty.",
+    "specs": {
+      "Processor": "Intel Core i5-10210U",
+      "RAM": "16GB DDR4",
+      "Storage": "512GB NVMe SSD",
+      "Display": "14\" FHD IPS",
+      "Graphics": "Intel UHD",
+      "Battery": "Up to 10 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "deal-002",
+    "name": "Samsung Galaxy S21 FE",
+    "category": "Deals",
+    "brand": "Samsung",
+    "price": 42000,
+    "oldPrice": 58000,
+    "image": "/images/products/deal-placeholder.svg",
+    "description": "Fan edition flagship with great features at an affordable price.",
+    "specs": {
+      "Processor": "Exynos 2100",
+      "RAM": "6GB",
+      "Storage": "128GB",
+      "Display": "6.4\" Dynamic AMOLED 2X",
+      "Camera": "12MP + 12MP + 8MP",
+      "Battery": "4500mAh"
+    },
+    "inStock": true
+  },
+  {
+    "id": "deal-003",
+    "name": "Lenovo ThinkPad E14",
+    "category": "Deals",
+    "brand": "Lenovo",
+    "price": 55000,
+    "oldPrice": 72000,
+    "image": "/images/products/deal-placeholder.svg",
+    "description": "Business laptop with excellent build quality at a discounted price.",
+    "specs": {
+      "Processor": "AMD Ryzen 5 5500U",
+      "RAM": "8GB DDR4",
+      "Storage": "256GB NVMe SSD",
+      "Display": "14\" FHD IPS",
+      "Graphics": "AMD Radeon",
+      "Battery": "Up to 11 hours"
+    },
+    "inStock": true
+  },
+  {
+    "id": "deal-004",
+    "name": "Xiaomi Redmi Note 11",
+    "category": "Deals",
+    "brand": "Xiaomi",
+    "price": 18000,
+    "oldPrice": 25000,
+    "image": "/images/products/deal-placeholder.svg",
+    "description": "Previous generation budget smartphone with great features at an unbeatable price.",
+    "specs": {
+      "Processor": "Snapdragon 680",
+      "RAM": "4GB",
+      "Storage": "64GB",
+      "Display": "6.43\" AMOLED",
+      "Camera": "50MP + 8MP + 2MP + 2MP",
+      "Battery": "5000mAh"
     },
     "inStock": true
   }

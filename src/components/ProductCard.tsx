@@ -19,6 +19,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
 
+  const stock = product.stock ?? (product.inStock ? 10 : 0);
+
   return (
     <Link to={`/product/${product.id}`} className="group">
       <article className="group card relative flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-teal/40 hover:shadow-[0_18px_40px_-18px_rgba(10,31,28,0.28)]">
@@ -26,9 +28,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="relative block aspect-[4/3] overflow-hidden" style={{ background: `linear-gradient(150deg, #0b7a6322, #0b7a6306 70%)` }}>
           <span className="dots-bg pointer-events-none absolute inset-0 opacity-60" />
           <img
-            src={product.images[0] || '/placeholder-product.jpg'}
+            src={product.image || product.images?.[0] || '/images/products/laptop-placeholder.svg'}
             alt={product.name}
             className="absolute left-1/2 top-1/2 h-[86%] -translate-x-1/2 -translate-y-1/2 object-cover transition-transform duration-500 group-hover:scale-[1.06] group-hover:-rotate-1"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/images/products/laptop-placeholder.svg';
+            }}
           />
           {/* Badges */}
           <span className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
@@ -43,7 +49,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
             )}
           </span>
-          {product.stock === 0 && (
+          {stock === 0 && (
             <span className="absolute inset-x-0 bottom-0 bg-ink/85 py-1.5 text-center text-[11px] font-extrabold uppercase tracking-widest text-white/90">
               Out of stock
             </span>
@@ -81,15 +87,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           </div>
 
-          <p className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-bold ${product.stock === 0 ? 'text-error' : product.stock <= 5 ? 'text-warning' : 'text-success'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${product.stock === 0 ? 'bg-error' : product.stock <= 5 ? 'bg-warning' : 'bg-success'}`} />
-            {product.stock === 0 ? 'Out of stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In stock'}
+          <p className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-bold ${stock === 0 ? 'text-error' : stock <= 5 ? 'text-warning' : 'text-success'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${stock === 0 ? 'bg-error' : stock <= 5 ? 'bg-warning' : 'bg-success'}`} />
+            {stock === 0 ? 'Out of stock' : stock <= 5 ? `Only ${stock} left` : 'In stock'}
           </p>
 
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={product.stock === 0}
+            disabled={stock === 0}
             className="btn btn-amber btn-sm mt-3.5 w-full"
           >
             <ShoppingCart className="h-4 w-4" /> Add to cart
