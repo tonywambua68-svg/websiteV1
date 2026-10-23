@@ -111,7 +111,7 @@ export const useProductStore = create<ProductStore>()(
 
           // Apply stock filter
           if (currentFilters.inStock) {
-            filteredProducts = filteredProducts.filter(p => p.stock > 0);
+            filteredProducts = filteredProducts.filter(p => (p.stock ?? (p.inStock ? 10 : 0)) > 0);
           }
 
           // Apply sorting

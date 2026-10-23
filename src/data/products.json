@@ -6,7 +6,7 @@
     "brand": "HP",
     "price": 85000,
     "oldPrice": 95000,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/b7322cf4-456e-492e-9a46-bddf67ad6b7c/_result.png",
     "description": "Professional business laptop with Intel Core i7, 16GB RAM, and 512GB SSD. Perfect for work and productivity.",
     "specs": {
       "Processor": "Intel Core i7-1165G7",
@@ -25,7 +25,7 @@
     "brand": "Dell",
     "price": 72000,
     "oldPrice": null,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/8891a89d-f26c-44fc-b122-bceda0436c90/_result.png",
     "description": "Reliable business laptop with excellent build quality and long battery life for professionals on the go.",
     "specs": {
       "Processor": "Intel Core i5-1135G7",
@@ -44,7 +44,7 @@
     "brand": "Lenovo",
     "price": 125000,
     "oldPrice": 140000,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/79acbee1-da0b-4531-b550-ad8d92e741be/_result.png",
     "description": "Premium ultrabook with carbon fiber construction, stunning display, and all-day battery life.",
     "specs": {
       "Processor": "Intel Core i7-1165G7",
@@ -63,7 +63,7 @@
     "brand": "ASUS",
     "price": 58000,
     "oldPrice": null,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/1bc98645-f114-4e1a-b4ec-25c5e3c5afec/_result.png",
     "description": "Affordable laptop for students and everyday use with solid performance and modern design.",
     "specs": {
       "Processor": "AMD Ryzen 5 5500U",
@@ -82,7 +82,7 @@
     "brand": "Apple",
     "price": 145000,
     "oldPrice": 160000,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/428e4d0a-7e8b-4e2b-8005-7778b585e3e4/_result.png",
     "description": "Apple's thinnest laptop with M2 chip, incredible performance, and all-day battery life.",
     "specs": {
       "Processor": "Apple M2",
@@ -101,7 +101,7 @@
     "brand": "Acer",
     "price": 62000,
     "oldPrice": null,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/019934ac-7b43-4400-a470-9e5f487edaa3/_result.png",
     "description": "Versatile laptop with powerful performance for work, study, and entertainment.",
     "specs": {
       "Processor": "Intel Core i5-1235U",
@@ -120,7 +120,7 @@
     "brand": "HP",
     "price": 68000,
     "oldPrice": 75000,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/6a373b1b-d442-4b51-bbf4-f074bdb88851/_result.png",
     "description": "Stylish laptop with great performance for everyday tasks and multimedia.",
     "specs": {
       "Processor": "AMD Ryzen 7 5700U",
@@ -139,7 +139,7 @@
     "brand": "Lenovo",
     "price": 52000,
     "oldPrice": null,
-    "image": "/images/products/laptop-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/da3eee8f-e3c7-41ba-8c50-be1bac3f3f28/_result.png",
     "description": "Budget-friendly laptop with reliable performance for students and home users.",
     "specs": {
       "Processor": "AMD Ryzen 3 5300U",
@@ -158,7 +158,7 @@
     "brand": "Samsung",
     "price": 95000,
     "oldPrice": 110000,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/887c5fb4-f8fb-461e-afe2-a3bc646a16ab/_result.png",
     "description": "Flagship smartphone with stunning display, powerful camera system, and all-day battery life.",
     "specs": {
       "Processor": "Snapdragon 8 Gen 2",
@@ -177,7 +177,7 @@
     "brand": "Apple",
     "price": 115000,
     "oldPrice": null,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/6f34d98b-992b-45b4-8dc1-80de8aeceb64/_result.png",
     "description": "Apple's latest iPhone with A15 Bionic chip, advanced camera system, and stunning Super Retina display.",
     "specs": {
       "Processor": "A15 Bionic",
@@ -196,7 +196,7 @@
     "brand": "Tecno",
     "price": 32000,
     "oldPrice": 38000,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/f319be5a-4484-4bb3-befe-88bd4be5c254/_result.png",
     "description": "Mid-range smartphone with excellent camera and great value for money.",
     "specs": {
       "Processor": "MediaTek Helio G99",
@@ -215,7 +215,7 @@
     "brand": "Infinix",
     "price": 28000,
     "oldPrice": null,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/9e8737fe-6224-4d6d-8e34-13fcc4c4eb2a/_result.png",
     "description": "Affordable smartphone with large display and long-lasting battery.",
     "specs": {
       "Processor": "MediaTek Helio G99",
@@ -234,7 +234,7 @@
     "brand": "Xiaomi",
     "price": 25000,
     "oldPrice": 30000,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/cd360656-7522-4150-8db2-ec1b1ad4336c/_result.png",
     "description": "Budget-friendly smartphone with great features and solid performance.",
     "specs": {
       "Processor": "Snapdragon 685",
@@ -253,7 +253,7 @@
     "brand": "Samsung",
     "price": 45000,
     "oldPrice": null,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/8315ae00-cf31-48d8-859b-1f7be5ab294f/_result.png",
     "description": "Mid-range smartphone with premium features and excellent camera.",
     "specs": {
       "Processor": "Exynos 1380",
@@ -272,7 +272,7 @@
     "brand": "Apple",
     "price": 85000,
     "oldPrice": 95000,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/f4990b97-f481-4e46-8553-83fcf59bea0e/_result.png",
     "description": "Previous generation iPhone with excellent performance and great value.",
     "specs": {
       "Processor": "A15 Bionic",
@@ -291,7 +291,7 @@
     "brand": "Tecno",
     "price": 18000,
     "oldPrice": null,
-    "image": "/images/products/phone-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/3c7acab5-d3b5-48c7-bbd8-7ae48ef49117/_result.png",
     "description": "Entry-level smartphone with modern design and essential features.",
     "specs": {
       "Processor": "MediaTek Helio G88",
@@ -310,7 +310,7 @@
     "brand": "Sony",
     "price": 75000,
     "oldPrice": 85000,
-    "image": "/images/products/gaming-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/cd7eb803-329d-408b-9646-3b7e75056b40/_result.png",
     "description": "Next-gen gaming console with ultra-high speed SSD, ray tracing, and 4K gaming capabilities.",
     "specs": {
       "Processor": "AMD Zen 2 8-core",
@@ -329,7 +329,7 @@
     "brand": "Microsoft",
     "price": 72000,
     "oldPrice": null,
-    "image": "/images/products/gaming-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/e062fe68-bdd7-40e3-b4b0-1c6bc2de106b/_result.png",
     "description": "Powerful gaming console with 4K gaming, fast loading, and Game Pass compatibility.",
     "specs": {
       "Processor": "AMD Zen 2 8-core",
@@ -348,7 +348,7 @@
     "brand": "ASUS",
     "price": 135000,
     "oldPrice": 150000,
-    "image": "/images/products/gaming-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/2518b503-69e6-477f-8bdc-1c9443724f57/_result.png",
     "description": "High-performance gaming laptop with RTX graphics and high refresh rate display.",
     "specs": {
       "Processor": "AMD Ryzen 7 5800H",
@@ -367,7 +367,7 @@
     "brand": "Razer",
     "price": 8500,
     "oldPrice": null,
-    "image": "/images/products/gaming-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/e65f69b1-2a93-4926-bf4f-eb199632a75b/_result.png",
     "description": "Professional gaming mouse with high precision sensor and ergonomic design.",
     "specs": {
       "Sensor": "Optical 20,000 DPI",
@@ -386,7 +386,7 @@
     "brand": "HP",
     "price": 65000,
     "oldPrice": 85000,
-    "image": "/images/products/deal-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/996849c1-5309-41ea-a8b0-65c0bf5ea455/_result.png",
     "description": "Previous generation business laptop at a great price. Excellent condition with warranty.",
     "specs": {
       "Processor": "Intel Core i5-10210U",
@@ -405,7 +405,7 @@
     "brand": "Samsung",
     "price": 42000,
     "oldPrice": 58000,
-    "image": "/images/products/deal-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/10c7f399-4a53-4d5d-8531-1d4c3fc7fada/_result.png",
     "description": "Fan edition flagship with great features at an affordable price.",
     "specs": {
       "Processor": "Exynos 2100",
@@ -424,7 +424,7 @@
     "brand": "Lenovo",
     "price": 55000,
     "oldPrice": 72000,
-    "image": "/images/products/deal-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/e3473258-4751-413a-950b-6e94a959aef4/_result.png",
     "description": "Business laptop with excellent build quality at a discounted price.",
     "specs": {
       "Processor": "AMD Ryzen 5 5500U",
@@ -443,7 +443,7 @@
     "brand": "Xiaomi",
     "price": 18000,
     "oldPrice": 25000,
-    "image": "/images/products/deal-placeholder.svg",
+    "image": "https://image.qwenlm.ai/generated-images/bb64d356-078d-47b6-b366-84598f691e51/_result.png",
     "description": "Previous generation budget smartphone with great features at an unbeatable price.",
     "specs": {
       "Processor": "Snapdragon 680",
