@@ -37,7 +37,7 @@ export default function Cart() {
                 {/* Product Image */}
                 <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   <img
-                    src={item.product.images[0] || '/placeholder-product.jpg'}
+                    src={item.product.image || item.product.images?.[0] || '/images/products/laptop-placeholder.svg'}
                     alt={item.product.name}
                     className="w-full h-full object-cover"
                   />

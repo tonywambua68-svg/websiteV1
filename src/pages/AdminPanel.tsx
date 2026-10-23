@@ -71,10 +71,10 @@ export default function AdminPanel() {
       brand: product.brand,
       price: product.price,
       oldPrice: product.oldPrice || 0,
-      image: product.images[0] || '',
+      image: product.images?.[0] || product.image || '',
       description: product.description,
       specs: {},
-      inStock: product.stock > 0,
+      inStock: (product.stock ?? (product.inStock ? 10 : 0)) > 0,
     });
     setEditingProduct(product);
     setShowProductForm(true);
@@ -275,7 +275,7 @@ export default function AdminPanel() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.images[0]}
+                          src={product.image || product.images?.[0] || '/images/products/laptop-placeholder.svg'}
                           alt={product.name}
                           className="w-12 h-12 object-cover rounded"
                         />
@@ -291,9 +291,9 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        (product.stock ?? (product.inStock ? 10 : 0)) > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                        {(product.stock ?? (product.inStock ? 10 : 0)) > 0 ? 'In Stock' : 'Out of Stock'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -372,7 +372,7 @@ export default function AdminPanel() {
                     <div className="space-y-2">
                       {order.items.map((item) => (
                         <div key={item.product.id} className="flex items-center gap-3">
-                          <img src={item.product.images[0]} alt={item.product.name} className="w-12 h-12 object-cover rounded" />
+                          <img src={item.product.image || item.product.images?.[0] || '/images/products/laptop-placeholder.svg'} alt={item.product.name} className="w-12 h-12 object-cover rounded" />
                           <div className="flex-1">
                             <p className="font-medium">{item.product.name}</p>
                             <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
