@@ -1,9 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product, ProductFilters, SearchParams } from '@/types';
+import catalogueJson from '@/data/products.json';
+
+const catalogue = catalogueJson as unknown as Product[];
 
 interface ProductStore {
   products: Product[];
+  allProducts: Product[];
   loading: boolean;
   filters: ProductFilters;
   searchParams: SearchParams;
@@ -31,7 +35,8 @@ const defaultSearchParams: SearchParams = {
 export const useProductStore = create<ProductStore>()(
   persist(
     (set, get) => ({
-      products: [],
+      products: catalogue,
+      allProducts: catalogue,
       loading: false,
       filters: defaultFilters,
       searchParams: defaultSearchParams,
@@ -43,12 +48,18 @@ export const useProductStore = create<ProductStore>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        set((state) => ({ products: [...state.products, newProduct] }));
+        set((state) => ({
+          products: [...state.products, newProduct],
+          allProducts: [...state.allProducts, newProduct],
+        }));
       },
 
       updateProduct: (id, updates) => {
         set((state) => ({
           products: state.products.map((p) =>
+            p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
+          ),
+          allProducts: state.allProducts.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
           ),
         }));
@@ -57,6 +68,7 @@ export const useProductStore = create<ProductStore>()(
       deleteProduct: (id) => {
         set((state) => ({
           products: state.products.filter((p) => p.id !== id),
+          allProducts: state.allProducts.filter((p) => p.id !== id),
         }));
       },
 
@@ -65,7 +77,7 @@ export const useProductStore = create<ProductStore>()(
       },
 
       getAllProducts: () => {
-        return get().products;
+        return get().allProducts;
       },
 
       fetchProducts: async (filters?: ProductFilters, params?: SearchParams) => {
@@ -75,7 +87,12 @@ export const useProductStore = create<ProductStore>()(
           const currentFilters = filters || get().filters;
           const currentParams = params || get().searchParams;
           
-          let filteredProducts = [...get().products];
+          let filteredProducts = [...get().allProducts];
+          if (filteredProducts.length === 0) {
+            const persisted = get().products;
+            const ids = new Set(persisted.map((p) => p.id));
+            filteredProducts = [...persisted, ...catalogue.filter((p) => !ids.has(p.id))];
+          }
 
           // Apply category filter
           if (currentFilters.category) {

@@ -1,11 +1,22 @@
 import { Link } from 'react-router-dom';
 import { useCartStore } from '@/store/cartStore';
-import { ShoppingCart, Menu, X } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import MegaMenu from '@/components/MegaMenu';
+import { megaMenu } from '@/data/megaMenu';
+import { ShoppingCart, Menu, X, ChevronDown, User, LogOut, Search, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
   const { itemCount } = useCartStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [mobileSearch, setMobileSearch] = useState('');
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-40">
@@ -36,33 +47,75 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden ml-auto md:flex items-center gap-1">
-            <Link to="/" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+          {/* Desktop search box (WooCommerce style) */}
+          <form
+            className="relative hidden min-w-0 max-w-md flex-1 lg:block"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = (new FormData(e.currentTarget).get('q') as string || '').trim();
+              if (q) window.location.href = `/shop?search=${encodeURIComponent(q)}`;
+            }}
+          >
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              type="search"
+              name="q"
+              placeholder="Search laptops, phones, gaming gear…"
+              className="h-10 w-full rounded-lg border border-line bg-mist pl-9 pr-20 text-sm font-medium text-ink outline-none transition placeholder:text-muted/70 focus:border-teal focus:bg-card"
+            />
+            <button
+              type="submit"
+              className="absolute right-1 top-1/2 h-8 -translate-y-1/2 rounded-md bg-teal px-3 text-[12px] font-extrabold text-white transition hover:bg-tealdeep"
+            >
+              Search
+            </button>
+          </form>
+
+          {/* Primary page links */}
+          <div className="hidden items-center gap-1 lg:ml-auto lg:flex">
+            <Link to="/" className="relative px-3 py-2.5 text-[13px] font-bold text-ink/80 transition hover:text-teal">
               Home
             </Link>
-            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+            <Link to="/shop" className="relative px-3 py-2.5 text-[13px] font-bold text-ink/80 transition hover:text-teal">
               Shop
             </Link>
-            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
-              Laptops
-            </Link>
-            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
-              Phones
-            </Link>
-            <Link to="/shop" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
-              Gaming
-            </Link>
-            <Link to="/order-tracking" className="relative px-3.5 py-2.5 text-[13px] font-bold transition hover:text-teal text-ink/80">
+            <Link to="/order-tracking" className="relative px-3 py-2.5 text-[13px] font-bold text-ink/80 transition hover:text-teal">
               Track Order
             </Link>
-            <Link to="/admin" className="ml-auto flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-extrabold transition hover:text-amberdeep text-amberdeep/90">
+            <Link to="/admin" className="flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-extrabold text-amberdeep/90 transition hover:text-amberdeep">
+              <LayoutDashboard className="h-4 w-4" />
               Admin
             </Link>
           </div>
 
           {/* Right side actions */}
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            {/* Account / login */}
+            {isAuthenticated ? (
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <span className="hidden max-w-[120px] truncate text-[12px] font-bold text-ink/80 xl:inline">
+                  Hi, {user?.name?.split(' ')[0] || 'there'}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="btn btn-outline btn-sm !h-9 !px-2.5"
+                  title="Log out"
+                  aria-label="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden xl:inline">Logout</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-[13px] font-bold text-ink/80 transition hover:border-teal hover:text-teal sm:flex"
+              >
+                <User className="h-4 w-4" />
+                Login
+              </Link>
+            )}
+
             {/* Cart */}
             <Link to="/cart" className="relative flex h-10 items-center gap-2 rounded-lg bg-amber px-3 font-display text-sm font-bold text-ink transition hover:bg-[#ffb538]">
               <ShoppingCart className="h-5 w-5" />
@@ -84,33 +137,133 @@ export default function Header() {
             </button>
           </div>
         </nav>
+      </div>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-line bg-card">
-            <div className="wrap py-4 flex flex-col gap-2">
-              <Link to="/" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
-                Home
-              </Link>
-              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
-                Shop
-              </Link>
-              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
-                Laptops
-              </Link>
-              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
-                Phones
-              </Link>
-              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist" onClick={() => setMobileMenuOpen(false)}>
-                Gaming
-              </Link>
-              <Link to="/shop" className="rounded-xl px-4 py-3 text-[15px] font-bold transition hover:bg-mist text-amberdeep" onClick={() => setMobileMenuOpen(false)}>
-                Deals
-              </Link>
+      {/* WooCommerce-style category bar with mega menu (desktop) */}
+      <MegaMenu />
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto border-t border-line bg-card md:hidden">
+          <div className="wrap py-4">
+            {/* Mobile search */}
+            <form
+              className="relative mb-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = mobileSearch.trim();
+                if (q) {
+                  window.location.href = `/shop?search=${encodeURIComponent(q)}`;
+                }
+              }}
+            >
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                type="search"
+                value={mobileSearch}
+                onChange={(e) => setMobileSearch(e.target.value)}
+                placeholder="Search products…"
+                className="h-11 w-full rounded-lg border border-line bg-mist pl-9 pr-3 text-sm font-medium outline-none focus:border-teal"
+              />
+            </form>
+
+            {/* Quick page links */}
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {[
+                { label: 'Home', to: '/' },
+                { label: 'Shop All', to: '/shop' },
+                { label: 'Track Order', to: '/order-tracking' },
+                { label: 'Admin', to: '/admin' },
+              ].map((l) => (
+                <Link
+                  key={l.label}
+                  to={l.to}
+                  className="rounded-lg border border-line bg-mist px-3 py-2.5 text-[13px] font-bold text-ink"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Accordion mega categories */}
+            <div className="divide-y divide-line rounded-xl border border-line">
+              {megaMenu.map((item) => {
+                const Icon = item.icon;
+                const isOpen = openSection === item.label;
+                return (
+                  <div key={item.label}>
+                    <div className="flex items-stretch">
+                      <Link
+                        to={item.to}
+                        className="flex flex-1 items-center gap-2.5 px-4 py-3.5 text-[14px] font-bold text-ink"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Icon className="h-4 w-4 text-teal" />
+                        {item.label}
+                      </Link>
+                      <button
+                        className="flex w-12 items-center justify-center text-muted"
+                        onClick={() => setOpenSection(isOpen ? null : item.label)}
+                        aria-label={`Toggle ${item.label} submenu`}
+                        aria-expanded={isOpen}
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <div className="bg-mist px-4 pb-4 pt-1">
+                        {item.columns.map((col) => (
+                          <div key={col.title} className="mt-2">
+                            <p className="py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-amberdeep">
+                              {col.title}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {col.links.map((link) => (
+                                <li key={link.label}>
+                                  <Link
+                                    to={link.to}
+                                    className="block rounded-md px-2 py-1.5 text-[13px] font-medium text-muted hover:bg-card hover:text-teal"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                  >
+                                    {link.label}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Account actions */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {isAuthenticated ? (
+                <>
+                  <span className="col-span-2 rounded-lg bg-mist px-3 py-2.5 text-[13px] font-bold text-ink">
+                    Signed in as {user?.email}
+                  </span>
+                  <button onClick={handleLogout} className="btn btn-outline btn-sm col-span-2">
+                    <LogOut className="h-4 w-4" /> Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="btn btn-teal btn-sm col-span-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <User className="h-4 w-4" /> Login / Register
+                </Link>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
