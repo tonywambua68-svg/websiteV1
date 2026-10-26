@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useProductStore } from '@/store/productStore';
+import type { ProductFilters } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import { Search, Filter } from 'lucide-react';
 
@@ -7,6 +9,21 @@ export default function Shop() {
   const { visible: products, fetchProducts, loading, filters, setFilters, resetFilters } = useProductStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [urlParams] = useSearchParams();
+
+  // Sync mega-menu links (/shop?category=Laptops&brand=HP&...) into the store filters
+  useEffect(() => {
+    const next: ProductFilters = {};
+    if (urlParams.get('category')) next.category = urlParams.get('category')!;
+    if (urlParams.get('brand')) next.brand = urlParams.get('brand')!;
+    if (urlParams.get('search')) next.search = urlParams.get('search')!;
+    if (urlParams.get('minPrice')) next.minPrice = Number(urlParams.get('minPrice'));
+    if (urlParams.get('maxPrice')) next.maxPrice = Number(urlParams.get('maxPrice'));
+
+    setSearchTerm(next.search || '');
+    setFilters({ ...next });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParams.toString()]);
 
   useEffect(() => {
     fetchProducts(filters);
