@@ -1,13 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product, ProductFilters, SearchParams } from '@/types';
+import seedProducts from '../data/products.json';
+
+const SEED = seedProducts as unknown as Product[];
 
 interface ProductStore {
   products: Product[];
+  visible: Product[];
   loading: boolean;
   filters: ProductFilters;
   searchParams: SearchParams;
-  
+
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
@@ -22,7 +26,7 @@ interface ProductStore {
 
 const defaultFilters: ProductFilters = {};
 const defaultSearchParams: SearchParams = {
-  limit: 20,
+  limit: 100,
   offset: 0,
   sort: 'date',
   order: 'desc',
@@ -31,7 +35,8 @@ const defaultSearchParams: SearchParams = {
 export const useProductStore = create<ProductStore>()(
   persist(
     (set, get) => ({
-      products: [],
+      products: SEED,
+      visible: SEED,
       loading: false,
       filters: defaultFilters,
       searchParams: defaultSearchParams,
@@ -42,7 +47,7 @@ export const useProductStore = create<ProductStore>()(
           id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        };
+        } as Product;
         set((state) => ({ products: [...state.products, newProduct] }));
       },
 
@@ -60,82 +65,64 @@ export const useProductStore = create<ProductStore>()(
         }));
       },
 
-      getProduct: (id) => {
-        return get().products.find((p) => p.id === id);
-      },
+      getProduct: (id) => get().products.find((p) => p.id === id),
 
-      getAllProducts: () => {
-        return get().products;
-      },
+      getAllProducts: () => get().products,
 
       fetchProducts: async (filters?: ProductFilters, params?: SearchParams) => {
         set({ loading: true });
-        
         try {
-          const currentFilters = filters || get().filters;
-          const currentParams = params || get().searchParams;
-          
-          let filteredProducts = [...get().products];
+          const f = filters || get().filters;
+          const p = params || get().searchParams;
 
-          // Apply category filter
-          if (currentFilters.category) {
-            filteredProducts = filteredProducts.filter(p => 
-              p.category.toLowerCase() === currentFilters.category!.toLowerCase()
+          let list = [...get().products];
+
+          if (f.category) {
+            const cat = f.category.toLowerCase();
+            if (cat === 'deals') {
+              list = list.filter((x: any) => x.oldPrice && x.oldPrice > x.price);
+            } else {
+              list = list.filter((x) => x.category.toLowerCase() === cat);
+            }
+          }
+          if (f.search) {
+            const s = f.search.toLowerCase();
+            list = list.filter(
+              (x) =>
+                x.name.toLowerCase().includes(s) ||
+                x.brand.toLowerCase().includes(s) ||
+                (x.description || '').toLowerCase().includes(s)
             );
           }
-
-          // Apply search filter
-          if (currentFilters.search) {
-            const searchTerm = currentFilters.search.toLowerCase();
-            filteredProducts = filteredProducts.filter(p =>
-              p.name.toLowerCase().includes(searchTerm) ||
-              p.brand.toLowerCase().includes(searchTerm) ||
-              p.description.toLowerCase().includes(searchTerm)
-            );
+          if (f.minPrice !== undefined) list = list.filter((x) => x.price >= f.minPrice!);
+          if (f.maxPrice !== undefined) list = list.filter((x) => x.price <= f.maxPrice!);
+          if (f.brand) {
+            list = list.filter((x) => x.brand.toLowerCase() === f.brand!.toLowerCase());
+          }
+          if (f.inStock) {
+            list = list.filter((x: any) => (x.stock ?? (x.inStock ? 10 : 0)) > 0);
           }
 
-          // Apply price filters
-          if (currentFilters.minPrice !== undefined) {
-            filteredProducts = filteredProducts.filter(p => p.price >= currentFilters.minPrice!);
-          }
-          if (currentFilters.maxPrice !== undefined) {
-            filteredProducts = filteredProducts.filter(p => p.price <= currentFilters.maxPrice!);
-          }
-
-          // Apply brand filter
-          if (currentFilters.brand) {
-            filteredProducts = filteredProducts.filter(p => 
-              p.brand.toLowerCase() === currentFilters.brand!.toLowerCase()
-            );
-          }
-
-          // Apply stock filter
-          if (currentFilters.inStock) {
-            filteredProducts = filteredProducts.filter(p => (p.stock ?? (p.inStock ? 10 : 0)) > 0);
-          }
-
-          // Apply sorting
-          if (currentParams.sort === 'name') {
-            filteredProducts.sort((a, b) => {
-              const comparison = a.name.localeCompare(b.name);
-              return currentParams.order === 'asc' ? comparison : -comparison;
+          if (p.sort === 'name') {
+            list.sort((a, b) => {
+              const c = a.name.localeCompare(b.name);
+              return p.order === 'asc' ? c : -c;
             });
-          } else if (currentParams.sort === 'price') {
-            filteredProducts.sort((a, b) => {
-              const comparison = a.price - b.price;
-              return currentParams.order === 'asc' ? comparison : -comparison;
+          } else if (p.sort === 'price') {
+            list.sort((a, b) => {
+              const c = a.price - b.price;
+              return p.order === 'asc' ? c : -c;
             });
           }
 
-          set({ products: filteredProducts, loading: false });
+          set({ visible: list, loading: false });
         } catch (error) {
           set({ loading: false });
         }
       },
 
       fetchProduct: async (id: string) => {
-        const product = get().products.find(p => p.id === id);
-        return product || null;
+        return get().products.find((p) => p.id === id) || null;
       },
 
       setFilters: (filters: ProductFilters) => {
@@ -151,7 +138,9 @@ export const useProductStore = create<ProductStore>()(
       },
     }),
     {
-      name: 'imara-products',
+      name: 'imara-products-v2',
+      version: 2,
+      partialize: (state) => ({ products: state.products }),
     }
   )
 );

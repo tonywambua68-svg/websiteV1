@@ -5,7 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import { ArrowRight, Truck, Shield, CreditCard, Headphones, Sparkles } from 'lucide-react';
 
 export default function Home() {
-  const { products, fetchProducts, loading } = useProductStore();
+  const { visible: products, fetchProducts, loading } = useProductStore();
 
   useEffect(() => {
     fetchProducts({}, { limit: 8 });

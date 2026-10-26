@@ -4,7 +4,7 @@ import ProductCard from '@/components/ProductCard';
 import { Search, Filter } from 'lucide-react';
 
 export default function Shop() {
-  const { products, fetchProducts, loading, filters, setFilters, resetFilters } = useProductStore();
+  const { visible: products, fetchProducts, loading, filters, setFilters, resetFilters } = useProductStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
