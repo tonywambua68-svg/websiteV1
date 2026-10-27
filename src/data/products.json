@@ -8,7 +8,7 @@
   "brand": "HP",
   "price": 85000,
   "oldPrice": 95000,
-  "image": "/src/data/images/laptop-001.svg",
+  "image": "/images/products/laptop-001.svg",
   "iconType": "Laptop",
   "description": "Professional business laptop with Intel Core i7, 16GB RAM and 512GB SSD. Perfect for work and productivity.",
   "specs": {
@@ -17,7 +17,8 @@
    "Storage": "512GB NVMe SSD",
    "Display": "14-inch FHD IPS",
    "Graphics": "Intel Iris Xe",
-   "Battery": "Up to 12 hours"
+   "Battery": "Up to 12 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -36,7 +37,7 @@
   "brand": "Dell",
   "price": 78000,
   "oldPrice": 88000,
-  "image": "/src/data/images/laptop-002.svg",
+  "image": "/images/products/laptop-002.svg",
   "iconType": "Laptop",
   "description": "Reliable 15-inch business laptop with Intel Core i5, ideal for everyday office tasks and remote work.",
   "specs": {
@@ -45,7 +46,8 @@
    "Storage": "256GB NVMe SSD",
    "Display": "15.6-inch FHD",
    "Graphics": "Intel Iris Xe",
-   "Battery": "Up to 10 hours"
+   "Battery": "Up to 10 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -64,7 +66,7 @@
   "brand": "Lenovo",
   "price": 152000,
   "oldPrice": 168000,
-  "image": "/src/data/images/laptop-003.svg",
+  "image": "/images/products/laptop-003.svg",
   "iconType": "Laptop",
   "description": "Flagship ultrabook weighing just 1.13kg with legendary ThinkPad keyboard, all-day battery and business-class security.",
   "specs": {
@@ -73,7 +75,8 @@
    "Storage": "512GB NVMe SSD",
    "Display": "14-inch WUXGA IPS",
    "Weight": "1.13 kg",
-   "Battery": "Up to 15 hours"
+   "Battery": "Up to 15 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -92,7 +95,7 @@
   "brand": "ASUS",
   "price": 56000,
   "oldPrice": 62000,
-  "image": "/src/data/images/laptop-004.svg",
+  "image": "/images/products/laptop-004.svg",
   "iconType": "Laptop",
   "description": "Affordable everyday laptop for students and home use with a slim design and full HD display.",
   "specs": {
@@ -101,7 +104,8 @@
    "Storage": "512GB SSD",
    "Display": "15.6-inch FHD",
    "Graphics": "Intel Iris Xe",
-   "Battery": "Up to 8 hours"
+   "Battery": "Up to 8 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -120,7 +124,7 @@
   "brand": "Apple",
   "price": 138000,
   "oldPrice": 148000,
-  "image": "/src/data/images/laptop-005.svg",
+  "image": "/images/products/laptop-005.svg",
   "iconType": "Laptop",
   "description": "Supercharged by Apple M2 chip. Thin, light and silent with 18-hour battery life and a stunning Liquid Retina display.",
   "specs": {
@@ -129,7 +133,8 @@
    "Storage": "256GB SSD",
    "Display": "13.6-inch Liquid Retina",
    "Battery": "Up to 18 hours",
-   "Weight": "1.24 kg"
+   "Weight": "1.24 kg",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -148,7 +153,7 @@
   "brand": "Acer",
   "price": 49000,
   "oldPrice": 55000,
-  "image": "/src/data/images/laptop-006.svg",
+  "image": "/images/products/laptop-006.svg",
   "iconType": "Laptop",
   "description": "Solid budget laptop with Ryzen 5 performance for browsing, docs, streaming and light multitasking.",
   "specs": {
@@ -157,7 +162,8 @@
    "Storage": "512GB SSD",
    "Display": "15.6-inch FHD",
    "Graphics": "AMD Radeon Graphics",
-   "Battery": "Up to 8 hours"
+   "Battery": "Up to 8 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -176,7 +182,7 @@
   "brand": "HP",
   "price": 72000,
   "oldPrice": 80000,
-  "image": "/src/data/images/laptop-007.svg",
+  "image": "/images/products/laptop-007.svg",
   "iconType": "Laptop",
   "description": "Stylish home laptop with powerful i5 performance, backlit keyboard and crisp FHD anti-glare screen.",
   "specs": {
@@ -185,7 +191,8 @@
    "Storage": "512GB SSD",
    "Display": "15.6-inch FHD IPS",
    "Graphics": "Intel UHD",
-   "Battery": "Up to 9 hours"
+   "Battery": "Up to 9 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -204,7 +211,7 @@
   "brand": "Lenovo",
   "price": 45000,
   "oldPrice": 52000,
-  "image": "/src/data/images/laptop-008.svg",
+  "image": "/images/products/laptop-008.svg",
   "iconType": "Laptop",
   "description": "Dependable everyday laptop for schoolwork, streaming and video calls with privacy camera shutter.",
   "specs": {
@@ -212,7 +219,8 @@
    "RAM": "8GB DDR4",
    "Storage": "256GB SSD",
    "Display": "15.6-inch FHD",
-   "Battery": "Up to 10 hours"
+   "Battery": "Up to 10 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -231,7 +239,7 @@
   "brand": "Dell",
   "price": 89000,
   "oldPrice": 96000,
-  "image": "/src/data/images/laptop-009.svg",
+  "image": "/images/products/laptop-009.svg",
   "iconType": "Laptop",
   "description": "Slim aluminium home-and-office laptop with 12th-gen i5, fast SSD and premium build quality.",
   "specs": {
@@ -240,7 +248,8 @@
    "Storage": "512GB SSD",
    "Display": "14-inch FHD+",
    "Weight": "1.56 kg",
-   "Battery": "Up to 11 hours"
+   "Battery": "Up to 11 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -259,7 +268,7 @@
   "brand": "Apple",
   "price": 198000,
   "oldPrice": 215000,
-  "image": "/src/data/images/laptop-010.svg",
+  "image": "/images/products/laptop-010.svg",
   "iconType": "Laptop",
   "description": "Pro-level power with the M1 Pro chip, mini-LED XDR display and studio-grade mics for creators and engineers.",
   "specs": {
@@ -267,7 +276,8 @@
    "RAM": "16GB Unified",
    "Storage": "512GB SSD",
    "Display": "14.2-inch Liquid Retina XDR",
-   "Battery": "Up to 17 hours"
+   "Battery": "Up to 17 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -286,7 +296,7 @@
   "brand": "Lenovo",
   "price": 98000,
   "oldPrice": 110000,
-  "image": "/src/data/images/laptop-011.svg",
+  "image": "/images/products/laptop-011.svg",
   "iconType": "Laptop",
   "description": "Entry gaming laptop with Ryzen 5 and GTX 1650 - smooth frame rates in popular titles at 120Hz.",
   "specs": {
@@ -294,7 +304,8 @@
    "RAM": "8GB DDR4",
    "Storage": "512GB SSD",
    "Display": "15.6-inch FHD 120Hz",
-   "Graphics": "NVIDIA GTX 1650 4GB"
+   "Graphics": "NVIDIA GTX 1650 4GB",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -313,7 +324,7 @@
   "brand": "HP",
   "price": 62000,
   "oldPrice": 68000,
-  "image": "/src/data/images/laptop-012.svg",
+  "image": "/images/products/laptop-012.svg",
   "iconType": "Laptop",
   "description": "Business-ready essentials: 12th-gen Intel performance, spill-resistant keyboard and robust HP Wolf Security.",
   "specs": {
@@ -321,7 +332,8 @@
    "RAM": "8GB DDR4",
    "Storage": "256GB SSD",
    "Display": "15.6-inch FHD",
-   "Battery": "Up to 9 hours"
+   "Battery": "Up to 9 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -340,7 +352,7 @@
   "brand": "ASUS",
   "price": 125000,
   "oldPrice": 135000,
-  "image": "/src/data/images/laptop-013.svg",
+  "image": "/images/products/laptop-013.svg",
   "iconType": "Laptop",
   "description": "Breathtaking 2.8K OLED display, ultra-light chassis and Intel Evo platform with all-day efficiency.",
   "specs": {
@@ -349,7 +361,8 @@
    "Storage": "512GB SSD",
    "Display": "14-inch 2.8K OLED 90Hz",
    "Weight": "1.14 kg",
-   "Battery": "Up to 13 hours"
+   "Battery": "Up to 13 hours",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -368,7 +381,7 @@
   "brand": "Acer",
   "price": 105000,
   "oldPrice": 118000,
-  "image": "/src/data/images/laptop-014.svg",
+  "image": "/images/products/laptop-014.svg",
   "iconType": "Laptop",
   "description": "Serious gaming on a budget with Ryzen 5, RTX 3050 and cooling that keeps composure during long sessions.",
   "specs": {
@@ -376,7 +389,8 @@
    "RAM": "16GB DDR5",
    "Storage": "512GB SSD",
    "Display": "15.6-inch FHD 144Hz",
-   "Graphics": "NVIDIA RTX 3050 6GB"
+   "Graphics": "NVIDIA RTX 3050 6GB",
+   "Condition": "Brand new, sealed"
   },
   "inStock": true,
   "stock": 12,
@@ -395,7 +409,7 @@
   "brand": "Samsung",
   "price": 95000,
   "oldPrice": 105000,
-  "image": "/src/data/images/phone-001.svg",
+  "image": "/images/products/phone-001.svg",
   "iconType": "Phone",
   "description": "Flagship Snapdragon 8 Gen 2 performance, pro-grade triple camera and vibrant Dynamic AMOLED 2X display.",
   "specs": {
@@ -423,7 +437,7 @@
   "brand": "Apple",
   "price": 118000,
   "oldPrice": 128000,
-  "image": "/src/data/images/phone-002.svg",
+  "image": "/images/products/phone-002.svg",
   "iconType": "Phone",
   "description": "Iconic design with A15 Bionic, advanced dual camera, Crash Detection and all-day battery.",
   "specs": {
@@ -450,7 +464,7 @@
   "brand": "Tecno",
   "price": 38000,
   "oldPrice": 42000,
-  "image": "/src/data/images/phone-003.svg",
+  "image": "/images/products/phone-003.svg",
   "iconType": "Phone",
   "description": "50MP Sony main sensor with OIS for sharp day and night photos, plus 68W Ultra Charge.",
   "specs": {
@@ -478,7 +492,7 @@
   "brand": "Infinix",
   "price": 25000,
   "oldPrice": 29000,
-  "image": "/src/data/images/phone-004.svg",
+  "image": "/images/products/phone-004.svg",
   "iconType": "Phone",
   "description": "Big AMOLED screen, JBL-tuned speakers and 68W charging at an unbeatable price.",
   "specs": {
@@ -506,7 +520,7 @@
   "brand": "Xiaomi",
   "price": 28500,
   "oldPrice": 32000,
-  "image": "/src/data/images/phone-005.svg",
+  "image": "/images/products/phone-005.svg",
   "iconType": "Phone",
   "description": "120Hz AMOLED display, 50MP main camera and dependable 5000mAh battery for daily use.",
   "specs": {
@@ -534,7 +548,7 @@
   "brand": "Samsung",
   "price": 52000,
   "oldPrice": 58000,
-  "image": "/src/data/images/phone-006.svg",
+  "image": "/images/products/phone-006.svg",
   "iconType": "Phone",
   "description": "Mid-range champion with IP67 water resistance, gorgeous Super AMOLED and 4 years of updates.",
   "specs": {
@@ -562,7 +576,7 @@
   "brand": "Apple",
   "price": 98000,
   "oldPrice": 110000,
-  "image": "/src/data/images/phone-007.svg",
+  "image": "/images/products/phone-007.svg",
   "iconType": "Phone",
   "description": "A15 Bionic power, cinematic video mode and brilliant OLED display - the value iPhone pick.",
   "specs": {
@@ -589,7 +603,7 @@
   "brand": "Tecno",
   "price": 16500,
   "oldPrice": 19000,
-  "image": "/src/data/images/phone-008.svg",
+  "image": "/images/products/phone-008.svg",
   "iconType": "Phone",
   "description": "Affordable big-screen phone with 90Hz display, 13MP AI camera and face unlock.",
   "specs": {
@@ -617,7 +631,7 @@
   "brand": "Samsung",
   "price": 165000,
   "oldPrice": 178000,
-  "image": "/src/data/images/phone-009.svg",
+  "image": "/images/products/phone-009.svg",
   "iconType": "Phone",
   "description": "The ultimate Android flagship with Galaxy AI, titanium frame, S Pen and 200MP pro camera.",
   "specs": {
@@ -645,7 +659,7 @@
   "brand": "Apple",
   "price": 135000,
   "oldPrice": 145000,
-  "image": "/src/data/images/phone-010.svg",
+  "image": "/images/products/phone-010.svg",
   "iconType": "Phone",
   "description": "Dynamic Island, 48MP main camera and USB-C - the newest iPhone experience.",
   "specs": {
@@ -672,7 +686,7 @@
   "brand": "Xiaomi",
   "price": 18500,
   "oldPrice": 21000,
-  "image": "/src/data/images/phone-011.svg",
+  "image": "/images/products/phone-011.svg",
   "iconType": "Phone",
   "description": "Clean design, huge battery and smooth 90Hz screen - everyday essentials done right.",
   "specs": {
@@ -700,7 +714,7 @@
   "brand": "Infinix",
   "price": 21000,
   "oldPrice": 24000,
-  "image": "/src/data/images/phone-012.svg",
+  "image": "/images/products/phone-012.svg",
   "iconType": "Phone",
   "description": "Punchy AMOLED, 108MP camera and sleek flat-frame design at a pocket-friendly price.",
   "specs": {
@@ -728,7 +742,7 @@
   "brand": "Google",
   "price": 112000,
   "oldPrice": 122000,
-  "image": "/src/data/images/phone-013.svg",
+  "image": "/images/products/phone-013.svg",
   "iconType": "Phone",
   "description": "Google Tensor G3 with the best point-and-shoot camera, Magic Eraser and 7 years of updates.",
   "specs": {
@@ -756,7 +770,7 @@
   "brand": "Samsung",
   "price": 128000,
   "oldPrice": 140000,
-  "image": "/src/data/images/phone-014.svg",
+  "image": "/images/products/phone-014.svg",
   "iconType": "Phone",
   "description": "Pocketable foldable with a 3.4-inch Flex Window, compact form factor and flagship performance.",
   "specs": {
@@ -784,7 +798,7 @@
   "brand": "Samsung",
   "price": 32000,
   "oldPrice": 36000,
-  "image": "/src/data/images/tablet-001.svg",
+  "image": "/images/products/tablet-001.svg",
   "iconType": "Tablet",
   "description": "11-inch 90Hz display, quad speakers and expandable storage - great for streaming and study.",
   "specs": {
@@ -812,7 +826,7 @@
   "brand": "Apple",
   "price": 62000,
   "oldPrice": 68000,
-  "image": "/src/data/images/tablet-002.svg",
+  "image": "/images/products/tablet-002.svg",
   "iconType": "Tablet",
   "description": "Colourful 10.9-inch Liquid Retina display, A14 Bionic power and Apple Pencil (USB-C) support.",
   "specs": {
@@ -839,7 +853,7 @@
   "brand": "Xiaomi",
   "price": 45000,
   "oldPrice": 50000,
-  "image": "/src/data/images/tablet-003.svg",
+  "image": "/images/products/tablet-003.svg",
   "iconType": "Tablet",
   "description": "144Hz 11-inch display and Snapdragon 870 - flagship tablet performance for work and play.",
   "specs": {
@@ -866,7 +880,7 @@
   "brand": "Apple",
   "price": 98000,
   "oldPrice": 105000,
-  "image": "/src/data/images/tablet-004.svg",
+  "image": "/images/products/tablet-004.svg",
   "iconType": "Tablet",
   "description": "Desktop-class M2 chip in a thin 11-inch design with Apple Pencil Pro support. Creator ready.",
   "specs": {
@@ -893,7 +907,7 @@
   "brand": "Tecno",
   "price": 22000,
   "oldPrice": 25000,
-  "image": "/src/data/images/tablet-005.svg",
+  "image": "/images/products/tablet-005.svg",
   "iconType": "Tablet",
   "description": "Large 11-inch screen, kids-mode and split-screen multitasking on a friendly budget.",
   "specs": {
@@ -920,7 +934,7 @@
   "brand": "Samsung",
   "price": 21000,
   "oldPrice": 24000,
-  "image": "/src/data/images/monitor-001.svg",
+  "image": "/images/products/monitor-001.svg",
   "iconType": "Monitor",
   "description": "Crisp 24-inch FHD IPS panel with 75Hz, eye-saver technology and slim bezels for work and study.",
   "specs": {
@@ -947,7 +961,7 @@
   "brand": "LG",
   "price": 48000,
   "oldPrice": 55000,
-  "image": "/src/data/images/monitor-002.svg",
+  "image": "/images/products/monitor-002.svg",
   "iconType": "Monitor",
   "description": "27-inch Nano IPS QHD at 165Hz (OC 180Hz), 1ms response and G-Sync compatible - esports ready.",
   "specs": {
@@ -974,7 +988,7 @@
   "brand": "Dell",
   "price": 52000,
   "oldPrice": 58000,
-  "image": "/src/data/images/monitor-003.svg",
+  "image": "/images/products/monitor-003.svg",
   "iconType": "Monitor",
   "description": "27-inch 4K USB-C monitor with 65W power delivery - one cable for video, data and charging.",
   "specs": {
@@ -1000,7 +1014,7 @@
   "brand": "Xiaomi",
   "price": 38000,
   "oldPrice": 42000,
-  "image": "/src/data/images/monitor-004.svg",
+  "image": "/images/products/monitor-004.svg",
   "iconType": "TV",
   "description": "43-inch 4K HDR smart TV with built-in Chromecast, Dolby Audio and a clean Google TV interface.",
   "specs": {
@@ -1026,7 +1040,7 @@
   "brand": "Samsung",
   "price": 45000,
   "oldPrice": 50000,
-  "image": "/src/data/images/monitor-005.svg",
+  "image": "/images/products/monitor-005.svg",
   "iconType": "TV",
   "description": "Crystal Processor 4K upscales everything to sharp UHD with Tizen smart apps and slim design.",
   "specs": {
@@ -1052,7 +1066,7 @@
   "brand": "ASUS",
   "price": 58000,
   "oldPrice": 64000,
-  "image": "/src/data/images/monitor-006.svg",
+  "image": "/images/products/monitor-006.svg",
   "iconType": "Monitor",
   "description": "Factory-calibrated QHD colour accuracy for designers and video editors, with Calman Verified badge.",
   "specs": {
@@ -1078,7 +1092,7 @@
   "brand": "Sony",
   "price": 78000,
   "oldPrice": 85000,
-  "image": "/src/data/images/gaming-001.svg",
+  "image": "/images/products/gaming-001.svg",
   "iconType": "Console",
   "description": "Lightning-fast SSD, ray tracing, haptic DualSense controller and a library of breathtaking exclusives.",
   "specs": {
@@ -1104,7 +1118,7 @@
   "brand": "Microsoft",
   "price": 75000,
   "oldPrice": 82000,
-  "image": "/src/data/images/gaming-002.svg",
+  "image": "/images/products/gaming-002.svg",
   "iconType": "Console",
   "description": "The most powerful Xbox: 12 TFLOPS, 1TB SSD and Quick Resume across four generations of games.",
   "specs": {
@@ -1130,7 +1144,7 @@
   "brand": "ASUS",
   "price": 135000,
   "oldPrice": 148000,
-  "image": "/src/data/images/gaming-003.svg",
+  "image": "/images/products/gaming-003.svg",
   "iconType": "Laptop",
   "description": "Ryzen 7 + RTX 3060 at 144Hz with ROG Intelligent Cooling - desktop-class frames anywhere.",
   "specs": {
@@ -1157,7 +1171,7 @@
   "brand": "Razer",
   "price": 5500,
   "oldPrice": 6500,
-  "image": "/src/data/images/gaming-004.svg",
+  "image": "/images/products/gaming-004.svg",
   "iconType": "Mouse",
   "description": "Esports-grade 20K DPI optical sensor, 70-million-click switches and Razer HyperSpeed ergonomics.",
   "specs": {
@@ -1183,7 +1197,7 @@
   "brand": "Sony",
   "price": 9500,
   "oldPrice": 11000,
-  "image": "/src/data/images/gaming-005.svg",
+  "image": "/images/products/gaming-005.svg",
   "iconType": "Gamepad",
   "description": "Authentic PS5 haptic feedback and adaptive triggers, also works on PC over USB or Bluetooth.",
   "specs": {
@@ -1208,7 +1222,7 @@
   "brand": "Logitech",
   "price": 7800,
   "oldPrice": 9000,
-  "image": "/src/data/images/gaming-006.svg",
+  "image": "/images/products/gaming-006.svg",
   "iconType": "Keyboard",
   "description": "Lightsync RGB keyboard with spill-resistant design, media keys and integrated wrist rest.",
   "specs": {
@@ -1233,7 +1247,7 @@
   "brand": "HyperX",
   "price": 12500,
   "oldPrice": 14500,
-  "image": "/src/data/images/gaming-007.svg",
+  "image": "/images/products/gaming-007.svg",
   "iconType": "Headphones",
   "description": "Legendary comfort with 53mm drivers, 7.1 surround sound card and detachable mic.",
   "specs": {
@@ -1259,7 +1273,7 @@
   "brand": "Nintendo",
   "price": 68000,
   "oldPrice": 74000,
-  "image": "/src/data/images/gaming-008.svg",
+  "image": "/images/products/gaming-008.svg",
   "iconType": "Console",
   "description": "Vivid 7-inch OLED screen, enhanced tabletop play and docked TV mode - endless fun in three modes.",
   "specs": {
@@ -1285,7 +1299,7 @@
   "brand": "Sony",
   "price": 42000,
   "oldPrice": 48000,
-  "image": "/src/data/images/audio-001.svg",
+  "image": "/images/products/audio-001.svg",
   "iconType": "Headphones",
   "description": "Industry-leading noise cancelling, 30-hour battery and crystal-clear hands-free calls.",
   "specs": {
@@ -1312,7 +1326,7 @@
   "brand": "Apple",
   "price": 26000,
   "oldPrice": 29000,
-  "image": "/src/data/images/audio-002.svg",
+  "image": "/images/products/audio-002.svg",
   "iconType": "Earbuds",
   "description": "2x more ANC than before, Adaptive Transparency, Personalised Spatial Audio and USB-C MagSafe case.",
   "specs": {
@@ -1338,7 +1352,7 @@
   "brand": "JBL",
   "price": 7500,
   "oldPrice": 8500,
-  "image": "/src/data/images/audio-003.svg",
+  "image": "/images/products/audio-003.svg",
   "iconType": "Headphones",
   "description": "Signature Pure Bass wireless on-ear headphones with 57-hour battery and multipoint pairing.",
   "specs": {
@@ -1363,7 +1377,7 @@
   "brand": "Samsung",
   "price": 12000,
   "oldPrice": 14000,
-  "image": "/src/data/images/audio-004.svg",
+  "image": "/images/products/audio-004.svg",
   "iconType": "Earbuds",
   "description": "Active noise cancelling, wingtips secure fit and deep sound tuned for Galaxy phones.",
   "specs": {
@@ -1388,7 +1402,7 @@
   "brand": "Anker",
   "price": 9800,
   "oldPrice": 11500,
-  "image": "/src/data/images/audio-005.svg",
+  "image": "/images/products/audio-005.svg",
   "iconType": "Speaker",
   "description": "Hi-Res portable Bluetooth speaker with 30W stereo output, EQ app control and 12-hour playtime.",
   "specs": {
@@ -1413,7 +1427,7 @@
   "brand": "Xiaomi",
   "price": 4500,
   "oldPrice": 5500,
-  "image": "/src/data/images/audio-006.svg",
+  "image": "/images/products/audio-006.svg",
   "iconType": "Speaker",
   "description": "Compact smart speaker with clear voice pickup, aptX audio and multi-room pairing.",
   "specs": {
@@ -1438,7 +1452,7 @@
   "brand": "JBL",
   "price": 6800,
   "oldPrice": 7800,
-  "image": "/src/data/images/audio-007.svg",
+  "image": "/images/products/audio-007.svg",
   "iconType": "Speaker",
   "description": "Tiny, tough and waterproof - punchy JBL Pro Sound that goes everywhere with you.",
   "specs": {
@@ -1463,7 +1477,7 @@
   "brand": "Sony",
   "price": 3200,
   "oldPrice": 3800,
-  "image": "/src/data/images/audio-008.svg",
+  "image": "/images/products/audio-008.svg",
   "iconType": "Headphones",
   "description": "Lightweight closed-back on-ear headphones with 30mm drivers - dependable everyday sound.",
   "specs": {
@@ -1489,7 +1503,7 @@
   "brand": "HP",
   "price": 3500,
   "oldPrice": 4200,
-  "image": "/src/data/images/acc-001.svg",
+  "image": "/images/products/acc-001.svg",
   "iconType": "Bag",
   "description": "Water-resistant padded backpack with laptop compartment, organiser pockets and trolley strap.",
   "specs": {
@@ -1514,7 +1528,7 @@
   "brand": "Samsonite",
   "price": 6500,
   "oldPrice": 7500,
-  "image": "/src/data/images/acc-002.svg",
+  "image": "/images/products/acc-002.svg",
   "iconType": "Bag",
   "description": "Premium commuter backpack with dedicated tech organisation and laptop-safe cushioning.",
   "specs": {
@@ -1539,7 +1553,7 @@
   "brand": "Anker",
   "price": 5800,
   "oldPrice": 6800,
-  "image": "/src/data/images/acc-003.svg",
+  "image": "/images/products/acc-003.svg",
   "iconType": "Battery",
   "description": "Two-output 20K mAh power bank - charges a phone up to 5 times on a single charge.",
   "specs": {
@@ -1564,7 +1578,7 @@
   "brand": "Baseus",
   "price": 3800,
   "oldPrice": 4500,
-  "image": "/src/data/images/acc-004.svg",
+  "image": "/images/products/acc-004.svg",
   "iconType": "Charger",
   "description": "Pocketable GaN charger powers your laptop, phone and earbuds at full speed from one brick.",
   "specs": {
@@ -1589,7 +1603,7 @@
   "brand": "UGREEN",
   "price": 2200,
   "oldPrice": 2800,
-  "image": "/src/data/images/acc-005.svg",
+  "image": "/images/products/acc-005.svg",
   "iconType": "Cable",
   "description": "4K@60Hz USB-C to HDMI cable for monitors, TVs and projectors - plug and present.",
   "specs": {
@@ -1614,7 +1628,7 @@
   "brand": "Samsung",
   "price": 14500,
   "oldPrice": 16500,
-  "image": "/src/data/images/acc-006.svg",
+  "image": "/images/products/acc-006.svg",
   "iconType": "Drive",
   "description": "Rugged 1TB portable SSD with 1050MB/s read speeds - perfect for creators on the move.",
   "specs": {
@@ -1640,7 +1654,7 @@
   "brand": "Kingston",
   "price": 4800,
   "oldPrice": 5500,
-  "image": "/src/data/images/acc-007.svg",
+  "image": "/images/products/acc-007.svg",
   "iconType": "Drive",
   "description": "High-quality 16GB DDR4-3200 SO-DIMM upgrade module for snappy multitasking in laptops.",
   "specs": {
@@ -1665,7 +1679,7 @@
   "brand": "Logitech",
   "price": 2500,
   "oldPrice": 3000,
-  "image": "/src/data/images/acc-008.svg",
+  "image": "/images/products/acc-008.svg",
   "iconType": "Mouse",
   "description": "90% quieter clicks, wireless freedom and 18-month battery life for quiet workplaces.",
   "specs": {
@@ -1690,7 +1704,7 @@
   "brand": "Logitech",
   "price": 4200,
   "oldPrice": 5000,
-  "image": "/src/data/images/acc-009.svg",
+  "image": "/images/products/acc-009.svg",
   "iconType": "Keyboard",
   "description": "Wireless keyboard and mouse combo with plug-and-receive simplicity and 24-month battery.",
   "specs": {
@@ -1715,7 +1729,7 @@
   "brand": "UGREEN",
   "price": 4900,
   "oldPrice": 5800,
-  "image": "/src/data/images/acc-010.svg",
+  "image": "/images/products/acc-010.svg",
   "iconType": "Battery",
   "description": "Slim 20K power bank with 22.5W fast output and digital battery display.",
   "specs": {
@@ -1740,7 +1754,7 @@
   "brand": "Spigen",
   "price": 2800,
   "oldPrice": 3300,
-  "image": "/src/data/images/acc-011.svg",
+  "image": "/images/products/acc-011.svg",
   "iconType": "Phone",
   "description": "Air Cushion Corner military-drop protection in a slim, clear matte finish.",
   "specs": {
@@ -1765,7 +1779,7 @@
   "brand": "ESR",
   "price": 1200,
   "oldPrice": 1600,
-  "image": "/src/data/images/acc-012.svg",
+  "image": "/images/products/acc-012.svg",
   "iconType": "Phone",
   "description": "9H hardness oleophobic glass with bubble-free alignment kit - pack of 3.",
   "specs": {
@@ -1790,7 +1804,7 @@
   "brand": "Tomtoc",
   "price": 5500,
   "oldPrice": 6500,
-  "image": "/src/data/images/acc-013.svg",
+  "image": "/images/products/acc-013.svg",
   "iconType": "Laptop",
   "description": "Aluminium laptop cooling stand with adjustable height and whisper-quiet dual fans.",
   "specs": {
@@ -1815,7 +1829,7 @@
   "brand": "Anker",
   "price": 1800,
   "oldPrice": 2200,
-  "image": "/src/data/images/acc-014.svg",
+  "image": "/images/products/acc-014.svg",
   "iconType": "Cable",
   "description": "The last cable you will buy - 20,000-bend durability with 3A fast charging.",
   "specs": {
@@ -1840,7 +1854,7 @@
   "brand": "HP",
   "price": 58000,
   "oldPrice": 65000,
-  "image": "/src/data/images/print-001.svg",
+  "image": "/images/products/print-001.svg",
   "iconType": "Printer",
   "description": "Fast monochrome laser all-in-one: print, scan, copy, fax with duplex and wireless.",
   "specs": {
@@ -1866,7 +1880,7 @@
   "brand": "Canon",
   "price": 28000,
   "oldPrice": 32000,
-  "image": "/src/data/images/print-002.svg",
+  "image": "/images/products/print-002.svg",
   "iconType": "Printer",
   "description": "Refillable ink tank printer - thousands of pages per set, Wi-Fi printing from mobile.",
   "specs": {
@@ -1892,7 +1906,7 @@
   "brand": "Epson",
   "price": 26500,
   "oldPrice": 30000,
-  "image": "/src/data/images/print-003.svg",
+  "image": "/images/products/print-003.svg",
   "iconType": "Printer",
   "description": "Low-cost, high-volume ink tank printing with 4,500-page black bottles and Wi-Fi.",
   "specs": {
@@ -1918,7 +1932,7 @@
   "brand": "Seagate",
   "price": 11500,
   "oldPrice": 13000,
-  "image": "/src/data/images/print-004.svg",
+  "image": "/images/products/print-004.svg",
   "iconType": "Drive",
   "description": "Plug-and-play 2TB USB 3.0 external hard drive for backups, photos and projects.",
   "specs": {
@@ -1943,7 +1957,7 @@
   "brand": "SanDisk",
   "price": 2400,
   "oldPrice": 2900,
-  "image": "/src/data/images/print-005.svg",
+  "image": "/images/products/print-005.svg",
   "iconType": "Drive",
   "description": "120MB/s memory card expands storage for phones, cameras and Nintendo Switch.",
   "specs": {
@@ -1968,7 +1982,7 @@
   "brand": "Canon",
   "price": 88000,
   "oldPrice": 96000,
-  "image": "/src/data/images/cam-001.svg",
+  "image": "/images/products/cam-001.svg",
   "iconType": "Camera",
   "description": "Approachable 24MP DSLR with Dual Pixel AF, vari-angle touchscreen and 4K video.",
   "specs": {
@@ -1994,7 +2008,7 @@
   "brand": "Sony",
   "price": 125000,
   "oldPrice": 138000,
-  "image": "/src/data/images/cam-002.svg",
+  "image": "/images/products/cam-002.svg",
   "iconType": "Camera",
   "description": "Blazing 0.02s autofocus, real-time eye AF and 4K video in a compact mirrorless body.",
   "specs": {
@@ -2020,7 +2034,7 @@
   "brand": "GoPro",
   "price": 45000,
   "oldPrice": 50000,
-  "image": "/src/data/images/cam-003.svg",
+  "image": "/images/products/cam-003.svg",
   "iconType": "Camera",
   "description": "5.3K60 video with Horizon Stabilisation and GPS logging - capture every adventure.",
   "specs": {
@@ -2046,7 +2060,7 @@
   "brand": "DJI",
   "price": 68000,
   "oldPrice": 75000,
-  "image": "/src/data/images/cam-004.svg",
+  "image": "/images/products/cam-004.svg",
   "iconType": "Camera",
   "description": "Sub-249g folding drone with 4K HDR camera, 31-minute flight time and obstacle sensing.",
   "specs": {
@@ -2072,7 +2086,7 @@
   "brand": "Logitech",
   "price": 6500,
   "oldPrice": 7500,
-  "image": "/src/data/images/cam-005.svg",
+  "image": "/images/products/cam-005.svg",
   "iconType": "Camera",
   "description": "Full HD 1080p webcam with stereo sound - the standard for calls, classes and streams.",
   "specs": {
@@ -2097,7 +2111,7 @@
   "brand": "Insta360",
   "price": 38000,
   "oldPrice": 42000,
-  "image": "/src/data/images/cam-006.svg",
+  "image": "/images/products/cam-006.svg",
   "iconType": "Camera",
   "description": "Shoot 720-degree action video, then reframe anything with the invisible selfie-stick effect.",
   "specs": {
@@ -2122,7 +2136,7 @@
   "brand": "Apple",
   "price": 38000,
   "oldPrice": 42000,
-  "image": "/src/data/images/wear-001.svg",
+  "image": "/images/products/wear-001.svg",
   "iconType": "Watch",
   "description": "Crash detection, workout tracking and smart notifications - the essential Apple Watch.",
   "specs": {
@@ -2148,7 +2162,7 @@
   "brand": "Samsung",
   "price": 32000,
   "oldPrice": 36000,
-  "image": "/src/data/images/wear-002.svg",
+  "image": "/images/products/wear-002.svg",
   "iconType": "Watch",
   "description": "Advanced sleep coaching, BioActive sensor and rotating bezel UX on Wear OS.",
   "specs": {
@@ -2174,7 +2188,7 @@
   "brand": "Xiaomi",
   "price": 6800,
   "oldPrice": 7800,
-  "image": "/src/data/images/wear-003.svg",
+  "image": "/images/products/wear-003.svg",
   "iconType": "Watch",
   "description": "150+ sport modes, 16-day battery and bright AMOLED in a featherweight band.",
   "specs": {
@@ -2200,7 +2214,7 @@
   "brand": "Huawei",
   "price": 28000,
   "oldPrice": 32000,
-  "image": "/src/data/images/wear-004.svg",
+  "image": "/images/products/wear-004.svg",
   "iconType": "Watch",
   "description": "Elegant octagonal design, 7-day battery and TruSeen heart tracking with built-in GPS.",
   "specs": {
@@ -2226,7 +2240,7 @@
   "brand": "Amazfit",
   "price": 12500,
   "oldPrice": 14500,
-  "image": "/src/data/images/wear-005.svg",
+  "image": "/images/products/wear-005.svg",
   "iconType": "Watch",
   "description": "Huge 1.91-inch display, Bluetooth calling and 10-day battery at a friendly price.",
   "specs": {
@@ -2252,7 +2266,7 @@
   "brand": "HP",
   "price": 58000,
   "oldPrice": 72000,
-  "image": "/src/data/images/deal-001.svg",
+  "image": "/images/products/deal-001.svg",
   "iconType": "Laptop",
   "description": "Certified refurbished business laptop - graded, tested and backed by 6-month Imara warranty.",
   "specs": {
@@ -2279,7 +2293,7 @@
   "brand": "Samsung",
   "price": 38000,
   "oldPrice": 48000,
-  "image": "/src/data/images/deal-002.svg",
+  "image": "/images/products/deal-002.svg",
   "iconType": "Phone",
   "description": "Like-new flagship experience: 120Hz AMOLED, triple camera, fully tested and warranted.",
   "specs": {
@@ -2306,7 +2320,7 @@
   "brand": "Lenovo",
   "price": 48000,
   "oldPrice": 60000,
-  "image": "/src/data/images/deal-003.svg",
+  "image": "/images/products/deal-003.svg",
   "iconType": "Laptop",
   "description": "Workhorse ThinkPad with backlit keyboard, tested battery health 85%+ and 6-month warranty.",
   "specs": {
@@ -2333,7 +2347,7 @@
   "brand": "Xiaomi",
   "price": 18000,
   "oldPrice": 24000,
-  "image": "/src/data/images/deal-004.svg",
+  "image": "/images/products/deal-004.svg",
   "iconType": "Phone",
   "description": "Budget legend, inspected and unlocked - 90Hz display and 5000mAh battery.",
   "specs": {
