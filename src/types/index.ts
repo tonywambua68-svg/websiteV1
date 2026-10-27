@@ -5,10 +5,12 @@ export interface Product {
   name: string;
   brand: string;
   category: string;
+  subcategory?: string;
   price: number;
   oldPrice?: number | null;
   image?: string;
   images?: string[];
+  iconType?: string;
   stock?: number;
   inStock?: boolean;
   description: string;
@@ -16,6 +18,9 @@ export interface Product {
   status?: 'active' | 'inactive';
   source?: string;
   specs?: Record<string, string>;
+  rating?: number;
+  reviews?: number;
+  tag?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -100,13 +105,21 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
-  brand?: string;
+  brand?: string; // comma-separated list supported
+  subcategory?: string;
   inStock?: boolean;
+  showInactive?: boolean; // admin view only
 }
 
 export interface SearchParams {
   limit?: number;
   offset?: number;
-  sort?: 'name' | 'price' | 'date';
+  sort?: 'name' | 'price' | 'date' | 'discount' | 'rating';
   order?: 'asc' | 'desc';
+}
+
+// Wishlist item (lightweight — references the catalogue product)
+export interface WishlistItem {
+  id: string;
+  addedAt: string;
 }

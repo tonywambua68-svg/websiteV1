@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef5f2"/>
+      <stop offset="1" stop-color="#dcebe6"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="450" fill="url(#bg)"/>
+  <circle cx="300" cy="170" r="86" fill="#ffffff" stroke="#0b7a63" stroke-width="3"/>
+  <g fill="none" stroke="#0b7a63" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M246 150c-16 0-26 14-28 34s6 34 20 34c10 0 14-8 22-12h40c8 4 12 12 22 12 14 0 18-14 20-34s-12-34-28-34z"/><line x1="266" y1="172" x2="266" y2="192"/><line x1="256" y1="182" x2="276" y2="182"/><circle cx="330" cy="176" r="4" fill="#f5a31a" stroke="none"/><circle cx="346" cy="190" r="4" fill="#f5a31a" stroke="none"/></g>
+  <text x="300" y="318" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="bold" fill="#0a1f1c">Sony</text>
+  <text x="300" y="356" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="21" fill="#0b7a63">Sony DualSense Wireless Controller</text>
+  <text x="300" y="404" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" letter-spacing="4" fill="#9db8b0">IMARA TECH · KENYA</text>
+</svg>
