@@ -23,12 +23,17 @@ const PRICE_BANDS = [
 ];
 
 export default function Shop() {
+
   const navigate = useNavigate();
   const { products, fetchProducts, loading, filters, setFilters, allProducts } = useProductStore();
   const [urlParams, setUrlParams] = useSearchParams();
 
   // URL is the single source of truth for filters — shareable & back-button safe.
   const [searchInput, setSearchInput] = useState(urlParams.get('search') ?? '');
+=======
+  const { visible: products, fetchProducts, loading, filters, setFilters, resetFilters } = useProductStore();
+  const [searchTerm, setSearchTerm] = useState('');
+
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
 
