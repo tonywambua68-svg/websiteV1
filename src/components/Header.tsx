@@ -3,7 +3,7 @@ import { Heart, LayoutDashboard, LogOut, Menu, ShoppingCart, User, X } from 'luc
 import { useState } from 'react'
 import Logo from '@/components/Logo'
 import SearchBox from '@/components/SearchBox'
-import MegaMenu, { useCatalogueMenu } from '@/components/MegaMenu'
+import MegaMenu from '@/components/MegaMenu'
 import CategoryDrawer from '@/components/CategoryDrawer'
 import { useCartStore } from '@/store/cartStore'
 import { useAuthStore } from '@/store/authStore'
@@ -36,7 +36,6 @@ export default function Header() {
   const count = items.reduce((sum, item) => sum + item.quantity, 0)
   const { user, isAuthenticated, logout } = useAuthStore()
   const saved = useWishlistStore((state) => state.ids.length)
-  const menu = useCatalogueMenu()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -84,7 +83,7 @@ export default function Header() {
           <SearchBox onNavigate={() => setOpen(false)} />
         </div>
       </div>
-      <MegaMenu items={menu} />
+      <MegaMenu />
       <CategoryDrawer isOpen={open} onClose={() => setOpen(false)} />
     </header>
   )

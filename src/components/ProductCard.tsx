@@ -55,7 +55,7 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
           {availabilityLabel(product.availability)}
         </p>
         <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-          <Link to={`/product/${product.slug}`} className="btn btn-amber btn-sm">
+          <Link to={`/product/${product.slug}`} className="btn btn-emerald btn-sm">
             Details
           </Link>
           <button

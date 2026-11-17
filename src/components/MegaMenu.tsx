@@ -1,108 +1,498 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
-import { getSupabase } from '@/lib/supabase'
-import type { Brand, Category } from '@/lib/domain'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  ArrowRight,
+  ChevronDown,
+  Laptop,
+  Monitor,
+  HardDrive,
+  Cpu,
+  Phone,
+  ShieldCheck,
+  X,
+} from 'lucide-react'
+import { useProductStore } from '@/store/productStore'
+import type { CatalogueProduct } from '@/lib/domain'
+import { formatKES } from '@/lib/commerce'
+import { MAIN_CATEGORIES, TOP_NAV_ITEMS } from '@/config/menuConfig'
 
-export interface MenuColumn {
-  title: string
-  links: Array<{ label: string; to: string }>
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Laptop,
+  Monitor,
+  HardDrive,
+  Cpu,
+  Phone,
+  ShieldCheck,
 }
 
-export interface MenuItem {
-  label: string
-  to: string
-  columns: MenuColumn[]
+interface MegaMenuProps {
+  isOpen?: boolean
+  onClose?: () => void
 }
 
-export function buildMenu(categories: Category[], brands: Brand[]): MenuItem[] {
-  const brandLinks = brands.map((brand) => ({ label: brand.name, to: `/shop?brand=${brand.slug}` }))
-  const laptopBrands = brands
-    .filter((brand) => ['hp', 'dell', 'lenovo', 'apple', 'acer', 'asus'].includes(brand.slug))
-    .map((brand) => ({ label: brand.name, to: `/shop?category=laptops&brand=${brand.slug}` }))
-  const byUse = categories
-    .filter((category) => category.menu_group === 'use' && category.is_active)
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((category) => ({ label: category.name, to: `/shop?category=${category.slug}` }))
-  const accessories = categories
-    .filter((category) => category.menu_group === 'accessories' && category.is_active)
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((category) => ({ label: category.name, to: `/shop?category=${category.slug}` }))
+const MENU_TRANSITION_MS = 180
 
-  return [
-    {
-      label: 'Laptops',
-      to: '/shop?category=laptops',
-      columns: [{ title: 'Brands', links: laptopBrands.length ? laptopBrands : [{ label: 'All laptops', to: '/shop?category=laptops' }] }],
-    },
-    {
-      label: 'By use',
-      to: '/shop?category=laptops',
-      columns: [{ title: 'Shop by use', links: byUse }],
-    },
-    {
-      label: 'Accessories',
-      to: '/shop?category=computer-accessories',
-      columns: [{ title: 'Accessories', links: accessories }],
-    },
-    { label: 'Brands', to: '/shop', columns: [{ title: 'All brands', links: brandLinks }] },
-    { label: 'Offers', to: '/shop?offers=1', columns: [] },
-    { label: 'Blog', to: '/blog', columns: [] },
-  ]
-}
+export default function MegaMenu({ isOpen: propIsOpen, onClose: propOnClose }: MegaMenuProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [panelHovered, setPanelHovered] = useState(false)
+  const [popularProducts, setPopularProducts] = useState<CatalogueProduct[]>([])
+  const navigate = useNavigate()
 
-export function useCatalogueMenu() {
-  const [items, setItems] = useState<MenuItem[]>(() => buildMenu([], []))
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const isOpen = propIsOpen ?? isMenuOpen
+  const onClose = propOnClose ?? (() => setIsMenuOpen(false))
+
   useEffect(() => {
-    const supabase = getSupabase()
-    if (!supabase) return
-    Promise.all([
-      supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
-      supabase.from('brands').select('*').eq('is_active', true).order('sort_order'),
-    ]).then(([categories, brands]) => {
-      setItems(buildMenu((categories.data ?? []) as Category[], (brands.data ?? []) as Brand[]))
+    const store = useProductStore.getState()
+    store.fetchSection({ featured: '1' }, 3).then((products) => {
+      setPopularProducts(products)
     })
   }, [])
-  return items
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    },
+    [onClose]
+  )
+
+  const openWithDelay = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+    openTimer.current = setTimeout(() => {
+      setIsMenuOpen(true)
+    }, MENU_TRANSITION_MS)
+  }, [])
+
+  const closeWithDelay = useCallback(() => {
+    if (panelHovered) return
+    if (openTimer.current) {
+      clearTimeout(openTimer.current)
+      openTimer.current = null
+    }
+    closeTimer.current = setTimeout(() => {
+      setIsMenuOpen(false)
+      setActiveCategory(null)
+    }, MENU_TRANSITION_MS)
+  }, [panelHovered])
+
+  const handleMouseEnter = useCallback(() => {
+    setPanelHovered(false)
+    openWithDelay()
+  }, [openWithDelay])
+
+  const handleMouseLeave = useCallback(() => {
+    if (panelHovered) return
+    closeWithDelay()
+  }, [closeWithDelay])
+
+  const handlePanelMouseEnter = useCallback(() => {
+    setPanelHovered(true)
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }, [])
+
+  const handlePanelMouseLeave = useCallback(() => {
+    setPanelHovered(false)
+    closeWithDelay()
+  }, [closeWithDelay])
+
+  const handleNavClick = useCallback(
+    (to: string) => {
+      navigate(to)
+      onClose()
+    },
+    [navigate, onClose]
+  )
+
+  const activeCategoryItem = activeCategory ? MAIN_CATEGORIES.find((c) => c.label === activeCategory) : undefined
+
+  return (
+    <div
+      className="relative lg:block"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onKeyDown={handleKeyDown}
+    >
+      <nav className="border-b border-line bg-card hidden lg:block" aria-label="Catalogue navigation">
+        <ul className="wrap flex h-11 items-center gap-1">
+          <li className="relative group">
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen((prev) => !prev)
+                setActiveCategory(null)
+              }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-bold text-ink hover:bg-amber hover:text-ink transition-colors duration-150"
+              aria-expanded={isOpen && activeCategory === null}
+              aria-label="All categories"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>All Categories</span>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </li>
+
+          {TOP_NAV_ITEMS.map((item) => {
+            const Icon = ICON_MAP[item.icon ?? 'ShieldCheck'] || ShieldCheck
+            return (
+              <li key={item.label} className="relative group">
+                <Link
+                  to={item.to}
+                  onClick={() => handleNavClick(item.to)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                  className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-bold transition-colors duration-150 ${
+                    item.label === 'Offers' ? 'text-amber font-extrabold' : 'text-ink hover:text-teal'
+                  }`}
+                  aria-expanded={isOpen && activeCategory === item.label}
+                  aria-label={item.label}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {item.label}
+                  {item.columns.length > 0 && <ChevronDown className="h-3 w-3" />}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+
+      {/* Mega Menu Panel — positioned directly below nav bar, no gap */}
+      {isOpen && (
+        <div
+          onMouseEnter={handlePanelMouseEnter}
+          onMouseLeave={handlePanelMouseLeave}
+          className="absolute top-full left-0 right-0 z-40 mt-0"
+        >
+          <div className="wrap mx-auto">
+            <div className="rounded-xl border border-line bg-ink/95 shadow-xl transition-all duration-150 ease-in-out">
+      {activeCategory === null ? (
+        <AllCategoriesPanel
+          setActiveCategory={setActiveCategory}
+          popularProducts={popularProducts}
+          onNavClick={handleNavClick}
+          onClose={onClose}
+        />
+      ) : activeCategoryItem ? (
+        <CategoryPanel
+          activeCategoryItem={activeCategoryItem}
+          setActiveCategory={setActiveCategory}
+          popularProducts={popularProducts}
+          onNavClick={handleNavClick}
+          onClose={onClose}
+        />
+      ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
-export default function MegaMenu({ items }: { items: MenuItem[] }) {
-  const [open, setOpen] = useState<string | null>(null)
+interface CategoryPanelProps {
+  activeCategoryItem: typeof MAIN_CATEGORIES[number]
+  setActiveCategory: (category: string | null) => void
+  popularProducts: CatalogueProduct[]
+  onNavClick: (to: string) => void
+  onClose: () => void
+}
+
+function CategoryPanel({
+  activeCategoryItem,
+  setActiveCategory,
+  popularProducts,
+  onNavClick,
+  onClose,
+}: CategoryPanelProps) {
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const hoveredItem =
+    hoveredCategory
+      ? MAIN_CATEGORIES.find((c) => c.label === hoveredCategory) || activeCategoryItem
+      : activeCategoryItem
+
+  const showPanel = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }, [])
+
+  const hidePanel = useCallback(() => {
+    closeTimer.current = setTimeout(() => {
+      setHoveredCategory(null)
+    }, MENU_TRANSITION_MS)
+  }, [])
+
+  const isPopularVisible = hoveredItem === activeCategoryItem || !hoveredCategory
+
   return (
-    <nav className="hidden border-b border-line bg-card lg:block" aria-label="Catalogue">
-      <ul className="wrap flex h-11 items-center gap-1">
-        {items.map((item) => (
-          <li
-            key={item.label}
-            className="relative"
-            onMouseEnter={() => setOpen(item.columns.length ? item.label : null)}
-            onMouseLeave={() => setOpen(null)}
-          >
-            <Link to={item.to} className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-bold text-ink hover:text-teal">
-              {item.label}
-              {item.columns.length > 0 && <ChevronDown className="h-3.5 w-3.5" />}
-            </Link>
-            {open === item.label && (
-              <div className="absolute left-0 top-full z-40 min-w-64 rounded-b-xl border border-line bg-card p-4 shadow-lg">
-                {item.columns.map((column) => (
-                  <div key={column.title}>
-                    <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-muted">{column.title}</p>
-                    <ul className="grid gap-1">
-                      {column.links.map((link) => (
-                        <li key={link.to + link.label}>
-                          <Link to={link.to} className="block rounded px-2 py-1.5 text-sm font-semibold hover:bg-mint" onClick={() => setOpen(null)}>
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+    <div className="flex h-full min-h-[400px]">
+      <div className="w-72 border-r border-white/10 bg-ink p-4">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber mb-4">
+          Shop by Category
+        </h2>
+        <nav className="space-y-1" aria-label="Main categories">
+          {MAIN_CATEGORIES.map((cat) => {
+            const Icon = ICON_MAP[cat.icon ?? 'ShieldCheck'] || ShieldCheck
+            const isActive =
+              activeCategoryItem.label === cat.label || hoveredCategory === cat.label
+            return (
+              <button
+                key={cat.label}
+                type="button"
+                onMouseEnter={() => setHoveredCategory(cat.label)}
+                onMouseLeave={hidePanel}
+                onClick={() => setActiveCategory(cat.label)}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
+                  isActive
+                    ? 'bg-amber text-ink font-semibold'
+                    : 'text-[#cbd5d1] hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="font-semibold">{cat.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      <div className="flex-1 p-6 bg-ink/90">
+        {hoveredItem ? (
+          <div className="grid gap-8 md:grid-cols-3">
+            {hoveredItem.columns.map((column) => (
+              <div key={column.title} className="space-y-3">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                  {column.title}
+                </h3>
+                <ul className="space-y-1.5">
+                  {column.links.map((link) => (
+                    <li key={link.to}>
+                      <Link
+                        to={link.to}
+                        onClick={() => {
+                          onNavClick(link.to)
+                          onClose()
+                        }}
+                        className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    </nav>
+            ))}
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                Popular Right Now
+              </h3>
+              <div className="space-y-3">
+                {isPopularVisible && popularProducts.length > 0 ? (
+                  popularProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
+                    >
+                      <img
+                        src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded-md bg-white"
+                        loading="lazy"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          to={`/product/${product.slug}`}
+                          onClick={() => {
+                            onNavClick(`/product/${product.slug}`)
+                            onClose()
+                          }}
+                          className="block text-sm font-semibold text-white truncate hover:text-amber"
+                          title={product.name}
+                        >
+                          {product.name}
+                        </Link>
+                        <div className="mt-1 text-xs font-bold text-amber">
+                          {formatKES(product.selling_price)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#8ba19b] italic">
+                    Hover over a category to see popular products.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
+            Hover over a category to view subcategories.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface AllCategoriesPanelProps {
+  setActiveCategory: (category: string | null) => void
+  popularProducts: CatalogueProduct[]
+  onNavClick: (to: string) => void
+  onClose: () => void
+}
+
+function AllCategoriesPanel({
+  setActiveCategory,
+  popularProducts,
+  onNavClick,
+  onClose,
+}: AllCategoriesPanelProps) {
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const hoveredItem =
+    hoveredCategory
+      ? MAIN_CATEGORIES.find((c) => c.label === hoveredCategory)
+      : undefined
+
+  const showPanel = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }, [])
+
+  const hidePanel = useCallback(() => {
+    closeTimer.current = setTimeout(() => {
+      setHoveredCategory(null)
+    }, MENU_TRANSITION_MS)
+  }, [])
+
+  return (
+    <div className="flex h-full min-h-[400px]">
+      <div className="w-72 border-r border-white/10 bg-ink p-4">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber mb-4">
+          Shop by Category
+        </h2>
+        <nav className="space-y-1" aria-label="Main categories">
+          {MAIN_CATEGORIES.map((cat) => {
+            const Icon = ICON_MAP[cat.icon ?? 'ShieldCheck'] || ShieldCheck
+            const isActive = hoveredCategory === cat.label
+            return (
+              <button
+                key={cat.label}
+                type="button"
+                onMouseEnter={() => setHoveredCategory(cat.label)}
+                onMouseLeave={hidePanel}
+                onClick={() => setActiveCategory(cat.label)}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
+                  isActive
+                    ? 'bg-amber text-ink font-semibold'
+                    : 'text-[#cbd5d1] hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="font-semibold">{cat.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      <div className="flex-1 p-6 bg-ink/90">
+        {hoveredItem ? (
+          <div className="grid gap-8 md:grid-cols-3">
+            {hoveredItem.columns.map((column) => (
+              <div key={column.title} className="space-y-3">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                  {column.title}
+                </h3>
+                <ul className="space-y-1.5">
+                  {column.links.map((link) => (
+                    <li key={link.to}>
+                      <Link
+                        to={link.to}
+                        onClick={() => {
+                          onNavClick(link.to)
+                          onClose()
+                        }}
+                        className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                Popular Right Now
+              </h3>
+              <div className="space-y-3">
+                {popularProducts.length > 0 ? (
+                  popularProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
+                    >
+                      <img
+                        src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded-md bg-white"
+                        loading="lazy"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          to={`/product/${product.slug}`}
+                          onClick={() => {
+                            onNavClick(`/product/${product.slug}`)
+                            onClose()
+                          }}
+                          className="block text-sm font-semibold text-white truncate hover:text-amber"
+                          title={product.name}
+                        >
+                          {product.name}
+                        </Link>
+                        <div className="mt-1 text-xs font-bold text-amber">
+                          {formatKES(product.selling_price)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#8ba19b] italic">
+                    No featured products available.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
+            Hover over a category to view subcategories.
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
