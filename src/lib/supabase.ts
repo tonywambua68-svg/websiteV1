@@ -1,0 +1,29 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
+let client: SupabaseClient | null | undefined
+
+export function supabaseConfigured(): boolean {
+  return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+}
+
+/** Anon client only. The service role key must never be imported here. */
+export function getSupabase(): SupabaseClient | null {
+  if (client !== undefined) return client
+  const url = import.meta.env.VITE_SUPABASE_URL
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !key) {
+    client = null
+    return client
+  }
+  client = createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  })
+  return client
+}
+
+/** Convenience export — may be null if env vars are missing. */
+export const supabase: SupabaseClient | null = getSupabase()

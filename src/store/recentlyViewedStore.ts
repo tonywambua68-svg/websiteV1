@@ -13,6 +13,6 @@ export const useRecentlyViewedStore = create<RecentState>()(
       push: (id) =>
         set((s) => ({ ids: [id, ...s.ids.filter((x) => x !== id)].slice(0, 12) })),
     }),
-    { name: 'imara-recent' }
+    { name: 'oremitech-recent' }
   )
 );

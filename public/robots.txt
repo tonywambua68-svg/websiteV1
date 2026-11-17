@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Block admin and internal routes
+Disallow: /admin/
+Disallow: /employee/
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Disallow: /wishlist
+Disallow: /order-tracking
+
+# Allow blog and shop (public content)
+Allow: /blog/
+Allow: /shop/
+
+Sitemap: https://oremitech.co.ke/sitemap.xml

@@ -81,11 +81,11 @@ export default function NovaChat() {
     }
 
     if (lower.includes('warranty') || lower.includes('guarantee')) {
-      return 'All our products come with genuine manufacturer warranties, typically 12-24 months. We also offer our own Imara warranty support via WhatsApp for any issues.';
+      return 'All our products come with genuine manufacturer warranties, typically 12-24 months. We also offer our own OREMITECH warranty support via WhatsApp for any issues.';
     }
 
     if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-      return 'Hello! Welcome to Imara Tech. I\'m here to help you find the best electronics at great prices. What are you looking for today?';
+      return 'Hello! Welcome to OREMITECH. I\'m here to help you find the best electronics at great prices. What are you looking for today?';
     }
 
     return 'I\'d be happy to help you with that! You can browse our product categories, or tell me what you\'re looking for and I\'ll guide you to the right products. We have laptops, phones, gaming gear, audio equipment, and much more!';
@@ -198,7 +198,7 @@ export default function NovaChat() {
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="btn btn-teal !h-11 !w-11 !p-0"
+            className="btn btn-emerald !h-11 !w-11 !p-0"
             aria-label="Send message"
           >
             <Send className="h-5 w-5" />
@@ -211,3 +211,4 @@ export default function NovaChat() {
     </div>
   );
 }
+

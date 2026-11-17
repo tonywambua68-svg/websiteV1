@@ -1,7 +1,7 @@
 [
  {
   "id": "laptop-001",
-  "sku": "IM-LAPTOP-001",
+  "sku": "ORM-LAPTOP-001",
   "name": "HP EliteBook 840 G8",
   "category": "Laptops",
   "subcategory": "Business Laptops",
@@ -30,7 +30,7 @@
  },
  {
   "id": "laptop-002",
-  "sku": "IM-LAPTOP-002",
+  "sku": "ORM-LAPTOP-002",
   "name": "Dell Latitude 5520",
   "category": "Laptops",
   "subcategory": "Business Laptops",
@@ -59,7 +59,7 @@
  },
  {
   "id": "laptop-003",
-  "sku": "IM-LAPTOP-003",
+  "sku": "ORM-LAPTOP-003",
   "name": "Lenovo ThinkPad X1 Carbon Gen 10",
   "category": "Laptops",
   "subcategory": "Ultrabooks",
@@ -88,7 +88,7 @@
  },
  {
   "id": "laptop-004",
-  "sku": "IM-LAPTOP-004",
+  "sku": "ORM-LAPTOP-004",
   "name": "ASUS VivoBook 15 X515",
   "category": "Laptops",
   "subcategory": "Student Laptops",
@@ -117,7 +117,7 @@
  },
  {
   "id": "laptop-005",
-  "sku": "IM-LAPTOP-005",
+  "sku": "ORM-LAPTOP-005",
   "name": "Apple MacBook Air M2",
   "category": "Laptops",
   "subcategory": "Ultrabooks",
@@ -146,7 +146,7 @@
  },
  {
   "id": "laptop-006",
-  "sku": "IM-LAPTOP-006",
+  "sku": "ORM-LAPTOP-006",
   "name": "Acer Aspire 5",
   "category": "Laptops",
   "subcategory": "Student Laptops",
@@ -175,7 +175,7 @@
  },
  {
   "id": "laptop-007",
-  "sku": "IM-LAPTOP-007",
+  "sku": "ORM-LAPTOP-007",
   "name": "HP Pavilion 15",
   "category": "Laptops",
   "subcategory": "Home & Office",
@@ -204,7 +204,7 @@
  },
  {
   "id": "laptop-008",
-  "sku": "IM-LAPTOP-008",
+  "sku": "ORM-LAPTOP-008",
   "name": "Lenovo IdeaPad 3",
   "category": "Laptops",
   "subcategory": "Student Laptops",
@@ -232,7 +232,7 @@
  },
  {
   "id": "laptop-009",
-  "sku": "IM-LAPTOP-009",
+  "sku": "ORM-LAPTOP-009",
   "name": "Dell Inspiron 14 5420",
   "category": "Laptops",
   "subcategory": "Home & Office",
@@ -261,7 +261,7 @@
  },
  {
   "id": "laptop-010",
-  "sku": "IM-LAPTOP-010",
+  "sku": "ORM-LAPTOP-010",
   "name": "Apple MacBook Pro 14 M1 Pro",
   "category": "Laptops",
   "subcategory": "Creator Laptops",
@@ -289,7 +289,7 @@
  },
  {
   "id": "laptop-011",
-  "sku": "IM-LAPTOP-011",
+  "sku": "ORM-LAPTOP-011",
   "name": "Lenovo IdeaPad Gaming 3",
   "category": "Laptops",
   "subcategory": "Gaming Laptops",
@@ -317,7 +317,7 @@
  },
  {
   "id": "laptop-012",
-  "sku": "IM-LAPTOP-012",
+  "sku": "ORM-LAPTOP-012",
   "name": "HP 250 G9",
   "category": "Laptops",
   "subcategory": "Business Laptops",
@@ -345,7 +345,7 @@
  },
  {
   "id": "laptop-013",
-  "sku": "IM-LAPTOP-013",
+  "sku": "ORM-LAPTOP-013",
   "name": "ASUS Zenbook 14 OLED",
   "category": "Laptops",
   "subcategory": "Ultrabooks",
@@ -374,7 +374,7 @@
  },
  {
   "id": "laptop-014",
-  "sku": "IM-LAPTOP-014",
+  "sku": "ORM-LAPTOP-014",
   "name": "Acer Aspire 7 Gaming",
   "category": "Laptops",
   "subcategory": "Gaming Laptops",
@@ -402,7 +402,7 @@
  },
  {
   "id": "phone-001",
-  "sku": "IM-PHONE-001",
+  "sku": "ORM-PHONE-001",
   "name": "Samsung Galaxy S23",
   "category": "Phones",
   "subcategory": "Android Phones",
@@ -430,7 +430,7 @@
  },
  {
   "id": "phone-002",
-  "sku": "IM-PHONE-002",
+  "sku": "ORM-PHONE-002",
   "name": "Apple iPhone 14",
   "category": "Phones",
   "subcategory": "iPhones",
@@ -457,7 +457,7 @@
  },
  {
   "id": "phone-003",
-  "sku": "IM-PHONE-003",
+  "sku": "ORM-PHONE-003",
   "name": "Tecno Camon 20 Pro",
   "category": "Phones",
   "subcategory": "Android Phones",
@@ -485,7 +485,7 @@
  },
  {
   "id": "phone-004",
-  "sku": "IM-PHONE-004",
+  "sku": "ORM-PHONE-004",
   "name": "Infinix Note 30",
   "category": "Phones",
   "subcategory": "Android Phones",
@@ -513,7 +513,7 @@
  },
  {
   "id": "phone-005",
-  "sku": "IM-PHONE-005",
+  "sku": "ORM-PHONE-005",
   "name": "Xiaomi Redmi Note 12",
   "category": "Phones",
   "subcategory": "Android Phones",
@@ -541,7 +541,7 @@
  },
  {
   "id": "phone-006",
-  "sku": "IM-PHONE-006",
+  "sku": "ORM-PHONE-006",
   "name": "Samsung Galaxy A54",
   "category": "Phones",
   "subcategory": "Android Phones",
@@ -569,7 +569,7 @@
  },
  {
   "id": "phone-007",
-  "sku": "IM-PHONE-007",
+  "sku": "ORM-PHONE-007",
   "name": "Apple iPhone 13",
   "category": "Phones",
   "subcategory": "iPhones",
@@ -596,7 +596,7 @@
  },
  {
   "id": "phone-008",
-  "sku": "IM-PHONE-008",
+  "sku": "ORM-PHONE-008",
   "name": "Tecno Spark 10 Pro",
   "category": "Phones",
   "subcategory": "Budget Phones",
@@ -624,7 +624,7 @@
  },
  {
   "id": "phone-009",
-  "sku": "IM-PHONE-009",
+  "sku": "ORM-PHONE-009",
   "name": "Samsung Galaxy S24 Ultra",
   "category": "Phones",
   "subcategory": "Flagship Phones",
@@ -652,7 +652,7 @@
  },
  {
   "id": "phone-010",
-  "sku": "IM-PHONE-010",
+  "sku": "ORM-PHONE-010",
   "name": "Apple iPhone 15",
   "category": "Phones",
   "subcategory": "iPhones",
@@ -679,7 +679,7 @@
  },
  {
   "id": "phone-011",
-  "sku": "IM-PHONE-011",
+  "sku": "ORM-PHONE-011",
   "name": "Xiaomi Redmi 13",
   "category": "Phones",
   "subcategory": "Budget Phones",
@@ -707,7 +707,7 @@
  },
  {
   "id": "phone-012",
-  "sku": "IM-PHONE-012",
+  "sku": "ORM-PHONE-012",
   "name": "Infinix Hot 40 Pro",
   "category": "Phones",
   "subcategory": "Budget Phones",
@@ -735,7 +735,7 @@
  },
  {
   "id": "phone-013",
-  "sku": "IM-PHONE-013",
+  "sku": "ORM-PHONE-013",
   "name": "Google Pixel 8",
   "category": "Phones",
   "subcategory": "Flagship Phones",
@@ -763,7 +763,7 @@
  },
  {
   "id": "phone-014",
-  "sku": "IM-PHONE-014",
+  "sku": "ORM-PHONE-014",
   "name": "Samsung Galaxy Z Flip5",
   "category": "Phones",
   "subcategory": "Foldables",
@@ -791,7 +791,7 @@
  },
  {
   "id": "tablet-001",
-  "sku": "IM-TABLET-001",
+  "sku": "ORM-TABLET-001",
   "name": "Samsung Galaxy Tab A9+",
   "category": "Tablets",
   "subcategory": "Android Tablets",
@@ -819,7 +819,7 @@
  },
  {
   "id": "tablet-002",
-  "sku": "IM-TABLET-002",
+  "sku": "ORM-TABLET-002",
   "name": "Apple iPad 10th Gen",
   "category": "Tablets",
   "subcategory": "iPads",
@@ -846,7 +846,7 @@
  },
  {
   "id": "tablet-003",
-  "sku": "IM-TABLET-003",
+  "sku": "ORM-TABLET-003",
   "name": "Xiaomi Pad 6",
   "category": "Tablets",
   "subcategory": "Android Tablets",
@@ -873,7 +873,7 @@
  },
  {
   "id": "tablet-004",
-  "sku": "IM-TABLET-004",
+  "sku": "ORM-TABLET-004",
   "name": "Apple iPad Air M2",
   "category": "Tablets",
   "subcategory": "iPads",
@@ -900,7 +900,7 @@
  },
  {
   "id": "tablet-005",
-  "sku": "IM-TABLET-005",
+  "sku": "ORM-TABLET-005",
   "name": "Tecno Pop Pad 11",
   "category": "Tablets",
   "subcategory": "Android Tablets",
@@ -927,7 +927,7 @@
  },
  {
   "id": "monitor-001",
-  "sku": "IM-MONITOR-001",
+  "sku": "ORM-MONITOR-001",
   "name": "Samsung 24-inch Full HD Monitor LS24",
   "category": "Monitors & TVs",
   "subcategory": "Computer Monitors",
@@ -954,7 +954,7 @@
  },
  {
   "id": "monitor-002",
-  "sku": "IM-MONITOR-002",
+  "sku": "ORM-MONITOR-002",
   "name": "LG 27GP850 Ultragear QHD",
   "category": "Monitors & TVs",
   "subcategory": "Gaming Monitors",
@@ -981,7 +981,7 @@
  },
  {
   "id": "monitor-003",
-  "sku": "IM-MONITOR-003",
+  "sku": "ORM-MONITOR-003",
   "name": "Dell S2722QC 4K Monitor",
   "category": "Monitors & TVs",
   "subcategory": "Computer Monitors",
@@ -1007,7 +1007,7 @@
  },
  {
   "id": "monitor-004",
-  "sku": "IM-MONITOR-004",
+  "sku": "ORM-MONITOR-004",
   "name": "Xiaomi TV A2 43 Inch Smart",
   "category": "Monitors & TVs",
   "subcategory": "Smart TVs",
@@ -1033,7 +1033,7 @@
  },
  {
   "id": "monitor-005",
-  "sku": "IM-MONITOR-005",
+  "sku": "ORM-MONITOR-005",
   "name": "Samsung 43-inch Crystal UHD UA43AU7000",
   "category": "Monitors & TVs",
   "subcategory": "Smart TVs",
@@ -1059,7 +1059,7 @@
  },
  {
   "id": "monitor-006",
-  "sku": "IM-MONITOR-006",
+  "sku": "ORM-MONITOR-006",
   "name": "ASUS ProArt PA278CV",
   "category": "Monitors & TVs",
   "subcategory": "Creator Monitors",
@@ -1085,7 +1085,7 @@
  },
  {
   "id": "gaming-001",
-  "sku": "IM-GAMING-001",
+  "sku": "ORM-GAMING-001",
   "name": "Sony PlayStation 5 Console",
   "category": "Gaming",
   "subcategory": "Consoles",
@@ -1111,7 +1111,7 @@
  },
  {
   "id": "gaming-002",
-  "sku": "IM-GAMING-002",
+  "sku": "ORM-GAMING-002",
   "name": "Microsoft Xbox Series X",
   "category": "Gaming",
   "subcategory": "Consoles",
@@ -1137,7 +1137,7 @@
  },
  {
   "id": "gaming-003",
-  "sku": "IM-GAMING-003",
+  "sku": "ORM-GAMING-003",
   "name": "ASUS ROG Strix G15 Gaming Laptop",
   "category": "Gaming",
   "subcategory": "Gaming Laptops",
@@ -1164,7 +1164,7 @@
  },
  {
   "id": "gaming-004",
-  "sku": "IM-GAMING-004",
+  "sku": "ORM-GAMING-004",
   "name": "Razer DeathAdder V2 Mouse",
   "category": "Gaming",
   "subcategory": "Gaming Accessories",
@@ -1190,7 +1190,7 @@
  },
  {
   "id": "gaming-005",
-  "sku": "IM-GAMING-005",
+  "sku": "ORM-GAMING-005",
   "name": "Sony DualSense Wireless Controller",
   "category": "Gaming",
   "subcategory": "Gaming Accessories",
@@ -1215,7 +1215,7 @@
  },
  {
   "id": "gaming-006",
-  "sku": "IM-GAMING-006",
+  "sku": "ORM-GAMING-006",
   "name": "Logitech G213 RGB Gaming Keyboard",
   "category": "Gaming",
   "subcategory": "Gaming Accessories",
@@ -1240,7 +1240,7 @@
  },
  {
   "id": "gaming-007",
-  "sku": "IM-GAMING-007",
+  "sku": "ORM-GAMING-007",
   "name": "HyperX Cloud II Gaming Headset",
   "category": "Gaming",
   "subcategory": "Gaming Headsets",
@@ -1266,7 +1266,7 @@
  },
  {
   "id": "gaming-008",
-  "sku": "IM-GAMING-008",
+  "sku": "ORM-GAMING-008",
   "name": "Nintendo Switch OLED",
   "category": "Gaming",
   "subcategory": "Consoles",
@@ -1292,7 +1292,7 @@
  },
  {
   "id": "audio-001",
-  "sku": "IM-AUDIO-001",
+  "sku": "ORM-AUDIO-001",
   "name": "Sony WH-1000XM5 Headphones",
   "category": "Audio",
   "subcategory": "Headphones",
@@ -1319,7 +1319,7 @@
  },
  {
   "id": "audio-002",
-  "sku": "IM-AUDIO-002",
+  "sku": "ORM-AUDIO-002",
   "name": "Apple AirPods Pro 2",
   "category": "Audio",
   "subcategory": "Earbuds",
@@ -1345,7 +1345,7 @@
  },
  {
   "id": "audio-003",
-  "sku": "IM-AUDIO-003",
+  "sku": "ORM-AUDIO-003",
   "name": "JBL Tune 520BT",
   "category": "Audio",
   "subcategory": "Headphones",
@@ -1370,7 +1370,7 @@
  },
  {
   "id": "audio-004",
-  "sku": "IM-AUDIO-004",
+  "sku": "ORM-AUDIO-004",
   "name": "Samsung Galaxy Buds FE",
   "category": "Audio",
   "subcategory": "Earbuds",
@@ -1395,7 +1395,7 @@
  },
  {
   "id": "audio-005",
-  "sku": "IM-AUDIO-005",
+  "sku": "ORM-AUDIO-005",
   "name": "Anker Soundcore Motion+ Speaker",
   "category": "Audio",
   "subcategory": "Speakers",
@@ -1420,7 +1420,7 @@
  },
  {
   "id": "audio-006",
-  "sku": "IM-AUDIO-006",
+  "sku": "ORM-AUDIO-006",
   "name": "Xiaomi Mi Speaker Bluetooth",
   "category": "Audio",
   "subcategory": "Speakers",
@@ -1445,7 +1445,7 @@
  },
  {
   "id": "audio-007",
-  "sku": "IM-AUDIO-007",
+  "sku": "ORM-AUDIO-007",
   "name": "JBL Go 3 Portable Speaker",
   "category": "Audio",
   "subcategory": "Speakers",
@@ -1470,7 +1470,7 @@
  },
  {
   "id": "audio-008",
-  "sku": "IM-AUDIO-008",
+  "sku": "ORM-AUDIO-008",
   "name": "Sony MDR-ZX110 Headphones",
   "category": "Audio",
   "subcategory": "Headphones",
@@ -1496,7 +1496,7 @@
  },
  {
   "id": "acc-001",
-  "sku": "IM-ACC-001",
+  "sku": "ORM-ACC-001",
   "name": "HP 15.6-inch Padded Laptop Bag",
   "category": "Accessories",
   "subcategory": "Bags & Sleeves",
@@ -1521,7 +1521,7 @@
  },
  {
   "id": "acc-002",
-  "sku": "IM-ACC-002",
+  "sku": "ORM-ACC-002",
   "name": "Samsonite Laptop Backpack 15.6",
   "category": "Accessories",
   "subcategory": "Bags & Sleeves",
@@ -1546,7 +1546,7 @@
  },
  {
   "id": "acc-003",
-  "sku": "IM-ACC-003",
+  "sku": "ORM-ACC-003",
   "name": "Anker PowerCore 20000mAh Power Bank",
   "category": "Accessories",
   "subcategory": "Power & Charging",
@@ -1571,7 +1571,7 @@
  },
  {
   "id": "acc-004",
-  "sku": "IM-ACC-004",
+  "sku": "ORM-ACC-004",
   "name": "Baseus 65W GaN Charger",
   "category": "Accessories",
   "subcategory": "Power & Charging",
@@ -1596,7 +1596,7 @@
  },
  {
   "id": "acc-005",
-  "sku": "IM-ACC-005",
+  "sku": "ORM-ACC-005",
   "name": "UGREEN USB-C to HDMI Cable 2m",
   "category": "Accessories",
   "subcategory": "Cables & Adapters",
@@ -1621,7 +1621,7 @@
  },
  {
   "id": "acc-006",
-  "sku": "IM-ACC-006",
+  "sku": "ORM-ACC-006",
   "name": "Samsung T7 Shield 1TB SSD",
   "category": "Accessories",
   "subcategory": "Storage",
@@ -1647,7 +1647,7 @@
  },
  {
   "id": "acc-007",
-  "sku": "IM-ACC-007",
+  "sku": "ORM-ACC-007",
   "name": "Kingston 16GB DDR4 RAM",
   "category": "Accessories",
   "subcategory": "Storage",
@@ -1672,7 +1672,7 @@
  },
  {
   "id": "acc-008",
-  "sku": "IM-ACC-008",
+  "sku": "ORM-ACC-008",
   "name": "Logitech M220 Silent Mouse",
   "category": "Accessories",
   "subcategory": "Input Devices",
@@ -1697,7 +1697,7 @@
  },
  {
   "id": "acc-009",
-  "sku": "IM-ACC-009",
+  "sku": "ORM-ACC-009",
   "name": "Logitech MK270 Wireless Combo",
   "category": "Accessories",
   "subcategory": "Input Devices",
@@ -1722,7 +1722,7 @@
  },
  {
   "id": "acc-010",
-  "sku": "IM-ACC-010",
+  "sku": "ORM-ACC-010",
   "name": "UGREEN 20000mAh Power Bank",
   "category": "Accessories",
   "subcategory": "Power & Charging",
@@ -1747,7 +1747,7 @@
  },
  {
   "id": "acc-011",
-  "sku": "IM-ACC-011",
+  "sku": "ORM-ACC-011",
   "name": "Spigen iPhone 14 Case",
   "category": "Accessories",
   "subcategory": "Protection",
@@ -1772,7 +1772,7 @@
  },
  {
   "id": "acc-012",
-  "sku": "IM-ACC-012",
+  "sku": "ORM-ACC-012",
   "name": "ESR Tempered Glass Screen Protector",
   "category": "Accessories",
   "subcategory": "Protection",
@@ -1797,7 +1797,7 @@
  },
  {
   "id": "acc-013",
-  "sku": "IM-ACC-013",
+  "sku": "ORM-ACC-013",
   "name": "Tomtoc Laptop Cooling Pad",
   "category": "Accessories",
   "subcategory": "Cooling",
@@ -1822,7 +1822,7 @@
  },
  {
   "id": "acc-014",
-  "sku": "IM-ACC-014",
+  "sku": "ORM-ACC-014",
   "name": "Anker PowerLine III USB-C Cable",
   "category": "Accessories",
   "subcategory": "Cables & Adapters",
@@ -1847,7 +1847,7 @@
  },
  {
   "id": "print-001",
-  "sku": "IM-PRINT-001",
+  "sku": "ORM-PRINT-001",
   "name": "HP LaserJet Pro MFP M428fdw",
   "category": "Printers & Storage",
   "subcategory": "Printers",
@@ -1873,7 +1873,7 @@
  },
  {
   "id": "print-002",
-  "sku": "IM-PRINT-002",
+  "sku": "ORM-PRINT-002",
   "name": "Canon PIXMA G3420 Ink Tank",
   "category": "Printers & Storage",
   "subcategory": "Printers",
@@ -1899,7 +1899,7 @@
  },
  {
   "id": "print-003",
-  "sku": "IM-PRINT-003",
+  "sku": "ORM-PRINT-003",
   "name": "Epson EcoTank L3250",
   "category": "Printers & Storage",
   "subcategory": "Printers",
@@ -1925,7 +1925,7 @@
  },
  {
   "id": "print-004",
-  "sku": "IM-PRINT-004",
+  "sku": "ORM-PRINT-004",
   "name": "Seagate Expansion 2TB External HDD",
   "category": "Printers & Storage",
   "subcategory": "Storage",
@@ -1950,7 +1950,7 @@
  },
  {
   "id": "print-005",
-  "sku": "IM-PRINT-005",
+  "sku": "ORM-PRINT-005",
   "name": "SanDisk Ultra 128GB microSDXC",
   "category": "Printers & Storage",
   "subcategory": "Memory Cards",
@@ -1975,7 +1975,7 @@
  },
  {
   "id": "cam-001",
-  "sku": "IM-CAM-001",
+  "sku": "ORM-CAM-001",
   "name": "Canon EOS 200D II DSLR",
   "category": "Cameras",
   "subcategory": "DSLR & Mirrorless",
@@ -2001,7 +2001,7 @@
  },
  {
   "id": "cam-002",
-  "sku": "IM-CAM-002",
+  "sku": "ORM-CAM-002",
   "name": "Sony Alpha A6400 Mirrorless",
   "category": "Cameras",
   "subcategory": "DSLR & Mirrorless",
@@ -2027,7 +2027,7 @@
  },
  {
   "id": "cam-003",
-  "sku": "IM-CAM-003",
+  "sku": "ORM-CAM-003",
   "name": "GoPro HERO12 Black",
   "category": "Cameras",
   "subcategory": "Action Cameras",
@@ -2053,7 +2053,7 @@
  },
  {
   "id": "cam-004",
-  "sku": "IM-CAM-004",
+  "sku": "ORM-CAM-004",
   "name": "DJI Mini 4K Drone",
   "category": "Cameras",
   "subcategory": "Drones",
@@ -2079,7 +2079,7 @@
  },
  {
   "id": "cam-005",
-  "sku": "IM-CAM-005",
+  "sku": "ORM-CAM-005",
   "name": "Logitech C920s HD Webcam",
   "category": "Cameras",
   "subcategory": "Webcams",
@@ -2104,7 +2104,7 @@
  },
  {
   "id": "cam-006",
-  "sku": "IM-CAM-006",
+  "sku": "ORM-CAM-006",
   "name": "Insta360 X3 360 Camera",
   "category": "Cameras",
   "subcategory": "Action Cameras",
@@ -2129,7 +2129,7 @@
  },
  {
   "id": "wear-001",
-  "sku": "IM-WEAR-001",
+  "sku": "ORM-WEAR-001",
   "name": "Apple Watch SE 40mm",
   "category": "Wearables",
   "subcategory": "Smart Watches",
@@ -2155,7 +2155,7 @@
  },
  {
   "id": "wear-002",
-  "sku": "IM-WEAR-002",
+  "sku": "ORM-WEAR-002",
   "name": "Samsung Galaxy Watch 6",
   "category": "Wearables",
   "subcategory": "Smart Watches",
@@ -2181,7 +2181,7 @@
  },
  {
   "id": "wear-003",
-  "sku": "IM-WEAR-003",
+  "sku": "ORM-WEAR-003",
   "name": "Xiaomi Smart Band 8",
   "category": "Wearables",
   "subcategory": "Fitness Bands",
@@ -2207,7 +2207,7 @@
  },
  {
   "id": "wear-004",
-  "sku": "IM-WEAR-004",
+  "sku": "ORM-WEAR-004",
   "name": "Huawei Watch GT 4 41mm",
   "category": "Wearables",
   "subcategory": "Smart Watches",
@@ -2233,7 +2233,7 @@
  },
  {
   "id": "wear-005",
-  "sku": "IM-WEAR-005",
+  "sku": "ORM-WEAR-005",
   "name": "Amazfit Bip 5 Smart Watch",
   "category": "Wearables",
   "subcategory": "Smart Watches",
@@ -2259,7 +2259,7 @@
  },
  {
   "id": "deal-001",
-  "sku": "IM-DEAL-001",
+  "sku": "ORM-DEAL-001",
   "name": "HP EliteBook 840 G7 (Refurbished)",
   "category": "Deals",
   "subcategory": "Refurbished Laptops",
@@ -2268,7 +2268,7 @@
   "oldPrice": 72000,
   "image": "/images/products/deal-001.svg",
   "iconType": "Laptop",
-  "description": "Certified refurbished business laptop - graded, tested and backed by 6-month Imara warranty.",
+  "description": "Certified refurbished business laptop - graded, tested and backed by 6-month OREMITECH warranty.",
   "specs": {
    "Processor": "Intel Core i5-1035G1",
    "RAM": "16GB DDR4",
@@ -2286,7 +2286,7 @@
  },
  {
   "id": "deal-002",
-  "sku": "IM-DEAL-002",
+  "sku": "ORM-DEAL-002",
   "name": "Samsung Galaxy S21 FE (Refurbished)",
   "category": "Deals",
   "subcategory": "Refurbished Phones",
@@ -2313,7 +2313,7 @@
  },
  {
   "id": "deal-003",
-  "sku": "IM-DEAL-003",
+  "sku": "ORM-DEAL-003",
   "name": "Lenovo ThinkPad E14 Gen 2 (Refurbished)",
   "category": "Deals",
   "subcategory": "Refurbished Laptops",
@@ -2340,7 +2340,7 @@
  },
  {
   "id": "deal-004",
-  "sku": "IM-DEAL-004",
+  "sku": "ORM-DEAL-004",
   "name": "Xiaomi Redmi Note 11 (Refurbished)",
   "category": "Deals",
   "subcategory": "Refurbished Phones",

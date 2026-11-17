@@ -26,6 +26,6 @@ export const useCompareStore = create<CompareState>()(
       clear: () => set({ ids: [] }),
       has: (id) => get().ids.includes(id),
     }),
-    { name: 'imara-compare' }
+    { name: 'oremitech-compare' }
   )
 );

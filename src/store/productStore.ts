@@ -1,243 +1,264 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Product, ProductFilters, SearchParams } from '@/types';
+import { create } from 'zustand'
+import { getSupabase } from '@/lib/supabase'
+import { asCatalogue, PAGE_SIZE, type CatalogueProduct, type ShopQuery } from '@/lib/domain'
+import { errorText, searchPattern } from '@/lib/commerce'
+import { FALLBACK_CATALOGUE } from '@/data/fallbackCatalogue'
 
-import { searchProducts } from '@/lib/search';
-import catalogueJson from '@/data/products.json';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-import seedProducts from '../data/products.json';
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value.trim())
+}
 
+interface ProductState {
+  products: CatalogueProduct[]
+  allProducts: CatalogueProduct[]
+  loading: boolean
+  error: string | null
+  total: number
+  page: number
+  fetchProducts: (filters?: ShopQuery) => Promise<void>
+  fetchProductBySlug: (identifier: string) => Promise<CatalogueProduct | null>
+  fetchProduct: (identifier: string) => Promise<CatalogueProduct | null>
+  fetchRelated: (product: CatalogueProduct) => Promise<CatalogueProduct[]>
+  searchProducts: (query: string) => Promise<CatalogueProduct[]>
+  fetchSection: (filters: ShopQuery, limit?: number) => Promise<CatalogueProduct[]>
+}
 
-const SEED = seedProducts as unknown as Product[];
+function applyFilters(query: any, filters: ShopQuery) {
+  let next = query
+  if (filters.category) next = next.eq('category_slug', filters.category)
+  if (filters.brand) {
+    const brands = filters.brand.split(',').map((brand) => brand.trim()).filter(Boolean)
+    next = brands.length === 1 ? next.eq('brand_slug', brands[0]) : next.in('brand_slug', brands)
+  }
+  if (filters.min) next = next.gte('selling_price', Number(filters.min))
+  if (filters.max) next = next.lte('selling_price', Number(filters.max))
+  if (filters.processor) next = next.or(`processor_model.ilike.%${filters.processor}%,processor_manufacturer.ilike.%${filters.processor}%`)
+  if (filters.ram) next = next.ilike('ram', `%${filters.ram}%`)
+  if (filters.storage) next = next.ilike('storage_capacity', `%${filters.storage}%`)
+  if (filters.condition) next = next.eq('laptop_condition', filters.condition)
+  if (filters.availability === 'in_stock' || filters.availability === 'supplier') next = next.eq('availability', filters.availability)
+  if (filters.offers === '1') next = next.not('comparison_price', 'is', null)
+  if (filters.featured === '1') next = next.eq('featured', true)
+  const pattern = filters.q ? searchPattern(filters.q) : null
+  if (pattern) next = next.ilike('search_text', pattern)
+  if (filters.sort === 'price_asc') next = next.order('selling_price', { ascending: true })
+  else if (filters.sort === 'price_desc') next = next.order('selling_price', { ascending: false })
+  else next = next.order('published_at', { ascending: false })
+  return next
+}
 
-/** Merge the shipped catalogue with locally-created admin products. */
-function mergeCatalogue(persisted: Product[]): Product[] {
-  const byId = new Map<string, Product>();
-  for (const p of catalogue) byId.set(p.id, p);
-  for (const p of persisted) {
-    if (!byId.has(p.id)) byId.set(p.id, p);
-    else {
-      // Admin edits win over the shipped file, but deleted products stay gone.
-      const existing = byId.get(p.id)!;
-      if (p.status === 'inactive' || existing.updatedAt) byId.set(p.id, { ...existing, ...p });
+function filterFallback(list: CatalogueProduct[], filters: ShopQuery = {}): CatalogueProduct[] {
+  let res = [...list]
+  if (filters.category) {
+    const cat = filters.category.toLowerCase()
+    res = res.filter((p) => p.category_slug === cat || p.category_name.toLowerCase().includes(cat))
+  }
+  if (filters.brand) {
+    const brands = filters.brand.toLowerCase().split(',').map((b) => b.trim()).filter(Boolean)
+    if (brands.length > 0) {
+      res = res.filter((p) => brands.includes(p.brand_slug?.toLowerCase() || '') || brands.includes(p.brand_name?.toLowerCase() || ''))
     }
   }
-  return Array.from(byId.values());
+  if (filters.min) res = res.filter((p) => p.selling_price >= Number(filters.min))
+  if (filters.max) res = res.filter((p) => p.selling_price <= Number(filters.max))
+  if (filters.processor) {
+    const proc = filters.processor.toLowerCase()
+    res = res.filter((p) => p.processor_model?.toLowerCase().includes(proc) || p.processor_manufacturer?.toLowerCase().includes(proc))
+  }
+  if (filters.ram) {
+    const ram = filters.ram.toLowerCase()
+    res = res.filter((p) => p.ram?.toLowerCase().includes(ram))
+  }
+  if (filters.storage) {
+    const st = filters.storage.toLowerCase()
+    res = res.filter((p) => p.storage_capacity?.toLowerCase().includes(st))
+  }
+  if (filters.condition) {
+    res = res.filter((p) => p.laptop_condition.toLowerCase() === filters.condition?.toLowerCase())
+  }
+  if (filters.availability) {
+    res = res.filter((p) => p.availability === filters.availability)
+  }
+  if (filters.offers === '1') {
+    res = res.filter((p) => p.comparison_price && p.comparison_price > p.selling_price)
+  }
+  if (filters.featured === '1') {
+    res = res.filter((p) => p.featured)
+  }
+  if (filters.q) {
+    const q = filters.q.toLowerCase()
+    res = res.filter((p) => p.search_text.includes(q) || p.name.toLowerCase().includes(q) || p.brand_name?.toLowerCase().includes(q))
+  }
+  if (filters.sort === 'price_asc') res.sort((a, b) => a.selling_price - b.selling_price)
+  else if (filters.sort === 'price_desc') res.sort((a, b) => b.selling_price - a.selling_price)
+  return res
 }
 
-interface ProductStore {
-  products: Product[];
-  visible: Product[];
-  loading: boolean;
-  filters: ProductFilters;
-  searchParams: SearchParams;
+export const useProductStore = create<ProductState>((set, get) => ({
+  products: FALLBACK_CATALOGUE,
+  allProducts: FALLBACK_CATALOGUE,
+  loading: false,
+  error: null,
+  total: FALLBACK_CATALOGUE.length,
+  page: 1,
 
-  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  getProduct: (id: string) => Product | undefined;
-  getAllProducts: () => Product[];
-  getAllCatalogue: () => Product[];
-  fetchProducts: (filters?: ProductFilters, params?: SearchParams) => Promise<void>;
-  fetchProduct: (id: string) => Promise<Product | null>;
-  setFilters: (filters: ProductFilters) => void;
-  setSearchParams: (params: SearchParams) => void;
-  resetFilters: () => void;
-}
+  fetchProducts: async (filters: ShopQuery = {}) => {
+    const supabase = getSupabase()
+    const page = Math.max(1, Number(filters.page ?? 1) || 1)
+    const from = (page - 1) * PAGE_SIZE
 
-const defaultFilters: ProductFilters = {};
-const defaultSearchParams: SearchParams = {
-  limit: 100,
-  offset: 0,
-  sort: 'date',
-  order: 'desc',
-};
-
-export const useProductStore = create<ProductStore>()(
-  persist(
-    (set, get) => ({
-      products: SEED,
-      visible: SEED,
-      loading: false,
-      filters: defaultFilters,
-      searchParams: defaultSearchParams,
-
-      addProduct: (product) => {
-        const newProduct: Product = {
-          ...product,
-          id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        } as Product;
-        set((state) => ({ products: [...state.products, newProduct] }));
-      },
-
-      updateProduct: (id, updates) => {
-        set((state) => ({
-          products: state.products.map((p) =>
-            p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
-          ),
-        }));
-      },
-
-      deleteProduct: (id) => {
-        set((state) => ({
-          products: state.products.filter((p) => p.id !== id),
-        }));
-      },
-
-      getProduct: (id) => get().products.find((p) => p.id === id),
-
-      getAllProducts: () => get().products,
-
-      fetchProducts: async (filters?: ProductFilters, params?: SearchParams) => {
-        set({ loading: true });
-
-        try {
-          const currentFilters = filters || get().filters;
-          const currentParams = params || get().searchParams;
-
-          let filteredProducts = mergeCatalogue(get().products);
-
-          // Hide products the shopper shouldn't see (admin can still edit them)
-          if (!currentFilters.showInactive) {
-            filteredProducts = filteredProducts.filter((p) => p.status !== 'inactive');
-        try {
-          const f = filters || get().filters;
-          const p = params || get().searchParams;
-
-          let list = [...get().products];
-
-          if (f.category) {
-            const cat = f.category.toLowerCase();
-            if (cat === 'deals') {
-              list = list.filter((x: any) => x.oldPrice && x.oldPrice > x.price);
-            } else {
-              list = list.filter((x) => x.category.toLowerCase() === cat);
-            }
-
-          }
-          if (f.search) {
-            const s = f.search.toLowerCase();
-            list = list.filter(
-              (x) =>
-                x.name.toLowerCase().includes(s) ||
-                x.brand.toLowerCase().includes(s) ||
-                (x.description || '').toLowerCase().includes(s)
-            );
-          }
-
-
-          // Apply brand filter(s) — supports comma-separated multi-select
-          if (currentFilters.brand) {
-            const brands = currentFilters.brand.split(',').map((b) => b.trim().toLowerCase()).filter(Boolean);
-            if (brands.length) {
-              filteredProducts = filteredProducts.filter(p => brands.includes(p.brand.toLowerCase()));
-            }
-          }
-
-          // Subcategory / free-text search via the shared relevance engine
-          if (currentFilters.subcategory) {
-            filteredProducts = filteredProducts.filter(
-              (p) => (p.subcategory ?? '').toLowerCase() === currentFilters.subcategory!.toLowerCase()
-            );
-          }
-          if (currentFilters.search) {
-            filteredProducts = searchProducts(filteredProducts, currentFilters.search);
-          }
-
-          // Apply price filters
-          if (currentFilters.minPrice !== undefined) {
-            filteredProducts = filteredProducts.filter(p => p.price >= currentFilters.minPrice!);
-          }
-          if (currentFilters.maxPrice !== undefined) {
-            filteredProducts = filteredProducts.filter(p => p.price <= currentFilters.maxPrice!);
-          }
-
-          // Apply stock filter
-          if (currentFilters.inStock) {
-            filteredProducts = filteredProducts.filter(p => (p.stock ?? (p.inStock ? 10 : 0)) > 0);
-          }
-
-          // Apply sorting (relevance from search is preserved unless an explicit sort is chosen)
-          const sort = currentParams.sort ?? 'date';
-          if (sort === 'name') {
-            filteredProducts.sort((a, b) => {
-              const comparison = a.name.localeCompare(b.name);
-              return currentParams.order === 'asc' ? comparison : -comparison;
-            });
-          } else if (sort === 'price') {
-            filteredProducts.sort((a, b) => {
-              const comparison = a.price - b.price;
-              return currentParams.order === 'asc' ? comparison : -comparison;
-          if (f.minPrice !== undefined) list = list.filter((x) => x.price >= f.minPrice!);
-          if (f.maxPrice !== undefined) list = list.filter((x) => x.price <= f.maxPrice!);
-          if (f.brand) {
-            list = list.filter((x) => x.brand.toLowerCase() === f.brand!.toLowerCase());
-          }
-          if (f.inStock) {
-            list = list.filter((x: any) => (x.stock ?? (x.inStock ? 10 : 0)) > 0);
-          }
-
-          if (p.sort === 'name') {
-            list.sort((a, b) => {
-              const c = a.name.localeCompare(b.name);
-              return p.order === 'asc' ? c : -c;
-            });
-          } else if (p.sort === 'price') {
-            list.sort((a, b) => {
-              const c = a.price - b.price;
-              return p.order === 'asc' ? c : -c;
-
-            });
-          } else if (sort === 'discount') {
-            const pct = (p: Product) => (p.oldPrice && p.oldPrice > p.price ? (p.oldPrice - p.price) / p.oldPrice : 0);
-            filteredProducts.sort((a, b) => pct(b) - pct(a));
-          } else if (sort === 'rating') {
-            filteredProducts.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-          } else if (!currentFilters.search) {
-            // "Featured": tagged products first, then newest
-            filteredProducts.sort((a, b) => {
-              const at = a.tag ? 1 : 0;
-              const bt = b.tag ? 1 : 0;
-              if (at !== bt) return bt - at;
-              return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-            });
-          }
-
-
-          set({ products: filteredProducts, allProducts: mergeCatalogue(get().allProducts), loading: false });
-          set({ visible: list, loading: false });
-        } catch (error) {
-          set({ loading: false });
-        }
-      },
-
-      fetchProduct: async (id: string) => {
-
-        return mergeCatalogue(get().products).find((p) => p.id === id) || null;
-        return get().products.find((p) => p.id === id) || null;
-      },
-
-      /** All catalogue products, admin view (includes inactive drafts). */
-      getAllCatalogue: () => mergeCatalogue(get().allProducts),
-
-      setFilters: (filters: ProductFilters) => {
-        set({ filters: { ...get().filters, ...filters } });
-      },
-
-      setSearchParams: (params: SearchParams) => {
-        set({ searchParams: { ...get().searchParams, ...params } });
-      },
-
-      resetFilters: () => {
-        set({ filters: defaultFilters, searchParams: defaultSearchParams });
-      },
-    }),
-    {
-      name: 'imara-products-v2',
-      version: 2,
-      partialize: (state) => ({ products: state.products }),
+    if (!supabase) {
+      const filtered = filterFallback(FALLBACK_CATALOGUE, filters)
+      const paged = filtered.slice(from, from + PAGE_SIZE)
+      set({
+        products: paged,
+        allProducts: FALLBACK_CATALOGUE,
+        total: filtered.length,
+        page,
+        loading: false,
+        error: null,
+      })
+      return
     }
-  )
-);
+
+    set({ loading: true, error: null })
+    try {
+      const { data, count, error } = await applyFilters(
+        supabase.from('catalogue_products').select('*', { count: 'exact' }),
+        filters,
+      ).range(from, from + PAGE_SIZE - 1)
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        const mapped = (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+        set({
+          products: mapped,
+          allProducts: mapped,
+          total: count ?? mapped.length,
+          page,
+          loading: false,
+        })
+      } else {
+        // If Supabase table is empty yet, fallback to seed catalogue
+        const filtered = filterFallback(FALLBACK_CATALOGUE, filters)
+        set({
+          products: filtered.slice(from, from + PAGE_SIZE),
+          allProducts: FALLBACK_CATALOGUE,
+          total: filtered.length,
+          page,
+          loading: false,
+        })
+      }
+    } catch (error) {
+      // Graceful fallback to local seed data
+      const filtered = filterFallback(FALLBACK_CATALOGUE, filters)
+      set({
+        products: filtered.slice(from, from + PAGE_SIZE),
+        allProducts: FALLBACK_CATALOGUE,
+        total: filtered.length,
+        page,
+        loading: false,
+        error: errorText(error),
+      })
+    }
+  },
+
+  fetchProductBySlug: async (identifier: string) => {
+    if (!identifier) return null
+    const cleanId = identifier.trim()
+    const supabase = getSupabase()
+
+    if (supabase) {
+      try {
+        const query = supabase.from('catalogue_products').select('*')
+        if (isUuid(cleanId)) {
+          query.eq('id', cleanId)
+        } else {
+          query.eq('slug', cleanId)
+        }
+        const { data, error } = await query.maybeSingle()
+        if (!error && data) {
+          return asCatalogue(data as Record<string, unknown>)
+        }
+      } catch (err) {
+        console.warn('Supabase product fetch fallback:', err)
+      }
+    }
+
+    // Fallback search by slug or ID
+    const found = FALLBACK_CATALOGUE.find(
+      (p) => p.slug.toLowerCase() === cleanId.toLowerCase() || p.id.toLowerCase() === cleanId.toLowerCase()
+    )
+    return found || null
+  },
+
+  fetchProduct: async (identifier: string) => {
+    return get().fetchProductBySlug(identifier)
+  },
+
+  fetchRelated: async (product: CatalogueProduct) => {
+    const supabase = getSupabase()
+    if (supabase) {
+      try {
+        const { data } = await supabase
+          .from('catalogue_products')
+          .select('*')
+          .eq('category_slug', product.category_slug)
+          .neq('id', product.id)
+          .limit(4)
+        if (data && data.length > 0) {
+          return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+        }
+      } catch (err) {
+        console.warn('Supabase related products fallback:', err)
+      }
+    }
+    return FALLBACK_CATALOGUE.filter(
+      (p) => (p.category_slug === product.category_slug || p.brand_slug === product.brand_slug) && p.id !== product.id
+    ).slice(0, 4)
+  },
+
+  searchProducts: async (query: string) => {
+    const supabase = getSupabase()
+    const pattern = searchPattern(query)
+    if (!query || query.trim().length < 2) return []
+
+    if (supabase && pattern) {
+      try {
+        const { data, error } = await supabase
+          .from('catalogue_products')
+          .select('*')
+          .ilike('search_text', pattern)
+          .limit(8)
+        if (!error && data && data.length > 0) {
+          return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+        }
+      } catch (err) {
+        console.warn('Supabase search fallback:', err)
+      }
+    }
+
+    const q = query.toLowerCase().trim()
+    return FALLBACK_CATALOGUE.filter(
+      (p) => p.search_text.includes(q) || p.name.toLowerCase().includes(q) || p.brand_name?.toLowerCase().includes(q)
+    ).slice(0, 8)
+  },
+
+  fetchSection: async (filters: ShopQuery, limit = 8) => {
+    const supabase = getSupabase()
+    if (supabase) {
+      try {
+        const { data, error } = await applyFilters(supabase.from('catalogue_products').select('*'), filters).limit(limit)
+        if (!error && data && data.length > 0) {
+          return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+        }
+      } catch (err) {
+        console.warn('Supabase section fetch fallback:', err)
+      }
+    }
+    return filterFallback(FALLBACK_CATALOGUE, filters).slice(0, limit)
+  },
+}))

@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0a1f1c;
-  --color-pine: #10312c;
-  --color-teal: #0b7a63;
-  --color-tealdeep: #075747;
-  --color-mint: #e3f2ed;
+  --color-ink: #061512;
+  --color-footer-bg: #061512;
+  --color-dark-green: #061512;
+  --color-pine: #0a2a20;
+  --color-forest: #0d4a34;
+  --color-forestdeep: #083624;
+  --color-emerald: #156b45;
+  --color-emeralddeep: #0e5335;
+  --color-mint: #d8e8df;
   --color-amber: #f5a31a;
   --color-amberdeep: #8a5a06;
-  --color-mist: #f1f5f3;
-  --color-card: #fcfdfd;
-  --color-line: #d9e4e0;
-  --color-muted: #5c716c;
-  --color-success: #1b9e4b;
+  --color-mist: #eef3f1;
+  --color-card: #fafcfb;
+  --color-line: #c4d6ce;
+  --color-muted: #4a6b5c;
+  --color-success: #1a803a;
   --color-warning: #c97f10;
   --color-error: #d64545;
 }
@@ -36,7 +40,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-teal);
+    outline: 2px solid var(--color-emerald);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -44,14 +48,33 @@
 
 @layer components {
   .wrap {
-    max-width: 76rem;
+    width: 100%;
+    max-width: 100%;
     margin-inline: auto;
     padding-inline: 1rem;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 640px) {
     .wrap {
       padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .wrap {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .wrap {
+      padding-inline: 3.5rem;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .wrap {
+      padding-inline: 4.5rem;
     }
   }
 
@@ -82,10 +105,11 @@
     transform: none;
   }
 
+  /* Standard amber button — used for Subscribe, Explore Products, View Deals, Product Details, Add to Cart, Header cart */
   .btn-amber {
     background: var(--color-amber);
     color: var(--color-ink);
-    box-shadow: 0 6px 16px -6px rgba(245, 163, 26, 0.55);
+    box-shadow: 0 4px 12px -4px rgba(245, 163, 26, 0.4);
   }
 
   .btn-amber:hover:not(:disabled) {
@@ -93,13 +117,19 @@
     transform: translateY(-1px);
   }
 
-  .btn-teal {
-    background: var(--color-teal);
+  .btn-amber:focus-visible {
+    outline: 2px solid var(--color-amberdeep);
+    outline-offset: 2px;
+  }
+
+  /* Primary green button — retained for secondary actions */
+  .btn-emerald {
+    background: var(--color-emerald);
     color: #f4fbf9;
   }
 
-  .btn-teal:hover:not(:disabled) {
-    background: var(--color-tealdeep);
+  .btn-emerald:hover:not(:disabled) {
+    background: var(--color-emeralddeep);
     transform: translateY(-1px);
   }
 
@@ -113,6 +143,17 @@
     transform: translateY(-1px);
   }
 
+  .btn-light {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .btn-light:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
   .btn-outline {
     background: var(--color-card);
     border-color: var(--color-line);
@@ -120,8 +161,8 @@
   }
 
   .btn-outline:hover:not(:disabled) {
-    border-color: var(--color-teal);
-    color: var(--color-teal);
+    border-color: var(--color-emerald);
+    color: var(--color-emerald);
     transform: translateY(-1px);
   }
 
@@ -150,8 +191,8 @@
 
   .input:focus {
     outline: none;
-    border-color: var(--color-teal);
-    box-shadow: 0 0 0 3px rgba(11, 122, 99, 0.14);
+    border-color: var(--color-emerald);
+    box-shadow: 0 0 0 3px rgba(21, 107, 69, 0.14);
   }
 
   .card {
@@ -176,8 +217,8 @@
   }
 
   .chip:hover {
-    border-color: var(--color-teal);
-    color: var(--color-teal);
+    border-color: var(--color-emerald);
+    color: var(--color-emerald);
   }
 
   .chip-on {
@@ -213,7 +254,7 @@
   }
 
   .dots-bg {
-    background-image: radial-gradient(rgba(11, 122, 99, 0.16) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(21, 107, 69, 0.16) 1px, transparent 1px);
     background-size: 14px 14px;
   }
 
@@ -340,6 +381,426 @@
     animation: none;
   }
 }
+/* ===== Marketplace (AliExpress/Saruk style) utilities ===== */
+
+.market-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.market-card:hover {
+  border-color: var(--color-emerald);
+  box-shadow: 0 8px 24px -10px rgba(6, 21, 18, 0.18);
+}
+
+.market-card-image {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #f7faf9;
+  overflow: hidden;
+}
+
+.market-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: white;
+  padding: 0.4rem;
+  transition: transform 0.2s ease;
+}
+
+.market-card:hover .market-card-image img {
+  transform: scale(1.03);
+}
+
+.market-badge {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 10;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.25rem;
+  line-height: 1.2;
+}
+
+.market-badge-discount {
+  background: #ef4444;
+  color: #fff;
+}
+
+.market-badge-new {
+  background: var(--color-emerald);
+  color: #fff;
+  top: 1.45rem;
+}
+
+.market-badge-hot {
+  background: var(--color-amber);
+  color: var(--color-ink);
+}
+
+.market-card-info {
+  padding: 0.5rem 0.6rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.market-card-brand {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+}
+
+.market-card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.market-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-amberdeep);
+}
+
+.market-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #d64545;
+  letter-spacing: -0.01em;
+}
+
+.market-card-price .ksh {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.market-card-oldprice {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.market-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.market-card-sold {
+  color: var(--color-muted);
+}
+
+.market-card-ship {
+  color: var(--color-success);
+}
+
+.market-card-actions {
+  margin-top: 0.35rem;
+}
+
+.market-card-actions .btn {
+  height: 2rem;
+  width: 100%;
+  font-size: 0.72rem;
+  padding-inline: 0.5rem;
+  border-radius: 0.4rem;
+}
+
+/* Category tile row */
+.category-tiles {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-tiles::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tile {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 76px;
+  padding: 0.55rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  text-decoration: none;
+}
+
+.category-tile:hover {
+  background: var(--color-card);
+  border-color: var(--color-line);
+}
+
+.category-tile-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f7faf9, #eef4f2);
+  color: var(--color-emerald);
+  border: 1px solid var(--color-line);
+}
+
+.category-tile:hover .category-tile-icon {
+  background: #d8f0e2;
+  border-color: #b8d9c8;
+}
+
+.category-tile-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+
+.quick-strip {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
+
+.section-link {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--color-emerald);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.section-link:hover {
+  color: var(--color-emeralddeep);
+}
+
+/* Flash sale banner */
+.flash-sale {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  background: linear-gradient(90deg, #c2410c 0%, #ea580c 45%, #f59e0b 100%);
+  color: #fff;
+}
+
+.flash-sale-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  flex-wrap: wrap;
+}
+
+.flash-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.flash-label {
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.flash-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.flash-countdown {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.flash-unit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.75rem;
+  padding: 0 0.35rem;
+  border-radius: 0.3rem;
+  background: rgba(6, 21, 18, 0.85);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.flash-sep {
+  font-weight: 900;
+  opacity: 0.9;
+}
+
+.flash-cta {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #c2410c;
+  background: #fff;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.flash-cta:hover {
+  transform: translateY(-1px);
+}
+
+/* Sticky mobile filter bar */
+.sticky-filter-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-line);
+  padding-top: 0.5rem;
+}
+
+.filter-chip-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filter-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Deals rail */
+.deals-rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.deals-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.deal-item {
+  flex: 0 0 auto;
+  width: 150px;
+  border: 1px solid var(--color-line);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: var(--color-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.deal-item-image {
+  aspect-ratio: 1 / 1;
+  background: #f7faf9;
+}
+
+.deal-item-info {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deal-item-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.deal-item-price {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+.deal-item-old {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+/* ===== End marketplace utilities ===== */
+
 /* Mega menu panel entrance animation */
 @keyframes megaPanelIn {
   from {

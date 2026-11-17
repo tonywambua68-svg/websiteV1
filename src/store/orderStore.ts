@@ -44,7 +44,7 @@ export const useOrderStore = create<OrderStore>()(
 
       addOrder: (orderData) => {
         const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const orderNumber = `IMR-${new Date().getFullYear()}-${String(get().orders.length + 1).padStart(4, '0')}`;
+        const orderNumber = `ORM-${new Date().getFullYear()}-${String(get().orders.length + 1).padStart(4, '0')}`;
         
         const newOrder: Order = {
           ...orderData,
@@ -80,7 +80,7 @@ export const useOrderStore = create<OrderStore>()(
       },
     }),
     {
-      name: 'imara-orders',
+      name: 'oremitech-orders',
     }
   )
 );

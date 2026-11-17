@@ -1,4 +1,4 @@
-// Mega menu configuration for the Imara Tech header.
+// Mega menu configuration for the OREMITECH header.
 // Category / brand data is derived from src/data/products.json so the menu
 // always stays in sync with the catalogue.
 

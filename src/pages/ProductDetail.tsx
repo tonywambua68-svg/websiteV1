@@ -1,177 +1,537 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useProductStore } from '@/store/productStore';
-import { useCartStore } from '@/store/cartStore';
-import { ShoppingCart, Heart, Share2, Minus, Plus } from 'lucide-react';
-import NovaAssistant from '@/components/NovaAssistant';
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useProductStore } from '@/store/productStore'
+import { useCartStore } from '@/store/cartStore'
+import { useWishlistStore } from '@/store/wishlistStore'
+import { usePageMeta } from '@/components/Analytics'
+import type { CatalogueProduct } from '@/lib/domain'
+import ProductCard from '@/components/ProductCard'
+import ProductImageGallery from '@/components/ProductImageGallery'
+import {
+  formatKES,
+  availabilityLabel,
+  conditionLabel,
+  whatsappHref,
+  clampQuantity,
+  availableUnits,
+} from '@/lib/commerce'
+import DOMPurify from 'dompurify'
+import parse from 'html-react-parser'
+import {
+  Heart,
+  ShoppingCart,
+  Truck,
+  ShieldCheck,
+  CheckCircle2,
+  Phone,
+  ArrowLeft,
+  Minus,
+  Plus,
+  Share2,
+} from 'lucide-react'
+
+const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
 
 export default function ProductDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { fetchProduct, loading } = useProductStore();
-  const { addItem } = useCartStore();
-  const [product, setProduct] = useState<any>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const { slug, id } = useParams<{ slug?: string; id?: string }>()
+  const identifier = slug || id
+  const navigate = useNavigate()
+
+  const { fetchProductBySlug, fetchRelated } = useProductStore()
+  const addItem = useCartStore((state) => state.addItem)
+  const inWishlist = useWishlistStore((state) => (identifier ? state.has(identifier) : false))
+  const toggleWishlist = useWishlistStore((state) => state.toggle)
+
+  const [product, setProduct] = useState<CatalogueProduct | null>(null)
+  const [related, setRelated] = useState<CatalogueProduct[]>([])
+  const [loading, setLoading] = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  // SEO meta tags — updates document head when product data loads
+  const pageTitle = product ? (product.seo_title || product.name) : 'Product · OREMITECH'
+  const pageDescription = product ? (product.seo_description || product.description || '') : ''
+  usePageMeta(pageTitle, pageDescription)
 
   useEffect(() => {
-    if (id) {
-      loadProduct();
-    }
-  }, [id]);
+    let isMounted = true
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 
-  const loadProduct = async () => {
-    if (id) {
-      const p = await fetchProduct(id);
-      setProduct(p);
+    if (!identifier) {
+      setLoading(false)
+      return
     }
-  };
 
-  const handleAddToCart = () => {
-    if (product) {
-      addItem(product, quantity);
-    }
-  };
+    setLoading(true)
+    fetchProductBySlug(identifier).then((found) => {
+      if (!isMounted) return
+      setProduct(found)
+      if (found) {
+        fetchRelated(found).then((rel) => {
+          if (isMounted) setRelated(rel)
+        })
+      }
+      setLoading(false)
+    })
 
-  const handleBuyNow = () => {
-    if (product) {
-      addItem(product, quantity);
-      navigate('/cart');
+    return () => {
+      isMounted = false
     }
-  };
+  }, [identifier, fetchProductBySlug, fetchRelated])
+
+  // Inject Open Graph, canonical, and JSON-LD into document head for SEO
+  useEffect(() => {
+    if (!product) return
+
+    const head = document.head
+    const baseUrl = window.location.origin
+    const productUrl = `${baseUrl}/product/${product.slug}`
+    const title = product.seo_title || `${product.name} · OREMITECH`
+    const description = product.seo_description || product.description || ''
+    const socialTitle = product.seo_social_title || product.seo_title || product.name
+    const socialDescription = product.seo_social_description || product.seo_description || product.description || ''
+    const imageUrl = product.images?.[0]?.url || product.image_url || ''
+    const altText = product.images?.[0]?.alt || product.name
+
+    // Remove previously injected tags (by data-seo attribute)
+    head.querySelectorAll('[data-seo]').forEach((el) => el.remove())
+
+    const addMeta = (name: string, content: string, property?: boolean) => {
+      const meta = document.createElement('meta')
+      meta.setAttribute('data-seo', 'true')
+      if (property) {
+        meta.setAttribute('property', name)
+      } else {
+        meta.setAttribute('name', name)
+      }
+      meta.setAttribute('content', content)
+      head.appendChild(meta)
+    }
+
+    // Update document title
+    document.title = title
+
+    // Canonical link
+    const existingCanonical = head.querySelector('link[rel="canonical"][data-seo]')
+    if (!existingCanonical) {
+      const link = document.createElement('link')
+      link.setAttribute('rel', 'canonical')
+      link.setAttribute('href', productUrl)
+      link.setAttribute('data-seo', 'true')
+      head.appendChild(link)
+    }
+
+    // Meta tags
+    addMeta('description', description)
+    addMeta('robots', 'index,follow')
+
+    // Open Graph
+    addMeta('og:type', 'product', true)
+    addMeta('og:title', socialTitle, true)
+    addMeta('og:description', socialDescription, true)
+    addMeta('og:url', productUrl, true)
+    if (imageUrl) addMeta('og:image', imageUrl, true)
+    addMeta('og:price:amount', String(product.selling_price), true)
+    addMeta('og:price:currency', 'KES', true)
+
+    // Product-specific OG
+    addMeta('product:price:amount', String(product.selling_price), true)
+    addMeta('product:price:currency', 'KES', true)
+    addMeta('product:condition', product.laptop_condition, true)
+    addMeta('product:availability', product.availability, true)
+
+    // JSON-LD Product structured data
+    const jsonLd = document.createElement('script')
+    jsonLd.setAttribute('type', 'application/ld+json')
+    jsonLd.setAttribute('data-seo', 'true')
+    const offerAvailability =
+      product.availability === 'in_stock'
+        ? 'https://schema.org/InStock'
+        : product.availability === 'supplier'
+          ? 'https://schema.org/LimitedAvailability'
+          : 'https://schema.org/OutOfStock'
+    const structuredData: Record<string, unknown> = {
+      '@context': 'https://schema.org/',
+      '@type': 'Product',
+      name: product.name,
+      slug: product.slug,
+      image: imageUrl || null,
+      description: description || null,
+      brand: {
+        '@type': 'Brand',
+        name: product.brand_name || null,
+      },
+      offers: {
+        '@type': 'Offer',
+        price: String(product.selling_price),
+        priceCurrency: 'KES',
+        availability: offerAvailability,
+        url: productUrl,
+      },
+    }
+    if (product.comparison_price && product.comparison_price > product.selling_price) {
+      structuredData.aggregateOffer = {
+        '@type': 'AggregateOffer',
+        lowPrice: String(product.selling_price),
+        highPrice: String(product.comparison_price),
+        priceCurrency: 'KES',
+      }
+    }
+    if (product.model) structuredData.model = product.model
+    if (product.weight) structuredData.weight = product.weight
+    if (product.colour) structuredData.color = product.colour
+    jsonLd.textContent = JSON.stringify(structuredData)
+    head.appendChild(jsonLd)
+
+    return () => {
+      head.querySelectorAll('[data-seo]').forEach((el) => el.remove())
+    }
+  }, [product])
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading product...</p>
-        </div>
+      <div className="wrap py-16 text-center">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-teal border-t-transparent" />
+        <p className="mt-4 font-display text-sm font-semibold text-muted">Loading product specifications…</p>
       </div>
-    );
+    )
   }
 
   if (!product) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-          <p className="text-gray-600">The product you're looking for doesn't exist.</p>
-        </div>
+      <div className="wrap py-16 text-center">
+        <h1 className="font-display text-2xl font-bold text-ink">Product Not Found</h1>
+        <p className="mt-2 text-sm text-muted">
+          The requested product could not be found or may no longer be published.
+        </p>
+        <Link to="/shop" className="btn btn-emerald mt-6">
+          Browse All Products
+        </Link>
       </div>
-    );
+    )
   }
 
+  const maxStock = availableUnits(product.owned_available, product.supplier_available)
+  const isAvailable = maxStock > 0
+
+  const handleAddToCart = async () => {
+    if (!isAvailable) return
+    const success = await addItem(product, quantity)
+    if (success) {
+      setFeedback(`Added ${quantity} item(s) to your cart!`)
+      setTimeout(() => setFeedback(null), 3500)
+    } else {
+      setFeedback('Unable to add item. Check available stock.')
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if (!isAvailable) return
+    const success = await addItem(product, quantity)
+    if (success) {
+      navigate('/checkout')
+    }
+  }
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: product.name,
+        url: window.location.href,
+      }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const waText = `Hello OREMITECH, I am interested in: ${product.name} (Price: ${formatKES(product.selling_price)}). Is it currently available for delivery?`
+  const waLink = whatsappHref('254700000000', waText)
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Product Images */}
-        <div>
-          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
-            <img
-              src={product.images[selectedImage] || '/placeholder-product.jpg'}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.map((img: string, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 ${
-                    selectedImage === idx ? 'border-primary-600' : 'border-transparent'
-                  }`}
-                >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
+    <div className="wrap py-6">
+      {/* Breadcrumb / Back button */}
+      <div className="flex items-center justify-between pb-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to catalogue
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-teal"
+        >
+          <Share2 className="h-3.5 w-3.5" /> {copied ? 'Link copied!' : 'Share product'}
+        </button>
+      </div>
+
+      <div className="grid gap-10 lg:grid-cols-2">
+        {/* Left: Image Gallery */}
+        <div className="relative">
+          <ProductImageGallery
+            images={
+              product.images?.length > 0
+                ? product.images.map((img) => ({ url: img.url, alt: img.alt || product.name }))
+                : [{ url: product.image_url || PLACEHOLDER, alt: product.name }]
+            }
+          />
+          <button
+            type="button"
+            onClick={() => toggleWishlist(product.id)}
+            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-line bg-card shadow-sm transition"
+          >
+            <Heart className={`h-5 w-5 ${inWishlist ? 'fill-current text-error' : 'text-muted hover:text-ink'}`} />
+          </button>
         </div>
 
-        {/* Product Info */}
-        <div>
-          <div className="mb-4">
-            <span className="text-sm text-gray-500 uppercase">{product.brand}</span>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-3xl font-bold text-primary-600">${product.price.toFixed(2)}</span>
-              {product.oldPrice && (
-                <span className="text-xl text-gray-500 line-through">${product.oldPrice.toFixed(2)}</span>
+        {/* Right: Product Details & Actions */}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-teal/10 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-teal">
+              {product.brand_name || 'Verified Tech'}
+            </span>
+            <span className="rounded-full bg-mist px-2.5 py-0.5 text-[11px] font-semibold text-muted">
+              {conditionLabel(product.laptop_condition)}
+            </span>
+          </div>
+
+          <h1 className="mt-3 font-display text-2xl font-bold leading-tight text-ink md:text-3xl">
+            {product.name}
+          </h1>
+
+          <p className="mt-2 text-xs font-semibold text-muted">
+            Category: <span className="text-ink">{product.category_name}</span> · Model: <span className="text-ink">{product.model || product.name}</span>
+          </p>
+
+          {/* Pricing */}
+          <div className="mt-5 flex items-baseline gap-3 rounded-xl border border-line bg-card p-4">
+            <span className="font-display text-3xl font-extrabold text-ink">
+              {formatKES(product.selling_price)}
+            </span>
+            {product.comparison_price && product.comparison_price > product.selling_price && (
+              <span className="text-base text-muted line-through">
+                {formatKES(product.comparison_price)}
+              </span>
+            )}
+            <span className="ml-auto text-xs font-bold text-teal">
+              Tax Inclusive
+            </span>
+          </div>
+
+          {/* Availability Status */}
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <CheckCircle2 className={`h-4 w-4 ${isAvailable ? 'text-teal' : 'text-error'}`} />
+            <span className={`font-bold ${isAvailable ? 'text-teal' : 'text-error'}`}>
+              {availabilityLabel(product.availability)}
+            </span>
+            {isAvailable && (
+              <span className="text-muted">
+                ({product.owned_available > 0 ? `${product.owned_available} units at Oremitech` : 'Fulfilled from verified supplier'})
+              </span>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="mt-5 border-t border-line pt-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">Overview</h2>
+            <div className="mt-1.5 prose prose-sm text-ink/80 max-w-none">
+              {product.description ? (
+                parse(DOMPurify.sanitize(product.description), {
+                  replace: (domNode: any) => {
+                    if (domNode.tagName === 'A') {
+                      return { ...domNode, target: '_blank', rel: 'noopener noreferrer' }
+                    }
+                    return domNode
+                  },
+                })
+              ) : (
+                <p className="text-sm text-muted">No description available.</p>
               )}
             </div>
           </div>
 
-          <div className="mb-6">
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-              product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-            </span>
-          </div>
+          {/* Quantity and Actions */}
+          <div className="mt-6 space-y-3 border-t border-line pt-5">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold text-muted">Quantity:</span>
+              <div className="flex items-center rounded-lg border border-line bg-card">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => clampQuantity(q - 1, maxStock))}
+                  disabled={quantity <= 1}
+                  className="grid h-9 w-9 place-items-center hover:bg-mist disabled:opacity-40"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-10 text-center font-bold text-ink">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => clampQuantity(q + 1, maxStock))}
+                  disabled={quantity >= maxStock}
+                  className="grid h-9 w-9 place-items-center hover:bg-mist disabled:opacity-40"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <span className="text-[11px] text-muted">Max {Math.min(10, maxStock)} per order</span>
+            </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Description</h3>
-            <p className="text-gray-600">{product.description}</p>
-          </div>
-
-          {/* Quantity Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-            <div className="flex items-center space-x-4">
+            <div className="grid gap-3 pt-2 sm:grid-cols-2">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!isAvailable}
+                className="btn btn-amber !h-12 w-full font-bold shadow-sm disabled:opacity-50"
               >
-                <Minus className="w-4 h-4" />
+                <ShoppingCart className="h-4 w-4" /> Add to Cart
               </button>
-              <span className="text-lg font-semibold w-12 text-center">{quantity}</span>
+
               <button
-                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                type="button"
+                onClick={handleBuyNow}
+                disabled={!isAvailable}
+                className="btn btn-outline !h-12 w-full font-bold shadow-sm disabled:opacity-50"
               >
-                <Plus className="w-4 h-4" />
+                Buy Now
               </button>
             </div>
+
+            {feedback && (
+              <div className="rounded-lg border border-teal/30 bg-mint/40 p-3 text-center text-xs font-bold text-tealdeep animate-fade">
+                {feedback}
+              </div>
+            )}
+
+            {waLink && (
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-outline !h-11 w-full gap-2 text-xs font-bold"
+              >
+                <Phone className="h-4 w-4 text-emerald-600" /> Inquire via WhatsApp
+              </a>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-            >
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              Add to Cart
-            </button>
-            <button
-              onClick={handleBuyNow}
-              disabled={product.stock === 0}
-              className="flex-1 bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              Buy Now
-            </button>
-          </div>
-
-          {/* Additional Actions */}
-          <div className="flex gap-4">
-            <button className="flex items-center gap-2 text-gray-600 hover:text-primary-600">
-              <Heart className="w-5 h-5" />
-              Add to Wishlist
-            </button>
-            <button className="flex items-center gap-2 text-gray-600 hover:text-primary-600">
-              <Share2 className="w-5 h-5" />
-              Share
-            </button>
+          {/* Guarantees */}
+          <div className="mt-8 grid grid-cols-2 gap-3 rounded-xl border border-line bg-card p-4 text-xs">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-teal shrink-0" />
+              <span>Doorstep delivery nationwide in Kenya</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-teal shrink-0" />
+              <span>{product.warranty || 'Physical warranty verification included'}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Nova Assistant for product-specific help */}
-      {product && <NovaAssistant product={product} />}
+      {/* Specifications Table */}
+      <section className="mt-14 rounded-2xl border border-line bg-card p-6 shadow-sm">
+        <h2 className="font-display text-lg font-bold text-ink">Technical Specifications</h2>
+        <div className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          {product.processor_model && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Processor</span>
+              <span className="font-bold text-ink">{product.processor_model}</span>
+            </div>
+          )}
+          {product.ram && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">RAM</span>
+              <span className="font-bold text-ink">{product.ram} {product.ram_type || ''}</span>
+            </div>
+          )}
+          {product.storage_capacity && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Storage</span>
+              <span className="font-bold text-ink">{product.storage_capacity} {product.storage_type || ''}</span>
+            </div>
+          )}
+          {product.screen_size && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Display</span>
+              <span className="font-bold text-ink">{product.screen_size}</span>
+            </div>
+          )}
+          {product.graphics && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Graphics</span>
+              <span className="font-bold text-ink">{product.graphics}</span>
+            </div>
+          )}
+          {product.operating_system && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Operating System</span>
+              <span className="font-bold text-ink">{product.operating_system}</span>
+            </div>
+          )}
+          {product.battery_condition && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Battery Condition</span>
+              <span className="font-bold text-ink">{product.battery_condition}</span>
+            </div>
+          )}
+          {product.keyboard_layout && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Keyboard</span>
+              <span className="font-bold text-ink">{product.keyboard_layout}</span>
+            </div>
+          )}
+          {product.warranty && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Warranty</span>
+              <span className="font-bold text-ink">{product.warranty}</span>
+            </div>
+          )}
+          {product.weight && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Weight</span>
+              <span className="font-bold text-ink">{product.weight}</span>
+            </div>
+          )}
+          {product.colour && (
+            <div className="flex justify-between border-b border-line/60 py-2 text-xs">
+              <span className="font-semibold text-muted">Colour</span>
+              <span className="font-bold text-ink">{product.colour}</span>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Related Products */}
+      {related.length > 0 && (
+        <section className="mt-14 border-t border-line pt-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-xl font-bold text-ink">Related Hardware</h2>
+              <p className="mt-1 text-xs text-muted">Similar laptops and complementary equipment.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="text-xs font-bold text-teal hover:underline"
+            >
+              View all →
+            </button>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {related.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
-  );
+  )
 }
+
