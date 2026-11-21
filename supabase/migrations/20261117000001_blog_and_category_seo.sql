@@ -75,20 +75,24 @@ alter table public.blog_categories enable row level security;
 alter table public.blog_articles enable row level security;
 
 -- Public read for published articles and active categories
-create policy if not exists blog_categories_public_read on public.blog_categories
+drop policy if exists blog_categories_public_read on public.blog_categories;
+create policy blog_categories_public_read on public.blog_categories
   for select using (is_active = true);
 
-create policy if not exists blog_articles_public_read on public.blog_articles
+drop policy if exists blog_articles_public_read on public.blog_articles;
+create policy blog_articles_public_read on public.blog_articles
   for select using (
     publication_status = 'published'
     and (scheduled_at is null or scheduled_at <= now())
   );
 
 -- Staff can manage all blog content
-create policy if not exists blog_staff_manage on public.blog_categories
+drop policy if exists blog_staff_manage on public.blog_categories;
+create policy blog_staff_manage on public.blog_categories
   for all using (public.is_staff());
 
-create policy if not exists blog_articles_staff_manage on public.blog_articles
+drop policy if exists blog_articles_staff_manage on public.blog_articles;
+create policy blog_articles_staff_manage on public.blog_articles
   for all using (public.is_staff());
 
 -- ---------------------------------------------------------------------------
@@ -105,10 +109,12 @@ begin
 end;
 $$;
 
-create trigger if not exists blog_categories_updated_at
+drop trigger if exists blog_categories_updated_at on public.blog_categories;
+create trigger blog_categories_updated_at
   before update on public.blog_categories
   for each row execute function public.touch_updated_at();
 
-create trigger if not exists blog_articles_updated_at
+drop trigger if exists blog_articles_updated_at on public.blog_articles;
+create trigger blog_articles_updated_at
   before update on public.blog_articles
   for each row execute function public.touch_updated_at();

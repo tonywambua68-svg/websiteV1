@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import Image from '@tiptap/extension-image'
 import { TableKit } from '@tiptap/extension-table'
 import DOMPurify from 'dompurify'
 import parse from 'html-react-parser'
@@ -17,6 +18,7 @@ import {
   Maximize,
   Minimize,
   Eye,
+  ImagePlus,
 } from 'lucide-react'
 
 const TOOLBAR_HEIGHT = 'h-9'
@@ -51,12 +53,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [1, 2, 3],
+          levels: [2, 3],
         },
       }),
       TableKit.configure({
         table: {
           resizable: false,
+        },
+      }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: {
+          loading: 'lazy',
+          decoding: 'async',
         },
       }),
     ],
@@ -177,6 +187,21 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         aria-label="Insert link"
       >
         <Link className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const src = window.prompt('Image URL:')
+          if (!src) return
+          const alt = window.prompt('Describe the image (alt text):') || ''
+          editor?.chain().focus().setImage({ src, alt }).run()
+        }}
+        disabled={!editor || disabled}
+        className="flex w-8 items-center justify-center rounded-sm text-xs text-muted hover:bg-mist"
+        title="Insert image"
+        aria-label="Insert image"
+      >
+        <ImagePlus className="h-4 w-4" />
       </button>
       <div className="h-4 w-px bg-line mx-1" />
       <button

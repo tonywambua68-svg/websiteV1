@@ -49,8 +49,7 @@ app.get('/sitemap.xml', async (req, res) => {
     try {
       const { data: products, error } = await supabase
         .from('catalogue_products')
-        .select('slug, updated_at')
-        .eq('publication_status', 'published');
+        .select('slug, published_at');
 
       if (!error && products) {
         products.forEach((p) => {
@@ -58,7 +57,7 @@ app.get('/sitemap.xml', async (req, res) => {
             loc: `${SITE_URL}/product/${p.slug}`,
             changefreq: 'weekly',
             priority: '0.7',
-            lastmod: p.updated_at,
+            lastmod: p.published_at,
           });
         });
       }

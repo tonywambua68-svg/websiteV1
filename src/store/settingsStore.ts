@@ -18,11 +18,13 @@ interface SettingsState {
   settings: PublicSettings
   loaded: boolean
   load: () => Promise<void>
+  setSettings: (settings: PublicSettings) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: fallback,
   loaded: false,
+  setSettings: (settings) => set({ settings: { ...fallback, ...settings }, loaded: true }),
   load: async () => {
     const supabase = getSupabase()
     if (!supabase) {

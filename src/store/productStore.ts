@@ -3,12 +3,7 @@ import { getSupabase } from '@/lib/supabase'
 import { asCatalogue, PAGE_SIZE, type CatalogueProduct, type ShopQuery } from '@/lib/domain'
 import { errorText, searchPattern } from '@/lib/commerce'
 import { FALLBACK_CATALOGUE } from '@/data/fallbackCatalogue'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isUuid(value: string): boolean {
-  return UUID_RE.test(value.trim())
-}
+import { isProductUuid } from '@/lib/productIds'
 
 interface ProductState {
   products: CatalogueProduct[]
@@ -142,23 +137,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
           loading: false,
         })
       } else {
-        // If Supabase table is empty yet, fallback to seed catalogue
-        const filtered = filterFallback(FALLBACK_CATALOGUE, filters)
         set({
-          products: filtered.slice(from, from + PAGE_SIZE),
-          allProducts: FALLBACK_CATALOGUE,
-          total: filtered.length,
+          products: [],
+          allProducts: [],
+          total: 0,
           page,
           loading: false,
+          error: null,
         })
       }
     } catch (error) {
-      // Graceful fallback to local seed data
-      const filtered = filterFallback(FALLBACK_CATALOGUE, filters)
       set({
-        products: filtered.slice(from, from + PAGE_SIZE),
-        allProducts: FALLBACK_CATALOGUE,
-        total: filtered.length,
+        products: [],
+        allProducts: [],
+        total: 0,
         page,
         loading: false,
         error: errorText(error),
@@ -174,7 +166,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     if (supabase) {
       try {
         const query = supabase.from('catalogue_products').select('*')
-        if (isUuid(cleanId)) {
+        if (isProductUuid(cleanId)) {
           query.eq('id', cleanId)
         } else {
           query.eq('slug', cleanId)
@@ -186,6 +178,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       } catch (err) {
         console.warn('Supabase product fetch fallback:', err)
       }
+      return null
     }
 
     // Fallback search by slug or ID
@@ -215,6 +208,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
       } catch (err) {
         console.warn('Supabase related products fallback:', err)
       }
+      return []
     }
     return FALLBACK_CATALOGUE.filter(
       (p) => (p.category_slug === product.category_slug || p.brand_slug === product.brand_slug) && p.id !== product.id
@@ -233,12 +227,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
           .select('*')
           .ilike('search_text', pattern)
           .limit(8)
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
         }
       } catch (err) {
-        console.warn('Supabase search fallback:', err)
+        console.warn('Supabase search unavailable:', err)
       }
+      return []
     }
 
     const q = query.toLowerCase().trim()
@@ -252,12 +247,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
     if (supabase) {
       try {
         const { data, error } = await applyFilters(supabase.from('catalogue_products').select('*'), filters).limit(limit)
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
         }
       } catch (err) {
-        console.warn('Supabase section fetch fallback:', err)
+        console.warn('Supabase section fetch unavailable:', err)
       }
+      return []
     }
     return filterFallback(FALLBACK_CATALOGUE, filters).slice(0, limit)
   },

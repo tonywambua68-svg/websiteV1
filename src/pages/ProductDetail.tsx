@@ -4,6 +4,7 @@ import { useProductStore } from '@/store/productStore'
 import { useCartStore } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { usePageMeta } from '@/components/Analytics'
+import { useSettingsStore } from '@/store/settingsStore'
 import type { CatalogueProduct } from '@/lib/domain'
 import ProductCard from '@/components/ProductCard'
 import ProductImageGallery from '@/components/ProductImageGallery'
@@ -33,6 +34,7 @@ import {
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
 
 export default function ProductDetail() {
+  const supportPhone = useSettingsStore((state) => state.settings.whatsapp_e164)
   const { slug, id } = useParams<{ slug?: string; id?: string }>()
   const identifier = slug || id
   const navigate = useNavigate()
@@ -248,7 +250,7 @@ export default function ProductDetail() {
   }
 
   const waText = `Hello OREMITECH, I am interested in: ${product.name} (Price: ${formatKES(product.selling_price)}). Is it currently available for delivery?`
-  const waLink = whatsappHref('254700000000', waText)
+  const waLink = supportPhone ? whatsappHref(supportPhone, waText) : null
 
   return (
     <div className="wrap py-6">

@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import AdminLayout from './AdminLayout'
 import { getSupabase } from '@/lib/supabase'
-import { useProductStore } from '@/store/productStore'
 import { useAuthStore } from '@/store/authStore'
 import { slugify } from '@/lib/commerce'
+import { generateProductSeo } from '@/lib/productSeo'
 import {
   ArrowLeft,
   Save,
@@ -24,17 +24,57 @@ import {
   Maximize,
   ImageMinus,
   ImagePlus,
+  PackageCheck,
 } from 'lucide-react'
 import RichTextEditor from '@/components/editor/RichTextEditor'
 import { SeoPreview, SeoCompletenessIndicator } from '@/components/seo/SeoComponents'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
 
+function withSeoDefaults(form: {
+  name: string
+  model: string
+  brand_name: string
+  laptop_condition: string
+  processor_model: string
+  ram: string
+  storage_capacity: string
+  category_slug: string
+  warranty: string
+  slug: string
+  seo_title: string
+  seo_description: string
+  seo_focus_keyword: string
+  seo_secondary_keywords: string
+  seo_social_title: string
+  seo_social_description: string
+}) {
+  const suggested = generateProductSeo({
+    name: form.name,
+    model: form.model,
+    brand: form.brand_name,
+    condition: form.laptop_condition,
+    processor: form.processor_model,
+    ram: form.ram,
+    storage: form.storage_capacity,
+    category: form.category_slug.replace(/-/g, ' '),
+    warranty: form.warranty,
+  })
+  return {
+    slug: form.slug.trim() || suggested.slug,
+    seo_title: form.seo_title.trim() || suggested.seo_title,
+    seo_description: form.seo_description.trim() || suggested.seo_description,
+    seo_focus_keyword: form.seo_focus_keyword.trim() || suggested.seo_focus_keyword,
+    seo_secondary_keywords: form.seo_secondary_keywords.trim() || suggested.seo_secondary_keywords,
+    seo_social_title: form.seo_social_title.trim() || suggested.seo_social_title,
+    seo_social_description: form.seo_social_description.trim() || suggested.seo_social_description,
+  }
+}
+
 export default function AdminProductForm() {
   const { id } = useParams<{ id?: string }>()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
-  const { fetchProductBySlug } = useProductStore()
 
   const [loading, setLoading] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
@@ -42,26 +82,22 @@ export default function AdminProductForm() {
   const { user } = useAuthStore()
   const isOwner = user?.role === 'owner'
   const [newProdId, setNewProdId] = useState<string | null>(null)
+  const [productVerification, setProductVerification] = useState<{
+    id: string
+    verified_at: string | null
+    condition: string | null
+    verified_price: number | null
+    notes: string | null
+  } | null>(null)
+  const [verifiedPrice, setVerifiedPrice] = useState('')
+  const [verifiedCondition, setVerifiedCondition] = useState('new')
+  const [verificationNotes, setVerificationNotes] = useState('')
+  const [inspectionConfirmed, setInspectionConfirmed] = useState(false)
+  const [savingVerification, setSavingVerification] = useState(false)
 
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; slug: string }>>([
-    { id: 'cat-1', name: 'Laptops', slug: 'laptops' },
-    { id: 'cat-2', name: 'Business Laptops', slug: 'business-laptops' },
-    { id: 'cat-3', name: 'Gaming Laptops', slug: 'gaming-laptops' },
-    { id: 'cat-4', name: 'Student Laptops', slug: 'student-laptops' },
-    { id: 'cat-5', name: 'Workstations', slug: 'workstations' },
-    { id: 'cat-6', name: 'Computer Accessories', slug: 'computer-accessories' },
-    { id: 'cat-7', name: 'Monitors', slug: 'monitors' },
-    { id: 'cat-8', name: 'Storage Devices', slug: 'storage-devices' },
-  ])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; slug: string }>>([])
 
-  const [brands, setBrands] = useState<Array<{ id: string; name: string; slug: string }>>([
-    { id: 'b-1', name: 'HP', slug: 'hp' },
-    { id: 'b-2', name: 'Dell', slug: 'dell' },
-    { id: 'b-3', name: 'Lenovo', slug: 'lenovo' },
-    { id: 'b-4', name: 'Apple', slug: 'apple' },
-    { id: 'b-5', name: 'ASUS', slug: 'asus' },
-    { id: 'b-6', name: 'Acer', slug: 'acer' },
-  ])
+  const [brands, setBrands] = useState<Array<{ id: string; name: string; slug: string }>>([])
 
   const [form, setForm] = useState({
     name: '',
@@ -107,66 +143,120 @@ export default function AdminProductForm() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const supabase = getSupabase()
-    if (supabase) {
-      supabase.from('categories').select('id, name, slug').then(({ data }) => {
-        if (data && data.length > 0) setCategories(data)
-      })
-      supabase.from('brands').select('id, name, slug').then(({ data }) => {
-        if (data && data.length > 0) setBrands(data)
-      })
-    }
+    let active = true
+    const loadForm = async () => {
+      const supabase = getSupabase()
+      if (!supabase) {
+        setError('The store database is not configured.')
+        return
+      }
 
-    if (id) {
+      const [categoryResult, brandResult] = await Promise.all([
+        supabase.from('categories').select('id, name, slug').order('name'),
+        supabase.from('brands').select('id, name, slug').order('name'),
+      ])
+      if (!active) return
+      if (categoryResult.error) setError(`Categories could not be loaded: ${categoryResult.error.message}`)
+      if (brandResult.error) setError(`Brands could not be loaded: ${brandResult.error.message}`)
+      const loadedCategories = categoryResult.data ?? []
+      const loadedBrands = brandResult.data ?? []
+      setCategories(loadedCategories)
+      setBrands(loadedBrands)
+      if (!id) {
+        setForm((previous) => ({
+          ...previous,
+          category_slug: loadedCategories.find((category) => category.slug === previous.category_slug)?.slug
+            || loadedCategories[0]?.slug
+            || '',
+          brand_name: loadedBrands.find((brand) => brand.name.toLowerCase() === previous.brand_name.toLowerCase())?.name
+            || loadedBrands[0]?.name
+            || '',
+        }))
+        return
+      }
+
       setLoading(true)
-      fetchProductBySlug(id).then((p) => {
-        if (p) {
-          setForm({
-            name: p.name,
-            slug: p.slug,
-            brand_name: p.brand_name || 'HP',
-            category_slug: p.category_slug,
-            model: p.model || '',
-            description: p.description,
-            selling_price: String(p.selling_price),
-            comparison_price: p.comparison_price ? String(p.comparison_price) : '',
-            purchase_cost: '',
-            laptop_condition: p.laptop_condition || 'new',
-            warranty: p.warranty || '1 Year Warranty',
-            processor_manufacturer: p.processor_manufacturer || 'Intel',
-            processor_model: p.processor_model || '',
-            ram: p.ram || '16GB',
-            ram_type: p.ram_type || 'DDR4',
-            storage_capacity: p.storage_capacity || '512GB',
-            storage_type: p.storage_type || 'SSD',
-            screen_size: p.screen_size || '',
-            graphics: p.graphics || '',
-            operating_system: p.operating_system || 'Windows 11 Pro',
-            battery_condition: p.battery_condition || 'Healthy',
-            keyboard_layout: p.keyboard_layout || 'Standard QWERTY',
-            weight: p.weight || '1.4 kg',
-            colour: p.colour || 'Silver',
-            featured: p.featured,
-            publication_status: 'draft',
-            images: p.images?.length
-              ? p.images.map((img) => ({ url: img.url, alt: img.alt || p.name }))
-              : [{ url: '/images/products/laptop-placeholder.svg', alt: p.name || 'Product image' }],
-            initial_stock: String(p.owned_available || 5),
-            // SEO fields from database
-            seo_title: p.seo_title || '',
-            seo_description: p.seo_description || '',
-            seo_focus_keyword: p.seo_focus_keyword || '',
-            seo_secondary_keywords: p.seo_secondary_keywords || '',
-            seo_social_title: p.seo_social_title || '',
-            seo_social_description: p.seo_social_description || '',
-            pendingUploads: [],
-            imageUploading: false,
-          })
-        }
+      const [productResult, verificationResult] = await Promise.all([
+        supabase.from('products').select(`
+          *, categories(name, slug), brands(name), product_images(url, alt, sort_order, is_primary),
+          inventory_balances(owned_qty, reserved_qty, supplier_qty, supplier_reserved_qty)
+        `).eq('id', id).maybeSingle(),
+        supabase.from('product_verifications')
+          .select('id, verified_at, condition, verified_price, notes')
+          .eq('product_id', id)
+          .eq('result', 'verified')
+          .order('verified_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ])
+      if (!active) return
+      if (productResult.error || !productResult.data) {
+        setError(productResult.error?.message || 'This product could not be loaded for editing.')
         setLoading(false)
+        return
+      }
+      if (verificationResult.error) {
+        setError(`Product inspection could not be loaded: ${verificationResult.error.message}`)
+      }
+
+      const product = productResult.data as any
+      const category = Array.isArray(product.categories) ? product.categories[0] : product.categories
+      const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands
+      const inventory = Array.isArray(product.inventory_balances) ? product.inventory_balances[0] : product.inventory_balances
+      const images = (product.product_images ?? [])
+        .slice()
+        .sort((a: any, b: any) => Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary)) || a.sort_order - b.sort_order)
+        .map((image: any) => ({ url: image.url, alt: image.alt || product.name }))
+
+      setForm({
+        name: product.name,
+        slug: product.slug,
+        brand_name: brand?.name || '',
+        category_slug: category?.slug || '',
+        model: product.model || '',
+        description: product.description || '',
+        selling_price: String(product.selling_price),
+        comparison_price: product.comparison_price ? String(product.comparison_price) : '',
+        purchase_cost: '',
+        laptop_condition: product.laptop_condition || 'unspecified',
+        warranty: product.warranty || '',
+        processor_manufacturer: product.processor_manufacturer || '',
+        processor_model: product.processor_model || '',
+        ram: product.ram || '',
+        ram_type: product.ram_type || '',
+        storage_capacity: product.storage_capacity || '',
+        storage_type: product.storage_type || '',
+        screen_size: product.screen_size || '',
+        graphics: product.graphics || '',
+        operating_system: product.operating_system || '',
+        battery_condition: product.battery_condition || '',
+        keyboard_layout: product.keyboard_layout || '',
+        weight: product.weight || '',
+        colour: product.colour || '',
+        featured: Boolean(product.featured),
+        publication_status: product.publication_status || 'draft',
+        images: images.length ? images : [{ url: PLACEHOLDER, alt: product.name || 'Product image' }],
+        initial_stock: String(Math.max(0, Number(inventory?.owned_qty || 0) - Number(inventory?.reserved_qty || 0))),
+        seo_title: product.seo_title || '',
+        seo_description: product.seo_description || '',
+        seo_focus_keyword: product.seo_focus_keyword || '',
+        seo_secondary_keywords: product.seo_secondary_keywords || '',
+        seo_social_title: product.seo_social_title || '',
+        seo_social_description: product.seo_social_description || '',
+        pendingUploads: [],
+        imageUploading: false,
       })
+      if (verificationResult.data) {
+        setProductVerification(verificationResult.data)
+        setVerifiedPrice(verificationResult.data.verified_price == null ? '' : String(verificationResult.data.verified_price))
+        setVerifiedCondition(verificationResult.data.condition || 'new')
+        setVerificationNotes(verificationResult.data.notes || '')
+      }
+      setLoading(false)
     }
-  }, [id, fetchProductBySlug])
+    void loadForm()
+    return () => { active = false }
+  }, [id])
 
   const handleNameChange = (nameVal: string) => {
     setForm((prev) => ({
@@ -174,6 +264,14 @@ export default function AdminProductForm() {
       name: nameVal,
       slug: isEdit ? prev.slug : slugify(nameVal),
     }))
+  }
+
+  const generateSeoNow = () => {
+    setForm((previous) => ({ ...previous, ...withSeoDefaults(previous) }))
+    setMessage('SEO suggestions filled in. Review and edit them before saving.')
+    window.requestAnimationFrame(() => {
+      document.getElementById('product-seo')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   const addImage = () => {
@@ -276,19 +374,24 @@ export default function AdminProductForm() {
 
     setLoading(true)
     const supabase = getSupabase()
+    if (!supabase) {
+      setError('Product was not saved because the store database is not configured.')
+      setLoading(false)
+      return
+    }
 
     try {
-      if (supabase) {
-        // Find category ID
-        const matchedCat = categories.find((c) => c.slug === form.category_slug) || categories[0]
-        const matchedBrand = brands.find((b) => b.name.toLowerCase() === form.brand_name.toLowerCase())
+      const matchedCat = categories.find((c) => c.slug === form.category_slug)
+      if (!matchedCat) throw new Error('Choose a valid product category before saving.')
+      const matchedBrand = brands.find((b) => b.name.toLowerCase() === form.brand_name.toLowerCase())
+      const seo = withSeoDefaults(form)
 
-        if (isEdit && id) {
+      if (isEdit && id) {
           const { error: updErr } = await supabase
             .from('products')
             .update({
               name: form.name.trim(),
-              slug: form.slug.trim(),
+              slug: form.slug.trim() || seo.slug,
               brand_id: matchedBrand?.id || null,
               category_id: matchedCat.id,
               model: form.model.trim(),
@@ -312,19 +415,20 @@ export default function AdminProductForm() {
               colour: form.colour,
               featured: form.featured,
               publication_status: form.publication_status,
-              seo_title: form.seo_title.trim() || null,
-              seo_description: form.seo_description.trim() || null,
-              seo_focus_keyword: form.seo_focus_keyword.trim() || null,
-              seo_secondary_keywords: form.seo_secondary_keywords.trim() || null,
-              seo_social_title: form.seo_social_title.trim() || null,
-              seo_social_description: form.seo_social_description.trim() || null,
+              seo_title: seo.seo_title,
+              seo_description: seo.seo_description,
+              seo_focus_keyword: seo.seo_focus_keyword,
+              seo_secondary_keywords: seo.seo_secondary_keywords,
+              seo_social_title: seo.seo_social_title,
+              seo_social_description: seo.seo_social_description,
             })
             .eq('id', id)
 
           if (updErr) throw updErr
 
           // Replace all product images (existing + new uploads)
-          await supabase.from('product_images').delete().eq('product_id', id)
+          const { error: deleteImagesError } = await supabase.from('product_images').delete().eq('product_id', id)
+          if (deleteImagesError) throw deleteImagesError
           const imageRows = form.images
             .filter((img) => img.url && img.url.startsWith('http'))
             .map((img, idx) => ({
@@ -334,17 +438,19 @@ export default function AdminProductForm() {
               sort_order: idx,
             }))
           if (imageRows.length > 0) {
-            await supabase.from('product_images').insert(imageRows)
+            const { error: imageInsertError } = await supabase.from('product_images').insert(imageRows)
+            if (imageInsertError) throw imageInsertError
           }
 
+          setForm((previous) => ({ ...previous, ...seo }))
           setMessage('Product updated successfully!')
-        } else {
+      } else {
           // Create product in database
           const { data: newProd, error: insertErr } = await supabase
             .from('products')
             .insert({
               name: form.name.trim(),
-              slug: form.slug.trim() || slugify(form.name),
+              slug: form.slug.trim() || seo.slug || slugify(form.name),
               brand_id: matchedBrand?.id || null,
               category_id: matchedCat.id,
               model: form.model.trim(),
@@ -368,12 +474,12 @@ export default function AdminProductForm() {
               colour: form.colour,
               featured: form.featured,
               publication_status: form.publication_status,
-              seo_title: form.seo_title.trim() || null,
-              seo_description: form.seo_description.trim() || null,
-              seo_focus_keyword: form.seo_focus_keyword.trim() || null,
-              seo_secondary_keywords: form.seo_secondary_keywords.trim() || null,
-              seo_social_title: form.seo_social_title.trim() || null,
-              seo_social_description: form.seo_social_description.trim() || null,
+              seo_title: seo.seo_title,
+              seo_description: seo.seo_description,
+              seo_focus_keyword: seo.seo_focus_keyword,
+              seo_secondary_keywords: seo.seo_secondary_keywords,
+              seo_social_title: seo.seo_social_title,
+              seo_social_description: seo.seo_social_description,
             })
             .select('id')
             .single()
@@ -386,12 +492,13 @@ export default function AdminProductForm() {
             // Save initial stock via the adjust_stock RPC (updates balance + records movement)
             const stockQty = Number(form.initial_stock) || 0
             if (stockQty > 0) {
-              await supabase.rpc('adjust_stock', {
+              const { error: stockError } = await supabase.rpc('adjust_stock', {
                 p_product_id: newProd.id,
                 p_bucket: 'owned',
                 p_delta: stockQty,
                 p_notes: 'Initial inventory entry',
               })
+              if (stockError) throw new Error(`Product saved as a draft, but initial stock was not recorded: ${stockError.message}`)
             }
 
             // Save images
@@ -404,14 +511,13 @@ export default function AdminProductForm() {
                 sort_order: idx,
               }))
             if (imageRows.length > 0) {
-              await supabase.from('product_images').insert(imageRows)
+              const { error: imageError } = await supabase.from('product_images').insert(imageRows)
+              if (imageError) throw new Error(`Product saved as a draft, but its images were not saved: ${imageError.message}`)
             }
           }
 
-          setMessage('New product created successfully! It starts as Draft — use Publish to Website to make it live.')
-        }
-      } else {
-          setMessage('Product saved in memory session.')
+          setMessage('Product saved as a draft. Record its physical inspection before an owner can approve and publish it.')
+          setForm((previous) => ({ ...previous, ...seo }))
       }
     } catch (err: any) {
       setError(err.message || 'Error saving product.')
@@ -423,6 +529,10 @@ export default function AdminProductForm() {
     const targetId = isEdit ? id : newProdId
     if (!targetId) {
       setError('No product ID available to publish.')
+      return
+    }
+    if (!productVerification) {
+      setError('Record the physical inspection for this product before approval or publication.')
       return
     }
     setError(null)
@@ -464,6 +574,57 @@ export default function AdminProductForm() {
     }
   }
 
+  const handleRecordPhysicalVerification = async () => {
+    const targetId = isEdit ? id : newProdId
+    const actualPrice = Number(verifiedPrice)
+    if (!targetId) {
+      setError('Save the product as a draft before recording its physical inspection.')
+      return
+    }
+    if (!inspectionConfirmed || !Number.isFinite(actualPrice) || actualPrice <= 0 || verificationNotes.trim().length < 10) {
+      setError('Confirm the hands-on inspection, enter the verified price, and add at least 10 characters of inspection notes.')
+      return
+    }
+    const supabase = getSupabase()
+    if (!supabase || !user?.id) {
+      setError('The store database is unavailable. The inspection was not recorded.')
+      return
+    }
+
+    setError(null)
+    setSavingVerification(true)
+    try {
+      const { data, error: verificationError } = await supabase
+        .from('product_verifications')
+        .insert({
+          product_id: targetId,
+          verified_price: actualPrice,
+          condition: verifiedCondition,
+          verified_specs: {
+            model: form.model.trim(),
+            processor: form.processor_model.trim(),
+            ram: form.ram.trim(),
+            storage: form.storage_capacity.trim(),
+            battery_condition: form.battery_condition.trim(),
+          },
+          notes: verificationNotes.trim(),
+          result: 'verified',
+          verified_by: user.id,
+          verified_at: new Date().toISOString(),
+        })
+        .select('id, verified_at, condition, verified_price, notes')
+        .single()
+      if (verificationError) throw verificationError
+      setProductVerification(data)
+      setInspectionConfirmed(false)
+      setMessage('Physical inspection recorded. The product is ready for owner approval and publication.')
+    } catch {
+      setError('The physical inspection could not be saved. Check your staff permissions and try again.')
+    } finally {
+      setSavingVerification(false)
+    }
+  }
+
   return (
     <AdminLayout
       title={isEdit ? 'Edit Laptop Product' : 'Add New Laptop Product'}
@@ -486,6 +647,70 @@ export default function AdminProductForm() {
             {message}
           </div>
         )}
+
+        {/* Keep the publishing requirement visible without scrolling to the hardware section. */}
+        <div id="physical-product-verification" className={`scroll-mt-6 rounded-xl border p-6 shadow-xs ${productVerification ? 'border-teal/30 bg-mint/20' : 'border-amber/40 bg-amber/5'}`}>
+          <h2 className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wider text-ink">
+            <PackageCheck className={`h-5 w-5 ${productVerification ? 'text-teal' : 'text-amberdeep'}`} />
+            Required before publishing: Physical Product Verification
+          </h2>
+          {productVerification ? (
+            <div className="mt-3 rounded-lg border border-teal/30 bg-mint/30 p-4 text-sm">
+              <p className="font-bold text-tealdeep">Physical inspection recorded</p>
+              <p className="mt-1 text-xs text-muted">
+                Condition: {productVerification.condition || 'Not recorded'} · Verified price: {productVerification.verified_price == null ? 'Not recorded' : `KSh ${Number(productVerification.verified_price).toLocaleString()}`}
+                {productVerification.verified_at ? ` · ${new Date(productVerification.verified_at).toLocaleDateString()}` : ''}
+              </p>
+              {productVerification.notes && <p className="mt-2 whitespace-pre-wrap text-xs text-muted">{productVerification.notes}</p>}
+            </div>
+          ) : (isEdit || newProdId) ? (
+            <div className="mt-4 space-y-4">
+              <p className="text-xs text-muted">Inspect the actual device in person. Enter the verified price, condition, and checks performed, then confirm the inspection.</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold text-muted">Actual verified price (KSh) *</label>
+                  <input type="number" min="1" step="1" required value={verifiedPrice} onChange={(event) => setVerifiedPrice(event.target.value)} className="input mt-1.5 w-full text-xs" placeholder={`Listed price: ${form.selling_price || '—'}`} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-muted">Inspected condition *</label>
+                  <select required value={verifiedCondition} onChange={(event) => setVerifiedCondition(event.target.value)} className="input mt-1.5 w-full text-xs">
+                    <option value="new">Brand New Sealed</option>
+                    <option value="refurbished">Certified Refurbished</option>
+                    <option value="open_box">Open Box</option>
+                    <option value="used_excellent">Used — Excellent</option>
+                    <option value="used_good">Used — Good</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-muted">Inspection notes *</label>
+                  <textarea required minLength={10} maxLength={1500} rows={3} value={verificationNotes} onChange={(event) => setVerificationNotes(event.target.value)} className="input mt-1.5 w-full text-xs" placeholder="Record checks performed: model label, screen, keyboard, ports, battery, charger, and power-on test." />
+                </div>
+              </div>
+              <label className="flex items-start gap-2 text-xs font-semibold text-ink">
+                <input type="checkbox" required checked={inspectionConfirmed} onChange={(event) => setInspectionConfirmed(event.target.checked)} className="mt-0.5" />
+                I inspected this physical product and the recorded condition, price, and notes are accurate.
+              </label>
+              <button type="button" onClick={() => void handleRecordPhysicalVerification()} disabled={savingVerification} className="btn btn-emerald !h-10 text-xs font-bold disabled:opacity-50">
+                {savingVerification ? 'Saving inspection…' : 'Record Physical Inspection'}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <p className="text-xs text-muted">Save this product as a draft first. This panel will then let you record the physical inspection before publishing.</p>
+              <button type="submit" disabled={loading} className="btn btn-outline mt-3 !h-9 text-xs font-bold">Save Draft</button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-teal/30 bg-mint/30 p-4 shadow-xs sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <h2 className="font-display text-sm font-bold text-ink">SEO for this product</h2>
+            <p className="mt-1 text-xs text-muted">Enter the product name and specifications, then generate editable search and social text. Blank SEO fields are also filled automatically when you save.</p>
+          </div>
+          <button type="button" onClick={generateSeoNow} disabled={!form.name.trim()} className="btn btn-emerald mt-3 !h-10 shrink-0 gap-2 text-xs font-bold disabled:opacity-50 sm:mt-0">
+            <Keyboard className="h-4 w-4" /> Generate & Review SEO
+          </button>
+        </div>
 
         {/* Basic Info Card */}
         <div className="rounded-xl border border-line bg-card p-6 shadow-xs">
@@ -706,7 +931,7 @@ export default function AdminProductForm() {
               <label className="block text-xs font-bold text-muted">Physical Condition</label>
               <select
                 value={form.laptop_condition}
-                onChange={(e) => setForm({ ...form, laptop_condition: e.target.value })}
+                onChange={(e) => { setForm({ ...form, laptop_condition: e.target.value }); setVerifiedCondition(e.target.value) }}
                 className="input mt-1.5 w-full text-xs font-semibold"
               >
                 <option value="new">Brand New Sealed</option>
@@ -862,7 +1087,7 @@ export default function AdminProductForm() {
         </div>
 
         {/* SEO Settings */}
-        <div className="rounded-xl border border-line bg-card p-6 shadow-xs">
+        <div id="product-seo" className="scroll-mt-6 rounded-xl border border-line bg-card p-6 shadow-xs">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted">
               6. Product SEO Settings
@@ -985,50 +1210,7 @@ export default function AdminProductForm() {
           <div className="mt-6">
             <button
               type="button"
-              onClick={() => {
-                // Auto-generate SEO suggestions from existing product data
-                const name = form.name.trim()
-                const brand = form.brand_name
-                const condition = form.laptop_condition
-                const model = form.model.trim()
-                
-                if (!form.seo_title) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_title: `${name}${model ? ` ${model}` : ''} | ${brand} ${condition} | OREMITECH Kenya`,
-                  }))
-                }
-                if (!form.seo_description) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_description: `${name} available at OREMITECH Kenya. Verified ${condition} laptop with ${form.ram || 'RAM'} and ${form.storage_capacity || 'storage'}. Nationwide delivery in KSh.`,
-                  }))
-                }
-                if (!form.seo_focus_keyword) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_focus_keyword: `${name} ${model || ''}`.trim(),
-                  }))
-                }
-                if (!form.seo_secondary_keywords) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_secondary_keywords: `${brand} laptop, ${condition} laptop, ${form.processor_model || ''} laptop, buy laptop Kenya`.trim(),
-                  }))
-                }
-                if (!form.seo_social_title) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_social_title: `${name} - Verified ${condition} at OREMITECH Kenya`,
-                  }))
-                }
-                if (!form.seo_social_description) {
-                  setForm((prev) => ({
-                    ...prev,
-                    seo_social_description: `Get a verified ${name} with nationwide delivery. Quality assured by OREMITECH Kenya.`,
-                  }))
-                }
-              }}
+              onClick={generateSeoNow}
               className="btn btn-emerald !h-10 w-full text-xs font-bold flex items-center justify-center gap-2"
             >
               <Keyboard className="h-4 w-4" /> Generate SEO Suggestions

@@ -8,6 +8,7 @@ import BlogArticle from '@/pages/BlogArticle'
 import Cart from '@/pages/Cart'
 import Checkout from '@/pages/Checkout'
 import OrderTracking from '@/pages/OrderTracking'
+import OrderConfirmation from '@/pages/OrderConfirmation'
 import AboutUs from '@/pages/AboutUs'
 import FAQ from '@/pages/FAQ'
 import Contact from '@/pages/Contact'
@@ -21,6 +22,7 @@ import AdminProducts from '@/pages/admin/Products'
 import AdminProductForm from '@/pages/admin/ProductForm'
 import AdminCategories from '@/pages/admin/Categories'
 import AdminBlog from '@/pages/admin/BlogAdmin'
+import AdminBlogPreview from '@/pages/admin/BlogPreview'
 import AdminBrands from '@/pages/admin/Brands'
 import AdminInventory from '@/pages/admin/Inventory'
 import AdminOrders from '@/pages/admin/Orders'
@@ -29,6 +31,11 @@ import AdminSuppliers from '@/pages/admin/Suppliers'
 import AdminEmployees from '@/pages/admin/Employees'
 import AdminFinance from '@/pages/admin/Finance'
 import AdminSettings from '@/pages/admin/Settings'
+import AdminDeliveryZones from '@/pages/admin/DeliveryZones'
+import AdminProductImport from '@/pages/admin/ProductImport'
+import AdminProductReview from '@/pages/admin/ProductReview'
+import AdminProductPublishing from '@/pages/admin/ProductPublishing'
+import AdminPricingRules from '@/pages/admin/PricingRules'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
 function App() {
@@ -42,6 +49,7 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="order-tracking" element={<OrderTracking />} />
+          <Route path="order-confirmation/:orderNumber" element={<OrderConfirmation />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Login />} />
@@ -55,6 +63,7 @@ function App() {
         <Route path="admin/blog" element={<AdminBlog />} />
         <Route path="admin/blog/new" element={<AdminBlog />} />
         <Route path="admin/blog/edit/:id" element={<AdminBlog />} />
+        <Route path="admin/blog/preview/:id" element={<AdminBlogPreview />} />
 
         {/* Admin routes — protected by Guard inside AdminLayout */}
         <Route path="admin" element={<AdminDashboard />} />
@@ -70,6 +79,11 @@ function App() {
         <Route path="admin/employees" element={<AdminEmployees />} />
         <Route path="admin/finance" element={<AdminFinance />} />
         <Route path="admin/settings" element={<AdminSettings />} />
+        <Route path="admin/delivery-zones" element={<AdminDeliveryZones />} />
+        <Route path="admin/product-import" element={<AdminProductImport />} />
+        <Route path="admin/product-review/:id" element={<AdminProductReview />} />
+        <Route path="admin/product-publishing" element={<AdminProductPublishing />} />
+        <Route path="admin/pricing-rules" element={<AdminPricingRules />} />
 
         {/* Employee routes — protected by Guard inside EmployeeLayout */}
         <Route path="employee" element={<EmployeeLayout />} />

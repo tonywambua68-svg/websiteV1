@@ -48,3 +48,6 @@ Thumbs.db
 .wrangler/
 .next/
 *.log
+
+# Supabase CLI local project metadata may include connection details
+supabase/.temp/

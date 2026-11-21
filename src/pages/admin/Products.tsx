@@ -4,8 +4,9 @@ import AdminLayout from './AdminLayout'
 import { getSupabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { formatKES, slugify } from '@/lib/commerce'
-import { Plus, Search, Edit, Trash2, Eye, CheckCircle2, AlertCircle, ShieldCheck, RefreshCw, Upload, FileText, XCircle } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, CheckCircle2, AlertCircle, ShieldCheck, RefreshCw, Upload, FileText, XCircle, Undo2 } from 'lucide-react'
 import { downloadCsv } from '@/lib/csv'
+import { generateProductSeo } from '@/lib/productSeo'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
 
@@ -131,10 +132,11 @@ const [csvImporting, setCsvImporting] = useState(false)
   }
 
   const toggleSelectAll = () => {
-    if (selected.size === products.length) {
+    const selectable = filtered.filter((product) => !product.deleted_at)
+    if (selected.size === selectable.length) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(products.map((p) => p.id)))
+      setSelected(new Set(selectable.map((product) => product.id)))
     }
   }
 
@@ -145,22 +147,42 @@ const [csvImporting, setCsvImporting] = useState(false)
       p.slug.toLowerCase().includes(search.toLowerCase()) ||
       (p.brand_name && p.brand_name.toLowerCase().includes(search.toLowerCase())) ||
       (p.category_name && p.category_name.toLowerCase().includes(search.toLowerCase()))
-    const matchStatus = statusFilter === 'all' || p.publication_status === statusFilter
-    const notArchived = statusFilter !== 'archived_only'
-    return matchSearch && matchStatus && (p.publication_status !== 'archived' || statusFilter === 'archived')
+    const showRemoved = statusFilter === 'removed'
+    const matchRemoval = showRemoved ? Boolean(p.deleted_at) : !p.deleted_at
+    const matchStatus = statusFilter === 'all' || showRemoved || p.publication_status === statusFilter
+    return matchSearch && matchStatus && matchRemoval
   })
 
   const handleArchive = async (id: string, name: string) => {
-    if (!window.confirm(`Archive "${name}"? This hides it from the storefront.`)) return
+    if (!isOwner) {
+      setMessage('Only the Owner can remove a product from the storefront.')
+      return
+    }
+    if (!window.confirm(`Remove "${name}" from the storefront? It will stop showing and selling, while existing order history is kept. You can restore it later.`)) return
     const supabase = getSupabase()
     if (!supabase) return
     try {
       const { error } = await supabase.from('products').update({ deleted_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
-      setMessage(`"${name}" archived.`)
-      loadProducts()
+      setSelected((previous) => { const next = new Set(previous); next.delete(id); return next })
+      setMessage(`"${name}" was removed from the storefront. Its order history is preserved.`)
+      await loadProducts()
     } catch (err: any) {
       setMessage(`Error: ${err.message}`)
+    }
+  }
+
+  const handleRestore = async (id: string, name: string) => {
+    if (!isOwner) return
+    const supabase = getSupabase()
+    if (!supabase) return
+    try {
+      const { error } = await supabase.from('products').update({ deleted_at: null }).eq('id', id)
+      if (error) throw error
+      setMessage(`"${name}" restored to active products. Review its publication status before making it available for sale.`)
+      await loadProducts()
+    } catch (error: any) {
+      setMessage(`Could not restore product: ${error.message}`)
     }
   }
 
@@ -195,6 +217,10 @@ const [csvImporting, setCsvImporting] = useState(false)
     if (selected.size === 0) return
     const supabase = getSupabase()
     if (!supabase) return
+    if (bulkField === 'archive' && !isOwner) {
+      setMessage('Only the Owner can remove products from the storefront.')
+      return
+    }
     setLoading(true)
     const ids = Array.from(selected)
     try {
@@ -249,30 +275,81 @@ const [csvImporting, setCsvImporting] = useState(false)
         slug: 'hp-elitebook-840-g8',
         category: 'Laptops',
         brand: 'HP',
+        model: 'EliteBook 840 G8',
         selling_price: '85000',
         comparison_price: '95000',
         condition: 'refurbished',
         description: 'Core i7 11th Gen, 16GB RAM, 512GB SSD, 14-inch FHD, Windows 11 Pro',
+        processor_manufacturer: 'Intel',
+        processor_model: 'Core i7 11th Gen',
+        ram: '16GB',
+        ram_type: 'DDR4',
+        storage_capacity: '512GB',
+        storage_type: 'SSD',
+        screen_size: '14-inch FHD',
+        operating_system: 'Windows 11 Pro',
+        warranty: '6 months',
+        initial_stock: '1',
+        seo_title: '',
+        seo_description: '',
+        seo_focus_keyword: '',
+        seo_secondary_keywords: '',
+        seo_social_title: '',
+        seo_social_description: '',
       },
       {
         name: 'Dell Latitude 5430',
         slug: 'dell-latitude-5430',
         category: 'Business Laptops',
         brand: 'Dell',
+        model: 'Latitude 5430',
         selling_price: '72000',
         comparison_price: '',
         condition: 'used_excellent',
         description: 'Core i5 12th Gen, 8GB RAM, 256GB SSD, 14-inch FHD, Windows 10 Pro',
+        processor_manufacturer: 'Intel',
+        processor_model: 'Core i5 12th Gen',
+        ram: '8GB',
+        ram_type: 'DDR4',
+        storage_capacity: '256GB',
+        storage_type: 'SSD',
+        screen_size: '14-inch FHD',
+        operating_system: 'Windows 10 Pro',
+        warranty: '3 months',
+        initial_stock: '1',
+        seo_title: '',
+        seo_description: '',
+        seo_focus_keyword: '',
+        seo_secondary_keywords: '',
+        seo_social_title: '',
+        seo_social_description: '',
       },
       {
         name: 'Apple MacBook Pro M1',
         slug: 'apple-macbook-pro-m1',
         category: 'Laptops',
         brand: 'Apple',
+        model: 'MacBook Pro M1',
         selling_price: '110000',
         comparison_price: '135000',
         condition: 'open_box',
         description: 'Apple M1 chip, 8GB RAM, 256GB SSD, 13.3-inch Retina, macOS',
+        processor_manufacturer: 'Apple',
+        processor_model: 'M1',
+        ram: '8GB',
+        ram_type: 'Unified Memory',
+        storage_capacity: '256GB',
+        storage_type: 'SSD',
+        screen_size: '13.3-inch Retina',
+        operating_system: 'macOS',
+        warranty: '3 months',
+        initial_stock: '1',
+        seo_title: '',
+        seo_description: '',
+        seo_focus_keyword: '',
+        seo_secondary_keywords: '',
+        seo_social_title: '',
+        seo_social_description: '',
       },
     ]
     downloadCsv('OREMITECH_sample_products_template.csv', sampleRows)
@@ -280,17 +357,34 @@ const [csvImporting, setCsvImporting] = useState(false)
   }
 
   const parseCsv = (text: string): Array<Record<string, string>> => {
-    const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0)
-    if (lines.length < 2) return []
-    const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''))
-    return lines.slice(1).map((line) => {
-      const values = line.split(',').map((v) => v.trim().replace(/"/g, ''))
-      const row: Record<string, string> = {}
-      headers.forEach((h, i) => {
-        row[h] = values[i] || ''
-      })
-      return row
-    })
+    const records: string[][] = []
+    let record: string[] = []
+    let cell = ''
+    let quoted = false
+    for (let i = 0; i < text.length; i += 1) {
+      const character = text[i]
+      if (character === '"') {
+        if (quoted && text[i + 1] === '"') {
+          cell += '"'
+          i += 1
+        } else quoted = !quoted
+      } else if (character === ',' && !quoted) {
+        record.push(cell.trim())
+        cell = ''
+      } else if ((character === '\n' || character === '\r') && !quoted) {
+        if (character === '\r' && text[i + 1] === '\n') i += 1
+        record.push(cell.trim())
+        if (record.some((value) => value !== '')) records.push(record)
+        record = []
+        cell = ''
+      } else cell += character
+    }
+    record.push(cell.trim())
+    if (record.some((value) => value !== '')) records.push(record)
+    if (records.length < 2) return []
+
+    const headers = records[0].map((header) => header.replace(/^\uFEFF/, '').trim().toLowerCase().replace(/[\s-]+/g, '_'))
+    return records.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])))
   }
 
   const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,18 +394,58 @@ const [csvImporting, setCsvImporting] = useState(false)
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target?.result as string
-      const parsed = parseCsv(text)
-      setCsvPreview(parsed)
-      // Validate
-      const errors: string[] = []
-      parsed.forEach((row, idx) => {
-        if (!row.name) errors.push(`Row ${idx + 2}: Missing product name`)
-        if (!row.selling_price || isNaN(Number(row.selling_price))) errors.push(`Row ${idx + 2}: Invalid selling price`)
-        if (!row.category) errors.push(`Row ${idx + 2}: Missing category`)
+      const parsed = parseCsv(text).map((row) => {
+        const seo = generateProductSeo({
+          name: row.name || '',
+          model: row.model,
+          brand: row.brand,
+          condition: row.condition,
+          processor: row.processor_model,
+          ram: row.ram,
+          storage: row.storage_capacity,
+          category: row.category,
+          warranty: row.warranty,
+        })
+        return {
+          ...row,
+          slug: row.slug || seo.slug,
+          seo_title: row.seo_title || seo.seo_title,
+          seo_description: row.seo_description || seo.seo_description,
+          seo_focus_keyword: row.seo_focus_keyword || seo.seo_focus_keyword,
+          seo_secondary_keywords: row.seo_secondary_keywords || seo.seo_secondary_keywords,
+          seo_social_title: row.seo_social_title || seo.seo_social_title,
+          seo_social_description: row.seo_social_description || seo.seo_social_description,
+        }
       })
-      setCsvErrors(errors)
+      setCsvPreview(parsed)
+      setCsvErrors(validateCsvRows(parsed))
     }
     reader.readAsText(file)
+  }
+
+  const updateCsvField = (index: number, field: string, value: string) => {
+    const next = csvPreview.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row)
+    setCsvPreview(next)
+    setCsvErrors(validateCsvRows(next))
+  }
+
+  const validateCsvRows = (rows: Array<Record<string, string>>) => {
+    const errors: string[] = []
+    rows.forEach((row, index) => {
+      if (!row.name) errors.push(`Row ${index + 2}: Missing product name`)
+      if (!row.selling_price || !Number.isFinite(Number(row.selling_price)) || Number(row.selling_price) <= 0) errors.push(`Row ${index + 2}: Enter a valid selling price greater than zero`)
+      if (!row.category) errors.push(`Row ${index + 2}: Missing product category`)
+      if ((row.seo_title || '').length > 60) errors.push(`Row ${index + 2}: SEO title must be 60 characters or less`)
+      if ((row.seo_description || '').length > 160) errors.push(`Row ${index + 2}: SEO description must be 160 characters or less`)
+      if (!row.slug?.trim()) errors.push(`Row ${index + 2}: Add a URL slug`)
+      if (row.initial_stock && (!Number.isInteger(Number(row.initial_stock)) || Number(row.initial_stock) < 0)) errors.push(`Row ${index + 2}: Initial stock must be a whole number of zero or more`)
+      if (row.comparison_price && (!Number.isFinite(Number(row.comparison_price)) || Number(row.comparison_price) <= Number(row.selling_price))) {
+        errors.push(`Row ${index + 2}: Comparison price must be greater than the selling price`)
+      }
+    })
+    const slugs = rows.map((row) => row.slug.toLowerCase())
+    if (new Set(slugs).size !== slugs.length) errors.push('Two or more products use the same URL slug. Give each product a unique slug.')
+    return errors
   }
 
   const handleCsvImport = async () => {
@@ -325,6 +459,8 @@ const [csvImporting, setCsvImporting] = useState(false)
         supabase.from('categories').select('id, name, slug'),
         supabase.from('brands').select('id, name, slug'),
       ])
+      if (catRes.error) throw catRes.error
+      if (brandRes.error) throw brandRes.error
       const categories = catRes.data ?? []
       const brands = brandRes.data ?? []
 
@@ -332,30 +468,69 @@ const [csvImporting, setCsvImporting] = useState(false)
       const failures: string[] = []
 
       for (const row of csvPreview) {
-        const catName = row.category || row.Category || ''
-        const brandName = row.brand || row.Brand || ''
+        const catName = row.category || ''
+        const brandName = row.brand || ''
         const cat = categories.find((c) => c.name.toLowerCase() === catName.toLowerCase() || c.slug === catName.toLowerCase())
         const brand = brands.find((b) => b.name.toLowerCase() === brandName.toLowerCase() || b.slug === brandName.toLowerCase())
         if (!cat) {
           failures.push(`${row.name || 'unknown'}: Category "${catName}" not found`)
           continue
         }
-        const slug = row.slug || row.Slug || slugify(row.name || '')
-        const sellingPrice = Number(row.selling_price || row['Selling Price'] || 0)
-        const { error } = await supabase.from('products').insert({
+        if (brandName && !brand) {
+          failures.push(`${row.name}: Brand "${brandName}" was not found. Choose an existing brand or leave the brand blank.`)
+          continue
+        }
+        const slug = row.slug || slugify(row.name || '')
+        const sellingPrice = Number(row.selling_price || 0)
+        const comparisonPrice = row.comparison_price ? Number(row.comparison_price) : null
+        if (comparisonPrice !== null && (!Number.isFinite(comparisonPrice) || comparisonPrice <= sellingPrice)) {
+          failures.push(`${row.name}: Comparison price must be greater than the selling price.`)
+          continue
+        }
+        const { data: product, error } = await supabase.from('products').insert({
           slug,
-          name: row.name || row.Name || '',
-          description: row.description || row.Description || '',
+          name: row.name,
+          model: row.model || null,
+          description: row.description || '',
           category_id: cat.id,
           brand_id: brand?.id || null,
-          selling_price: Number.isFinite(sellingPrice) ? sellingPrice : 0,
-          laptop_condition: row.condition || row.Condition || 'unspecified',
+          selling_price: sellingPrice,
+          comparison_price: comparisonPrice,
+          laptop_condition: row.condition || 'unspecified',
+          processor_manufacturer: row.processor_manufacturer || null,
+          processor_model: row.processor_model || null,
+          ram: row.ram || null,
+          ram_type: row.ram_type || null,
+          storage_capacity: row.storage_capacity || null,
+          storage_type: row.storage_type || null,
+          screen_size: row.screen_size || null,
+          operating_system: row.operating_system || null,
+          warranty: row.warranty || null,
+          seo_title: row.seo_title || null,
+          seo_description: row.seo_description || null,
+          seo_focus_keyword: row.seo_focus_keyword || null,
+          seo_secondary_keywords: row.seo_secondary_keywords || null,
+          seo_social_title: row.seo_social_title || null,
+          seo_social_description: row.seo_social_description || null,
           publication_status: 'draft',
-        })
+        }).select('id').single()
         if (error) {
-          failures.push(`${row.name || 'unknown'}: ${error.message}`)
+          failures.push(`${row.name}: ${error.message}`)
         } else {
-          successes.push(row.name || 'unknown')
+          const initialStock = Number(row.initial_stock || 0)
+          if (initialStock > 0) {
+            const { error: stockError } = await supabase.rpc('adjust_stock', {
+              p_product_id: product.id,
+              p_bucket: 'owned',
+              p_delta: Math.floor(initialStock),
+              p_notes: 'Initial stock from product CSV import',
+            })
+            if (stockError) {
+              failures.push(`${row.name}: Product created as a draft, but initial stock was not added: ${stockError.message}`)
+              continue
+            }
+          }
+          successes.push(row.name)
         }
       }
 
@@ -365,10 +540,7 @@ const [csvImporting, setCsvImporting] = useState(false)
       setCsvPreview([])
       setCsvErrors([])
       loadProducts()
-      setMessage(`Imported ${successes.length} product(s)${failures.length > 0 ? `, ${failures.length} failed` : ''}.`)
-      if (failures.length > 0) {
-        console.warn('CSV import failures:', failures)
-      }
+      setMessage(`Imported ${successes.length} product(s) as drafts${failures.length > 0 ? `; ${failures.length} row(s) need attention: ${failures.slice(0, 3).join(' • ')}` : '. Review products, inspection, and publication before they go live.'}`)
     } catch (err: any) {
       setCsvImporting(false)
       setMessage(`CSV import error: ${err.message}`)
@@ -458,7 +630,7 @@ const [csvImporting, setCsvImporting] = useState(false)
             >
               Bulk Status
             </button>
-            <button
+            {isOwner && <button
               type="button"
               onClick={() => {
                 setBulkField('archive')
@@ -467,7 +639,7 @@ const [csvImporting, setCsvImporting] = useState(false)
               className="btn btn-emerald !h-8 text-[10px] font-bold"
             >
               Archive Selected
-            </button>
+            </button>}
           </div>
         </div>
       )}
@@ -487,7 +659,7 @@ const [csvImporting, setCsvImporting] = useState(false)
                 >
                   <option value="price">Selling Price (KES)</option>
                   <option value="status">Publication Status</option>
-                  <option value="archive">Archive (soft-delete)</option>
+                  {isOwner && <option value="archive">Remove from storefront</option>}
                 </select>
               </div>
               {bulkField === 'price' && (
@@ -566,6 +738,7 @@ const [csvImporting, setCsvImporting] = useState(false)
             <option value="published">Published</option>
             <option value="rejected">Rejected</option>
             <option value="archived">Archived</option>
+            <option value="removed">Removed from storefront</option>
           </select>
         </div>
       </div>
@@ -584,7 +757,7 @@ const [csvImporting, setCsvImporting] = useState(false)
                   {selected.size > 0 ? (
                     <input
                       type="checkbox"
-                      checked={selected.size === products.length && products.length > 0}
+                      checked={selected.size === filtered.filter((product) => !product.deleted_at).length && filtered.some((product) => !product.deleted_at)}
                       onChange={toggleSelectAll}
                       className="h-4 w-4 rounded text-teal"
                     />
@@ -617,12 +790,12 @@ const [csvImporting, setCsvImporting] = useState(false)
                   return (
                     <tr key={product.id} className="hover:bg-mist/50">
                       <td className="px-4 py-3 text-center">
-                        <input
+                        {!product.deleted_at && <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelect(product.id)}
                           className="h-4 w-4 rounded text-teal"
-                        />
+                        />}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -652,25 +825,25 @@ const [csvImporting, setCsvImporting] = useState(false)
                           <span className="block text-[10px] text-teal">+{product.supplier_available} supplier</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">{statusLabel(product.publication_status)}</td>
+                      <td className="px-4 py-3">{product.deleted_at ? <span className="rounded-full bg-line px-2 py-0.5 text-[10px] font-extrabold uppercase text-muted">Removed</span> : statusLabel(product.publication_status)}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link
+                          {!product.deleted_at && <Link
                             to={`/product/${product.slug}`}
                             target="_blank"
                             className="rounded p-1 text-muted hover:text-teal"
                             title="View on site"
                           >
                             <Eye className="h-4 w-4" />
-                          </Link>
-                          <Link
+                          </Link>}
+                          {!product.deleted_at && <Link
                             to={`/admin/products/edit/${product.id}`}
                             className="rounded p-1 text-muted hover:text-ink"
                             title="Edit product"
                           >
                             <Edit className="h-4 w-4" />
-                          </Link>
-                          {product.publication_status === 'approved' && isOwner && (
+                          </Link>}
+                          {!product.deleted_at && product.publication_status === 'approved' && isOwner && (
                             <button
                               type="button"
                               onClick={() => handlePublish(product.id, product.name)}
@@ -680,7 +853,7 @@ const [csvImporting, setCsvImporting] = useState(false)
                               <ShieldCheck className="h-4 w-4" />
                             </button>
                           )}
-                          {product.publication_status === 'pending_approval' && isOwner && (
+                          {!product.deleted_at && product.publication_status === 'pending_approval' && isOwner && (
                             <button
                               type="button"
                               onClick={() => handleApprove(product.id, product.name)}
@@ -690,14 +863,21 @@ const [csvImporting, setCsvImporting] = useState(false)
                               <CheckCircle2 className="h-4 w-4" />
                             </button>
                           )}
-                          <button
+                          {product.deleted_at && isOwner ? <button
+                            type="button"
+                            onClick={() => void handleRestore(product.id, product.name)}
+                            className="rounded p-1 text-teal hover:bg-mint/50"
+                            title="Restore product"
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </button> : !product.deleted_at && isOwner && <button
                             type="button"
                             onClick={() => handleArchive(product.id, product.name)}
                             className="rounded p-1 text-muted hover:text-error"
                             title="Archive product"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>
@@ -712,7 +892,7 @@ const [csvImporting, setCsvImporting] = useState(false)
       {/* CSV Import Modal */}
       {csvModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl border border-line bg-card p-6 shadow-xl">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-line bg-card p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display text-base font-bold text-ink">Import Products from CSV</h3>
               <button
@@ -724,7 +904,7 @@ const [csvImporting, setCsvImporting] = useState(false)
               </button>
             </div>
             <p className="text-xs text-muted mb-4">
-              CSV columns: name, slug, category, brand, selling_price, condition, description. New products are created as Draft.
+              Upload many products at once with the downloaded template. SEO suggestions are filled automatically for blanks. Review and edit every product’s title, description, keywords, and social text below before importing. All imported products stay Draft until you inspect and publish them.
             </p>
             <div>
               <label className="block font-bold text-muted mb-1">Select CSV File</label>
@@ -746,30 +926,40 @@ const [csvImporting, setCsvImporting] = useState(false)
                     {csvErrors.length > 5 && <div className="text-[10px]">…and {csvErrors.length - 5} more</div>}
                   </div>
                 )}
-                <div className="overflow-x-auto max-h-48 overflow-y-auto border border-line rounded mb-3">
+                <div className="overflow-x-auto max-h-[55vh] overflow-y-auto border border-line rounded mb-3">
                   <table className="w-full text-left text-[10px]">
                     <thead className="bg-mist">
                       <tr>
-                        {Object.keys(csvPreview[0] || {}).map((h) => (
-                          <th key={h} className="px-2 py-1 font-bold text-muted">{h}</th>
-                        ))}
+                        <th className="px-2 py-2 font-bold text-muted">Product</th>
+                        <th className="px-2 py-2 font-bold text-muted">Category</th>
+                        <th className="px-2 py-2 font-bold text-muted">Price</th>
+                        <th className="min-w-64 px-2 py-2 font-bold text-muted">SEO title</th>
+                        <th className="min-w-80 px-2 py-2 font-bold text-muted">SEO description</th>
+                        <th className="min-w-48 px-2 py-2 font-bold text-muted">Focus keyword</th>
+                        <th className="min-w-56 px-2 py-2 font-bold text-muted">Social & extra SEO</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {csvPreview.slice(0, 10).map((row, i) => (
-                        <tr key={i} className="border-b border-line/50">
-                          {Object.values(row).map((v, j) => (
-                            <td key={j} className="px-2 py-1 truncate max-w-xs">{v}</td>
-                          ))}
-                        </tr>
-                      ))}
-                      {csvPreview.length > 10 && (
-                        <tr>
-                          <td colSpan={Object.keys(csvPreview[0] || {}).length} className="px-2 py-1 text-[10px] text-muted">
-                            …and {csvPreview.length - 10} more rows
+                      {csvPreview.map((row, i) => (
+                        <tr key={i} className="border-b border-line/50 align-top">
+                          <td className="min-w-48 px-2 py-2 font-bold text-ink">{row.name}<span className="block font-normal text-muted">{row.slug}</span></td>
+                          <td className="min-w-32 px-2 py-2">{row.category}</td>
+                          <td className="min-w-24 px-2 py-2">{formatKES(Number(row.selling_price) || 0)}</td>
+                          <td className="px-2 py-2"><input maxLength={60} aria-label={`SEO title for ${row.name}`} value={row.seo_title || ''} onChange={(event) => updateCsvField(i, 'seo_title', event.target.value)} className="input min-w-64 text-[10px]" /></td>
+                          <td className="px-2 py-2"><textarea maxLength={160} rows={3} aria-label={`SEO description for ${row.name}`} value={row.seo_description || ''} onChange={(event) => updateCsvField(i, 'seo_description', event.target.value)} className="input min-w-80 py-1 text-[10px]" /><span className="block text-right text-muted">{(row.seo_description || '').length}/160</span></td>
+                          <td className="px-2 py-2"><input aria-label={`Focus keyword for ${row.name}`} value={row.seo_focus_keyword || ''} onChange={(event) => updateCsvField(i, 'seo_focus_keyword', event.target.value)} className="input min-w-48 text-[10px]" /></td>
+                          <td className="px-2 py-2">
+                            <details>
+                              <summary className="cursor-pointer font-bold text-teal">Review all SEO fields</summary>
+                              <div className="mt-2 min-w-64 space-y-2">
+                                <label className="block font-semibold text-muted">Related keywords<input value={row.seo_secondary_keywords || ''} onChange={(event) => updateCsvField(i, 'seo_secondary_keywords', event.target.value)} className="input mt-1 w-full text-[10px]" /></label>
+                                <label className="block font-semibold text-muted">Social title<input maxLength={60} value={row.seo_social_title || ''} onChange={(event) => updateCsvField(i, 'seo_social_title', event.target.value)} className="input mt-1 w-full text-[10px]" /></label>
+                                <label className="block font-semibold text-muted">Social description<textarea maxLength={160} rows={3} value={row.seo_social_description || ''} onChange={(event) => updateCsvField(i, 'seo_social_description', event.target.value)} className="input mt-1 w-full py-1 text-[10px]" /></label>
+                              </div>
+                            </details>
                           </td>
                         </tr>
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>

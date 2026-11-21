@@ -4,36 +4,7 @@ import { getSupabase } from '@/lib/supabase'
 import { Building2, Plus, Phone, MapPin, Star, ShieldCheck, CheckCircle2 } from 'lucide-react'
 
 export default function AdminSuppliers() {
-  const [suppliers, setSuppliers] = useState<any[]>([
-    {
-      id: 'sup-1',
-      name: 'Nairobi Tech Hub Distro',
-      shop_name: 'Apex Wholesale Nairobi',
-      contact_person: 'David Mwangi',
-      phone: '+254 722 112 233',
-      email: 'sales@apexwholesale.co.ke',
-      physical_location: 'Tom Mboya Street, Nairobi CBD',
-      nairobi_area: 'CBD',
-      supplier_type: 'wholesale_distributor',
-      reliability_rating: 5,
-      verification_status: 'verified',
-      notes: 'Direct importer of certified refurbished ThinkPad and Latitude laptops.',
-    },
-    {
-      id: 'sup-2',
-      name: 'Moi Avenue Gaming Imports',
-      shop_name: 'Silicon Rift Supplies',
-      contact_person: 'Beatrice Njeri',
-      phone: '+254 733 445 566',
-      email: 'beatrice@siliconrift.ke',
-      physical_location: 'Moi Avenue, Digital Mall 2nd Floor',
-      nairobi_area: 'CBD',
-      supplier_type: 'retail_partner',
-      reliability_rating: 4,
-      verification_status: 'verified',
-      notes: 'Specializes in high-refresh monitors, NVMe SSDs, and gaming laptops.',
-    },
-  ])
+  const [suppliers, setSuppliers] = useState<any[]>([])
 
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState({
@@ -54,9 +25,18 @@ export default function AdminSuppliers() {
 
   const loadSuppliers = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
-    const { data } = await supabase.from('suppliers').select('*').order('created_at', { ascending: false })
-    if (data && data.length > 0) setSuppliers(data)
+    if (!supabase) {
+      setSuppliers([])
+      setMessage('Suppliers cannot be loaded because the store database is not configured.')
+      return
+    }
+    const { data, error } = await supabase.from('suppliers').select('*').order('created_at', { ascending: false })
+    if (error) {
+      setSuppliers([])
+      setMessage(`Could not load suppliers: ${error.message}`)
+      return
+    }
+    setSuppliers(data ?? [])
   }
 
   useEffect(() => {
@@ -92,11 +72,7 @@ export default function AdminSuppliers() {
         setFormOpen(false)
         loadSuppliers()
       }
-    } else {
-      setSuppliers((prev) => [{ id: `sup-${Date.now()}`, ...newRecord }, ...prev])
-      setMessage(`Supplier "${form.name}" registered locally.`)
-      setFormOpen(false)
-    }
+    } else setMessage('The supplier was not saved because the store database is not configured.')
     setLoading(false)
   }
 

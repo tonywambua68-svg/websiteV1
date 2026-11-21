@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useState } from 'react'
 import AdminLayout from './AdminLayout'
 import { getSupabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
-import { useOrderStore } from '@/store/orderStore'
 import { formatKES, formatNairobi } from '@/lib/commerce'
 import {
   DollarSign,
@@ -19,57 +18,64 @@ import {
 export default function AdminFinance() {
   const { user } = useAuthStore()
   const isOwner = user?.role === 'owner'
-  const { orders } = useOrderStore()
-
-  const [expenses, setExpenses] = useState<any[]>([
-    {
-      id: 'exp-1',
-      category: 'Packaging & Courier',
-      amount: 4500,
-      description: 'Protective bubble wrap & laptop boxes',
-      created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    },
-    {
-      id: 'exp-2',
-      category: 'Diagnostic Tools',
-      amount: 3200,
-      description: 'USB-C multimeter and thermal paste replacement',
-      created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    },
-    {
-      id: 'exp-3',
-      category: 'Transport & Field Verification',
-      amount: 2800,
-      description: 'Nairobi CBD motorbike fuel & logistics',
-      created_at: new Date(Date.now() - 12 * 86400000).toISOString(),
-    },
-  ])
+  const [expenses, setExpenses] = useState<any[]>([])
+  const [orders, setOrders] = useState<any[]>([])
+  const [expenseCategories, setExpenseCategories] = useState<string[]>([])
+  const [knownProductCost, setKnownProductCost] = useState(0)
 
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState({
     amount: '',
-    category: 'Packaging & Courier',
+    category: 'Other',
     description: '',
   })
 
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const totalSalesRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+  const paidOrders = orders.filter((order) => order.status !== 'refunded'
+    && order.payment_records?.some((payment: any) => payment.status === 'confirmed')
+    && !order.payment_records?.some((payment: any) => payment.status === 'refunded'))
+  const totalSalesRevenue = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0)
   const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0)
-  // Estimated estimated cost basis ~75% of sales
-  const estimatedGrossMargin = totalSalesRevenue * 0.22
-  const netEstimatedProfit = Math.max(0, estimatedGrossMargin - totalExpenses)
+  const estimatedGrossMargin = totalSalesRevenue - knownProductCost
+  const netEstimatedProfit = estimatedGrossMargin - totalExpenses
 
-  const loadExpenses = async () => {
+  const loadFinance = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
-    const { data } = await supabase.from('expenses').select('*').order('created_at', { ascending: false })
-    if (data && data.length > 0) setExpenses(data)
+    if (!supabase) {
+      setExpenses([])
+      setOrders([])
+      setMessage('Financial records cannot be loaded because the store database is not configured.')
+      return
+    }
+    setLoading(true)
+    try {
+      const [expensesResult, categoriesResult, ordersResult, financeResult] = await Promise.all([
+        supabase.from('expenses').select('*, expense_categories(name)').order('created_at', { ascending: false }),
+        supabase.from('expense_categories').select('name').order('name'),
+        supabase.from('orders').select('id, order_number, guest_name, total, status, created_at, payment_records(status)'),
+        supabase.rpc('finance_summary'),
+      ])
+      const failed = [expensesResult.error, categoriesResult.error, ordersResult.error, financeResult.error].find(Boolean)
+      if (failed) throw failed
+      setExpenses((expensesResult.data ?? []).map((expense: any) => ({
+        ...expense,
+        category: expense.expense_categories?.name || 'Other',
+        description: expense.notes || '',
+      })))
+      setExpenseCategories((categoriesResult.data ?? []).map((category: any) => category.name))
+      setOrders(ordersResult.data ?? [])
+      setKnownProductCost(Number(financeResult.data?.known_product_cost || 0))
+    } catch (error: any) {
+      setMessage(`Could not load financial records: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    loadExpenses()
+    if (isOwner) void loadFinance()
   }, [])
 
   const handleCreateExpense = async (e: FormEvent) => {
@@ -78,48 +84,45 @@ export default function AdminFinance() {
 
     setLoading(true)
     const supabase = getSupabase()
-    const record = {
-      amount: Number(form.amount),
-      description: form.description.trim() || form.category,
-      category_name: form.category,
+    if (!supabase || !user?.id) {
+      setMessage('The expense was not saved because the store database is unavailable.')
+      setLoading(false)
+      return
     }
-
-    if (supabase) {
+    try {
+      const { data: category, error: categoryError } = await supabase.from('expense_categories')
+        .upsert({ name: form.category }, { onConflict: 'name' }).select('id').single()
+      if (categoryError) throw categoryError
       const { error } = await supabase.from('expenses').insert({
-        amount: record.amount,
-        description: record.description,
+        category_id: category.id,
+        amount: Number(form.amount),
+        notes: form.description.trim() || null,
+        created_by: user.id,
       })
-      if (error) {
-        setMessage(`Error: ${error.message}`)
-      } else {
-        setMessage('Business operational expense logged!')
-        setFormOpen(false)
-        loadExpenses()
-      }
-    } else {
-      setExpenses((prev) => [
-        { id: `exp-${Date.now()}`, ...record, category: form.category, created_at: new Date().toISOString() },
-        ...prev,
-      ])
-      setMessage('Expense recorded locally.')
+      if (error) throw error
+      setMessage('Business expense saved to PostgreSQL.')
       setFormOpen(false)
+      setForm({ amount: '', category: expenseCategories[0] || 'Other', description: '' })
+      await loadFinance()
+    } catch (error: any) {
+      setMessage(`Expense was not saved: ${error.message}`)
+    } finally {
+      setLoading(false)
     }
-    setForm({ amount: '', category: 'Packaging & Courier', description: '' })
-    setLoading(false)
   }
 
   const exportFinancialCSV = () => {
     const rows = [
       ['Date', 'Type', 'Category / Order', 'Description', 'Amount (KES)'],
-      ...orders.map((o) => [
-        o.createdAt ? formatNairobi(o.createdAt) : '',
+      ...paidOrders.map((o) => [
+        o.created_at ? formatNairobi(o.created_at) : '',
         'REVENUE',
-        `Order #${o.orderNumber || o.id}`,
-        o.customerName || 'Customer Purchase',
+        `Order #${o.order_number || o.id}`,
+        o.guest_name || 'Customer Purchase',
         String(o.total),
       ]),
       ...expenses.map((e) => [
-        formatNairobi(e.created_at),
+        formatNairobi(e.incurred_on || e.created_at),
         'EXPENSE',
         e.category || 'Operations',
         e.description || '',
@@ -136,6 +139,10 @@ export default function AdminFinance() {
     link.click()
     document.body.removeChild(link)
     setMessage('Financial export downloaded as CSV.')
+  }
+
+  if (!isOwner) {
+    return <AdminLayout title="Financial Performance" subtitle="Owner access required"><div className="rounded-xl border border-amber/30 bg-amber/10 p-5 text-sm font-semibold text-amberdeep">Sign in with the active Owner account to view confidential costs and financial records.</div></AdminLayout>
   }
 
   return (
@@ -180,7 +187,7 @@ export default function AdminFinance() {
           <p className="mt-2 font-display text-2xl font-bold text-teal">
             {formatKES(totalSalesRevenue)}
           </p>
-          <p className="mt-1 text-[11px] text-muted">From {orders.length} verified customer orders</p>
+          <p className="mt-1 text-[11px] text-muted">From {paidOrders.length} orders with confirmed payments</p>
         </div>
 
         <div className="rounded-xl border border-line bg-card p-5 shadow-xs">
@@ -191,18 +198,18 @@ export default function AdminFinance() {
           <p className="mt-2 font-display text-2xl font-bold text-error">
             {formatKES(totalExpenses)}
           </p>
-          <p className="mt-1 text-[11px] text-muted">Logistics, packaging, diagnostics</p>
+          <p className="mt-1 text-[11px] text-muted">From saved expense records</p>
         </div>
 
         <div className="rounded-xl border border-line bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between text-muted">
-            <span className="text-xs font-extrabold uppercase">Est. Operating Profit</span>
+            <span className="text-xs font-extrabold uppercase">Net Profit Estimate</span>
             <ArrowUpRight className="h-4 w-4 text-tealdeep" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-tealdeep">
             {formatKES(netEstimatedProfit)}
           </p>
-          <p className="mt-1 text-[11px] text-muted">After logistics & direct operational costs</p>
+          <p className="mt-1 text-[11px] text-muted">Sales less known costs and expenses</p>
         </div>
 
         <div className="rounded-xl border border-line bg-card p-5 shadow-xs">
@@ -211,7 +218,7 @@ export default function AdminFinance() {
             <Receipt className="h-4 w-4 text-ink" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-ink">
-            {formatKES(orders.length > 0 ? totalSalesRevenue / orders.length : 0)}
+            {formatKES(paidOrders.length > 0 ? totalSalesRevenue / paidOrders.length : 0)}
           </p>
           <p className="mt-1 text-[11px] text-muted">Average basket size in KSh</p>
         </div>
@@ -232,12 +239,7 @@ export default function AdminFinance() {
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="input mt-1.5 w-full text-xs font-semibold"
                 >
-                  <option value="Packaging & Courier">Packaging & Courier Supplies</option>
-                  <option value="Transport & Field Verification">Transport & Motorbike Logistics</option>
-                  <option value="Diagnostic Tools">Technical Diagnostic Equipment</option>
-                  <option value="Rent & Utilities">Premises & Electrical</option>
-                  <option value="Advertising & Marketing">Online Ad Campaigns</option>
-                  <option value="Other">Other Operational Cost</option>
+                  {expenseCategories.map((category) => <option key={category} value={category}>{category}</option>)}
                 </select>
               </div>
 

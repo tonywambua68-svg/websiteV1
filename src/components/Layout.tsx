@@ -4,6 +4,7 @@ import Header from './Header'
 import Footer from './Footer'
 import Analytics from './Analytics'
 import StructuredData from './StructuredData'
+import ScrollToTop from './ScrollToTop'
 import CompareBar from './CompareBar'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
@@ -20,6 +21,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
       <StructuredData />
+      <ScrollToTop />
       <Analytics />
       <Header />
       <main className="flex-grow">

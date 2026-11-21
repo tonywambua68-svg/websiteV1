@@ -119,6 +119,28 @@ export interface PublicSettings {
   gsc_verification: string
 }
 
+export interface DeliveryZone {
+  id: string
+  name: string
+  counties: string[]
+  towns: string[]
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DeliveryRate {
+  id: string
+  zone_id: string
+  min_order: number
+  max_order: number | null
+  rate_kes: number
+  cod_eligible: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface ShopQuery {
   q?: string
   category?: string
@@ -180,6 +202,11 @@ export interface BlogCategory {
   updated_at: string
 }
 
+export interface BlogFaqItem {
+  question: string
+  answer: string
+}
+
 export interface BlogArticle {
   id: string
   title: string
@@ -191,6 +218,12 @@ export interface BlogArticle {
   category_id: string | null
   category: BlogCategory | null
   author_id: string | null
+  author_name: string | null
+  is_featured: boolean
+  tags: string[]
+  faq: BlogFaqItem[]
+  related_product_ids: string[]
+  reading_minutes: number | null
   seo_title: string | null
   seo_description: string | null
   seo_focus_keyword: string | null

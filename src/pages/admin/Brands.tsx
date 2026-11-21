@@ -6,15 +6,7 @@ import { slugify } from '@/lib/commerce'
 import { Plus, Tags, ToggleLeft, ToggleRight } from 'lucide-react'
 
 export default function AdminBrands() {
-  const [brands, setBrands] = useState<Brand[]>([
-    { id: '1', name: 'HP', slug: 'hp', sort_order: 10, is_active: true },
-    { id: '2', name: 'Dell', slug: 'dell', sort_order: 20, is_active: true },
-    { id: '3', name: 'Lenovo', slug: 'lenovo', sort_order: 30, is_active: true },
-    { id: '4', name: 'Apple', slug: 'apple', sort_order: 40, is_active: true },
-    { id: '5', name: 'ASUS', slug: 'asus', sort_order: 50, is_active: true },
-    { id: '6', name: 'Acer', slug: 'acer', sort_order: 60, is_active: true },
-    { id: '7', name: 'Microsoft Surface', slug: 'microsoft-surface', sort_order: 70, is_active: true },
-  ])
+  const [brands, setBrands] = useState<Brand[]>([])
 
   const [form, setForm] = useState({ name: '', slug: '', sort_order: '80' })
   const [loading, setLoading] = useState(false)
@@ -22,9 +14,18 @@ export default function AdminBrands() {
 
   const loadBrands = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
-    const { data } = await supabase.from('brands').select('*').order('sort_order')
-    if (data && data.length > 0) setBrands(data as Brand[])
+    if (!supabase) {
+      setBrands([])
+      setMessage('Brands cannot be loaded because the store database is not configured.')
+      return
+    }
+    const { data, error } = await supabase.from('brands').select('*').order('sort_order')
+    if (error) {
+      setBrands([])
+      setMessage(`Could not load brands: ${error.message}`)
+      return
+    }
+    setBrands((data ?? []) as Brand[])
   }
 
   useEffect(() => {
@@ -53,11 +54,7 @@ export default function AdminBrands() {
         setForm({ name: '', slug: '', sort_order: '80' })
         loadBrands()
       }
-    } else {
-      setBrands((prev) => [...prev, { id: `local-${Date.now()}`, ...newBrand }])
-      setMessage(`Brand "${form.name}" added locally.`)
-      setForm({ name: '', slug: '', sort_order: '80' })
-    }
+    } else setMessage('The brand was not saved because the store database is not configured.')
     setLoading(false)
   }
 
@@ -66,10 +63,12 @@ export default function AdminBrands() {
     const nextState = !b.is_active
 
     if (supabase) {
-      await supabase.from('brands').update({ is_active: nextState }).eq('id', b.id)
+      const { error } = await supabase.from('brands').update({ is_active: nextState }).eq('id', b.id)
+      if (error) setMessage(`Could not update ${b.name}: ${error.message}`)
+      else setMessage(`${b.name} ${nextState ? 'activated' : 'deactivated'}.`)
       loadBrands()
     } else {
-      setBrands((prev) => prev.map((item) => (item.id === b.id ? { ...item, is_active: nextState } : item)))
+      setMessage('The brand was not updated because the store database is not configured.')
     }
   }
 

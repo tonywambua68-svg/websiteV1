@@ -5,12 +5,13 @@ import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useProductStore } from '@/store/productStore'
 import { useOrderStore } from '@/store/orderStore'
+import { isKenyanPhone, normalizePhone } from '@/lib/commerce'
 import { Settings, Save, CheckCircle2, ShieldAlert, Download, Database } from 'lucide-react'
 
 export default function AdminSettings() {
   const { user } = useAuthStore()
   const isOwner = user?.role === 'owner'
-  const { settings, load } = useSettingsStore()
+  const { settings, load, setSettings } = useSettingsStore()
   const { allProducts } = useProductStore()
   const { orders } = useOrderStore()
 
@@ -19,19 +20,25 @@ export default function AdminSettings() {
     tagline: settings.tagline || 'Verified laptops and computer accessories in Kenya',
     currency: 'KES',
     timezone: 'Africa/Nairobi',
-    whatsapp_e164: settings.whatsapp_e164 || '+254700000000',
-    store_email: settings.store_email || 'support@oremitech.co.ke',
-    store_location: settings.store_location || 'Nairobi, Kenya',
+    whatsapp_e164: settings.whatsapp_e164 || '',
+    store_email: settings.store_email || '',
+    store_location: settings.store_location || '',
     ga_measurement_id: settings.ga_measurement_id || '',
     gsc_verification: settings.gsc_verification || '',
   })
 
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [orderAlertPhone, setOrderAlertPhone] = useState('')
 
   useEffect(() => {
     load()
-  }, [load])
+    const supabase = getSupabase()
+    if (supabase && isOwner) {
+      void supabase.from('business_settings').select('value').eq('key', 'order_alert_phone').maybeSingle()
+        .then(({ data }) => setOrderAlertPhone(data?.value || ''))
+    }
+  }, [load, isOwner])
 
   useEffect(() => {
     setForm({
@@ -39,9 +46,9 @@ export default function AdminSettings() {
       tagline: settings.tagline || 'Verified laptops and computer accessories in Kenya',
       currency: 'KES',
       timezone: 'Africa/Nairobi',
-      whatsapp_e164: settings.whatsapp_e164 || '+254700000000',
-      store_email: settings.store_email || 'support@oremitech.co.ke',
-      store_location: settings.store_location || 'Nairobi, Kenya',
+      whatsapp_e164: settings.whatsapp_e164 || '',
+      store_email: settings.store_email || '',
+      store_location: settings.store_location || '',
       ga_measurement_id: settings.ga_measurement_id || '',
       gsc_verification: settings.gsc_verification || '',
     })
@@ -54,23 +61,46 @@ export default function AdminSettings() {
       return
     }
 
+    if (form.whatsapp_e164.trim() && !isKenyanPhone(form.whatsapp_e164)) {
+      setMessage('Enter a valid Kenyan business WhatsApp number, such as +254712345678.')
+      return
+    }
+    if (orderAlertPhone.trim() && !isKenyanPhone(orderAlertPhone)) {
+      setMessage('Enter a valid Kenyan order-alert phone number, such as +254712345678.')
+      return
+    }
+
     setLoading(true)
     const supabase = getSupabase()
-    if (supabase) {
-      try {
-        const updates = Object.entries(form).map(([key, value]) =>
-          supabase.from('business_settings').upsert({ key, value: String(value) }, { onConflict: 'key' })
-        )
-        await Promise.all(updates)
-        setMessage('Business settings saved to PostgreSQL.')
-        load()
-      } catch (err: any) {
-        setMessage(`Error: ${err.message}`)
-      }
-    } else {
-      setMessage('Settings updated locally.')
+    if (!supabase) {
+      setMessage('Could not save settings because the store database is not configured.')
+      setLoading(false)
+      return
     }
-    setLoading(false)
+    try {
+      const savedForm = {
+        ...form,
+        whatsapp_e164: form.whatsapp_e164.trim() ? `+${normalizePhone(form.whatsapp_e164)}` : '',
+      }
+      const updates = Object.entries(savedForm).map(([key, value]) =>
+        supabase.from('business_settings').upsert({ key, value: String(value) }, { onConflict: 'key' })
+      )
+      const results = await Promise.all(updates)
+      const failed = results.find((result) => result.error)
+      if (failed?.error) throw failed.error
+      const savedAlertPhone = orderAlertPhone.trim() ? `+${normalizePhone(orderAlertPhone)}` : ''
+      const { error: alertPhoneError } = await supabase.from('business_settings').upsert({ key: 'order_alert_phone', value: savedAlertPhone }, { onConflict: 'key' })
+      if (alertPhoneError) throw alertPhoneError
+      setForm(savedForm)
+      setOrderAlertPhone(savedAlertPhone)
+      setSettings({ ...settings, ...savedForm })
+      setMessage('Business settings saved to PostgreSQL and applied to the storefront.')
+      await load()
+    } catch (err: any) {
+      setMessage(`Settings were not saved: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const exportCatalogueCSV = () => {
@@ -93,6 +123,10 @@ export default function AdminSettings() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  if (!isOwner) {
+    return <AdminLayout title="Business Settings" subtitle="Owner access required"><div className="rounded-xl border border-amber/30 bg-amber/10 p-5 text-sm font-semibold text-amberdeep">Sign in with the active Owner account to change the public business number and storefront settings.</div></AdminLayout>
   }
 
   return (
@@ -165,11 +199,18 @@ export default function AdminSettings() {
                   type="text"
                   value={form.store_location}
                   onChange={(e) => setForm({ ...form, store_location: e.target.value })}
-                  placeholder="Nairobi, Kenya"
+                  placeholder="Enter your verified store location"
                   className="input mt-1.5 w-full text-xs font-semibold"
                 />
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-card p-6 shadow-xs">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted">New Order SMS Alerts</h2>
+            <p className="mt-2 text-xs text-muted">Private number to notify when an order is placed. Use +254… format. SMS delivery also requires Africa’s Talking credentials to be configured securely in Supabase.</p>
+            <label className="mt-4 block text-xs font-bold text-muted">Owner alert phone number</label>
+            <input type="tel" value={orderAlertPhone} onChange={(e) => setOrderAlertPhone(e.target.value)} placeholder="+2547…" className="input mt-1.5 w-full text-xs font-bold" />
           </div>
 
           <div className="rounded-xl border border-line bg-card p-6 shadow-xs">
@@ -181,11 +222,11 @@ export default function AdminSettings() {
               <div>
                 <label className="block text-xs font-bold text-muted">Official WhatsApp (E.164 format) *</label>
                 <input
-                  type="text"
+                  type="tel"
                   required
                   value={form.whatsapp_e164}
                   onChange={(e) => setForm({ ...form, whatsapp_e164: e.target.value })}
-                  placeholder="+254700000000"
+                  placeholder="+254…"
                   className="input mt-1.5 w-full text-xs font-bold text-teal"
                 />
               </div>
@@ -196,7 +237,7 @@ export default function AdminSettings() {
                   type="email"
                   value={form.store_email}
                   onChange={(e) => setForm({ ...form, store_email: e.target.value })}
-                  placeholder="support@oremitech.co.ke"
+                  placeholder="support@example.co.ke"
                   className="input mt-1.5 w-full text-xs"
                 />
               </div>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title id="title">OREMITECH</title>
+  <rect width="96" height="96" rx="22" fill="#087f73"/>
+  <path d="M21 25h24c17 0 29 10 29 23S62 71 45 71H21V25zm18 13v20h6c8 0 13-4 13-10s-5-10-13-10h-6z" fill="#fff"/>
+  <circle cx="70" cy="69" r="7" fill="#bce9df"/>
+</svg>

@@ -18,6 +18,11 @@ import {
   LogOut,
   ExternalLink,
   ShieldCheck,
+  MapPin,
+  UploadCloud,
+  Rocket,
+  Percent,
+  BookOpen,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -35,9 +40,14 @@ const NAV_ITEMS = [
   { label: 'Inventory', to: '/admin/inventory', icon: Boxes },
   { label: 'Product Research', to: '/admin/research', icon: Compass },
   { label: 'Suppliers', to: '/admin/suppliers', icon: Building2 },
+  { label: 'Import Center', to: '/admin/product-import', icon: UploadCloud },
+  { label: 'Publishing', to: '/admin/product-publishing', icon: Rocket },
+  { label: 'Pricing Rules', to: '/admin/pricing-rules', icon: Percent },
+  { label: 'Knowledge Centre', to: '/admin/blog', icon: BookOpen },
   { label: 'Sales & Orders', to: '/admin/orders', icon: ShoppingCart },
   { label: 'Staff & Tasks', to: '/admin/employees', icon: Users },
   { label: 'Finance & P&L', to: '/admin/finance', icon: DollarSign },
+  { label: 'Delivery Zones', to: '/admin/delivery-zones', icon: MapPin },
   { label: 'Business Settings', to: '/admin/settings', icon: Settings },
 ]
 
@@ -45,6 +55,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const visibleNavItems = NAV_ITEMS.filter((item) => !['/admin/settings', '/admin/finance'].includes(item.to) || user?.role === 'owner')
 
   return (
     <Guard roles={['owner', 'manager']}>
@@ -59,7 +70,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-            {NAV_ITEMS.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon
               const active = location.pathname === item.to || (item.to !== '/admin' && location.pathname.startsWith(item.to))
               return (
@@ -122,8 +133,16 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
             </div>
           </header>
 
+          <nav className="flex gap-1 overflow-x-auto border-b border-line bg-card px-3 py-2 lg:hidden" aria-label="Admin navigation">
+            {visibleNavItems.map((item) => {
+              const Icon = item.icon
+              const active = location.pathname === item.to || (item.to !== '/admin' && location.pathname.startsWith(item.to))
+              return <Link key={item.to} to={item.to} className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold ${active ? 'bg-emerald text-white' : 'text-muted hover:bg-mist hover:text-ink'}`}><Icon className="h-3.5 w-3.5" />{item.label}</Link>
+            })}
+          </nav>
+
           {/* Page Body */}
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6">{children}</main>
         </div>
       </div>
     </Guard>

@@ -20,15 +20,8 @@ export default function AdminInventory() {
   const loadInventory = async () => {
     const supabase = getSupabase()
     if (!supabase) {
-      setBalances(
-        allProducts.map((p) => ({
-          product_id: p.id,
-          name: p.name,
-          owned_available: p.owned_available,
-          supplier_available: p.supplier_available,
-          reserved: 0,
-        }))
-      )
+      setBalances([])
+      setMessage('Inventory cannot be loaded because the store database is not configured.')
       return
     }
 
@@ -38,33 +31,20 @@ export default function AdminInventory() {
         supabase.from('stock_movements').select('*').order('created_at', { ascending: false }).limit(20),
       ])
 
-      if (balRes.data && balRes.data.length > 0) {
-        setBalances(
-          balRes.data.map((r: any) => ({
+      if (balRes.error) throw balRes.error
+      if (movRes.error) throw movRes.error
+      setBalances((balRes.data ?? []).map((r: any) => ({
             product_id: r.id,
             name: r.name,
             owned_available: Number(r.owned_available || 0),
             supplier_available: Number(r.supplier_available || 0),
             reserved: 0,
-          }))
-        )
-      } else {
-        setBalances(
-          allProducts.map((p) => ({
-            product_id: p.id,
-            name: p.name,
-            owned_available: p.owned_available,
-            supplier_available: p.supplier_available,
-            reserved: 0,
-          }))
-        )
-      }
-
-      if (movRes.data) {
-        setMovements(movRes.data)
-      }
-    } catch {
-      // Fallback
+          })))
+      setMovements(movRes.data ?? [])
+    } catch (error: any) {
+      setBalances([])
+      setMovements([])
+      setMessage(`Could not load inventory: ${error.message}`)
     }
   }
 
@@ -100,31 +80,7 @@ export default function AdminInventory() {
       } catch (err: any) {
         setMessage(`Error: ${err.message}`)
       }
-    } else {
-      setBalances((prev) =>
-        prev.map((b) => {
-          if (b.product_id === selectedProductId) {
-            return adjustBucket === 'owned'
-              ? { ...b, owned_available: Math.max(0, b.owned_available + qty) }
-              : { ...b, supplier_available: Math.max(0, b.supplier_available + qty) }
-          }
-          return b
-        })
-      )
-      setMovements((prev) => [
-        {
-          id: `local-${Date.now()}`,
-          product_id: selectedProductId,
-          bucket: adjustBucket,
-          movement_type: adjustType,
-          quantity: qty,
-          notes: adjustNotes || 'Local adjustment',
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ])
-      setMessage('Stock balance adjusted locally.')
-    }
+    } else setMessage('Stock was not changed because the store database is not configured.')
     setLoading(false)
   }
 

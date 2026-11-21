@@ -1,17 +1,39 @@
 import { useState } from 'react'
-import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Phone, Mail, MapPin } from 'lucide-react'
+import { getSupabase } from '@/lib/supabase'
+import { useSettingsStore } from '@/store/settingsStore'
 
 export default function Contact() {
+  const settings = useSettingsStore((state) => state.settings)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: 'General Inquiry', message: '' })
+  const supportPhone = settings.whatsapp_e164
+  const supportEmail = settings.store_email
+  const storeLocation = settings.store_location
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
     setSending(true)
-    // Simulate form submission; wire to Supabase/email function when backend is ready
-    await new Promise((r) => setTimeout(r, 1200))
+    const supabase = getSupabase()
+    if (!supabase) {
+      setError('The contact form is unavailable right now. Please use the configured contact details.')
+      setSending(false)
+      return
+    }
+    const { error: submitError } = await supabase.from('customer_inquiries').insert({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim() || null,
+      message: `${form.subject}: ${form.message.trim()}`,
+    })
     setSending(false)
+    if (submitError) {
+      setError('We could not save your message. Please try again later.')
+      return
+    }
     setSent(true)
   }
 
@@ -34,24 +56,19 @@ export default function Contact() {
                 {
                   icon: MapPin,
                   label: 'Visit Us',
-                  text: 'Oremitech Ltd, Nairobi, Kenya',
+                  text: storeLocation,
                 },
                 {
                   icon: Phone,
                   label: 'Call Us',
-                  text: '+254 700 000 000',
+                  text: supportPhone,
                 },
                 {
                   icon: Mail,
                   label: 'Email Us',
-                  text: 'support@oremitech.co.ke',
+                  text: supportEmail,
                 },
-                {
-                  icon: Clock,
-                  label: 'Hours',
-                  text: 'Mon &ndash; Fri, 9:00 &ndash; 17:00 EAT',
-                },
-              ].map((item) => (
+              ].filter((item) => item.text).map((item) => (
                 <div key={item.label} className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <item.icon className="h-5 w-5" />
@@ -64,20 +81,6 @@ export default function Contact() {
               ))}
             </div>
 
-            <div className="p-4 rounded-lg border border-line bg-card">
-              <p className="font-bold text-ink mb-2">Follow Us</p>
-              <div className="flex gap-3">
-                {['Twitter', 'Instagram', 'Facebook', 'LinkedIn'].map((network) => (
-                  <a
-                    key={network}
-                    href="#"
-                    className="w-9 h-9 rounded-lg border border-line flex items-center justify-center text-muted hover:text-teal-600 hover:border-teal-600 transition"
-                  >
-                    {network.charAt(0)}
-                  </a>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Contact Form */}
@@ -88,20 +91,20 @@ export default function Contact() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-ink mb-1">Full Name</label>
-                    <input type="text" required className="input w-full" placeholder="John Doe" />
+                    <input type="text" required maxLength={120} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input w-full" placeholder="Full name" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-ink mb-1">Email Address</label>
-                    <input type="email" required className="input w-full" placeholder="you@example.com" />
+                    <input type="email" required maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input w-full" placeholder="you@example.com" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-ink mb-1">Phone Number</label>
-                  <input type="tel" className="input w-full" placeholder="+254 7XX XXX XXX" />
+                  <input type="tel" maxLength={40} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input w-full" placeholder="Phone number (optional)" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-ink mb-1">Subject</label>
-                  <select className="input w-full">
+                  <select value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="input w-full">
                     <option>General Inquiry</option>
                     <option>Order Status</option>
                     <option>Product Verification</option>
@@ -111,7 +114,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-ink mb-1">Message</label>
-                  <textarea required rows={4} className="input w-full" placeholder="How can we help you?" />
+                  <textarea required minLength={5} maxLength={1800} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={4} className="input w-full" placeholder="How can we help you?" />
                 </div>
                 <button
                   type="submit"
@@ -123,8 +126,9 @@ export default function Contact() {
                   {sent ? 'Message Sent!' : sending ? 'Sending…' : 'Send Message'}
                 </button>
                 {sent && (
-                  <p className="text-sm text-success mt-2">Thank you! We&rsquo;ll get back to you shortly.</p>
+                  <p className="text-sm text-success mt-2">Thank you. Your message has been sent to our team.</p>
                 )}
+                {error && <p role="alert" className="text-sm text-error mt-2">{error}</p>}
               </form>
             </div>
           </div>

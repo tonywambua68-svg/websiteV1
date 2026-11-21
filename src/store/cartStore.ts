@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import { getSupabase } from '@/lib/supabase'
 import { asCatalogue, type CatalogueProduct } from '@/lib/domain'
 import { availableUnits, clampQuantity, lineTotal } from '@/lib/commerce'
+import { isProductUuid } from '@/lib/productIds'
+
 
 export interface CartLine {
   product_id: string
@@ -23,7 +25,7 @@ interface CartState {
   removeItem: (productId: string) => Promise<void>
   clearCart: () => Promise<void>
   totals: () => { subtotal: number; itemCount: number }
-  refreshPrices: () => Promise<void>
+  refreshPrices: () => Promise<boolean>
   syncToServer: () => Promise<void>
   syncFromServer: () => Promise<void>
 }
@@ -107,17 +109,44 @@ export const useCartStore = create<CartState>()(
 
       refreshPrices: async () => {
         const supabase = getSupabase()
-        const ids = get().items.map((item) => item.product_id)
-        if (!supabase || ids.length === 0) return
-        const { data, error } = await supabase.from('catalogue_products').select('*').in('id', ids)
-        if (error || !data) return
-        const byId = new Map(data.map((row) => [String(row.id), asCatalogue(row as Record<string, unknown>)]))
+        const cartItems = get().items
+        if (cartItems.length === 0) return true
+        if (!supabase) return false
+
+        const ids = [...new Set(cartItems.map((item) => item.product_id).filter(isProductUuid))]
+        const slugs = [...new Set(cartItems
+          .filter((item) => !isProductUuid(item.product_id))
+          .map((item) => item.slug || item.product_id)
+          .filter(Boolean))]
+        const rows: Record<string, unknown>[] = []
+
+        if (ids.length) {
+          const { data, error } = await supabase.from('catalogue_products').select('*').in('id', ids)
+          if (error || !data) {
+            set({ error: 'Could not verify current product availability. Please try again before ordering.' })
+            return false
+          }
+          rows.push(...data as Record<string, unknown>[])
+        }
+        if (slugs.length) {
+          const { data, error } = await supabase.from('catalogue_products').select('*').in('slug', slugs)
+          if (error || !data) {
+            set({ error: 'Could not verify current product availability. Please try again before ordering.' })
+            return false
+          }
+          rows.push(...data as Record<string, unknown>[])
+        }
+
+        const products = rows.map((row) => asCatalogue(row))
+        const byId = new Map(products.map((product) => [String(product.id), product]))
+        const bySlug = new Map(products.map((product) => [product.slug.toLocaleLowerCase('en'), product]))
         const next: CartLine[] = []
         let note: string | null = null
-        for (const item of get().items) {
+        for (const item of cartItems) {
           const product = byId.get(item.product_id)
+            ?? bySlug.get((item.slug || item.product_id).trim().toLocaleLowerCase('en'))
           if (!product) {
-            note = 'A product was removed because it is no longer published.'
+            note = 'A cart item was removed because it is not linked to a published store product.'
             continue
           }
           const max = Math.min(10, availableUnits(product.owned_available, product.supplier_available))
@@ -131,6 +160,8 @@ export const useCartStore = create<CartState>()(
           next.push(lineFromProduct(product, quantity))
         }
         set({ items: next, error: note })
+        await get().syncToServer()
+        return next.length === cartItems.length
       },
 
       syncToServer: async () => {

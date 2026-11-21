@@ -10,54 +10,8 @@ export default function AdminEmployees() {
   const { user } = useAuthStore()
   const isOwner = user?.role === 'owner'
 
-  const [staff, setStaff] = useState<any[]>([
-    {
-      id: 'emp-1',
-      full_name: 'Lead Business Owner',
-      email: 'owner@oremitech.co.ke',
-      phone: '+254 700 000 001',
-      role: 'owner',
-      account_status: 'active',
-      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    },
-    {
-      id: 'emp-2',
-      full_name: 'Kevin Mutua',
-      email: 'kevin.research@oremitech.co.ke',
-      phone: '+254 711 223 344',
-      role: 'product_researcher',
-      account_status: 'active',
-      created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    },
-    {
-      id: 'emp-3',
-      full_name: 'Mercy Achieng',
-      email: 'mercy.inventory@oremitech.co.ke',
-      phone: '+254 722 334 455',
-      role: 'inventory_assistant',
-      account_status: 'active',
-      created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    },
-  ])
-
-  const [tasks, setTasks] = useState<any[]>([
-    {
-      id: 'tsk-1',
-      title: 'Verify 3 HP EliteBook 840 G8 units at CBD Supplier',
-      assigned_to_name: 'Kevin Mutua',
-      status: 'in_progress',
-      due_date: '2026-11-20',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'tsk-2',
-      title: 'Conduct weekly cycle count on NVMe SSD inventory',
-      assigned_to_name: 'Mercy Achieng',
-      status: 'completed',
-      due_date: '2026-11-16',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ])
+  const [staff, setStaff] = useState<any[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
 
   const [taskModal, setTaskModal] = useState(false)
   const [taskForm, setTaskForm] = useState({
@@ -72,13 +26,26 @@ export default function AdminEmployees() {
 
   const loadData = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
+    if (!supabase) {
+      setStaff([])
+      setTasks([])
+      setMessage('Staff records are unavailable because the store database is not configured.')
+      return
+    }
     const [profilesRes, tasksRes] = await Promise.all([
       supabase.from('profiles').select('*').in('role', ['owner', 'manager', 'product_researcher', 'inventory_assistant', 'sales_assistant']),
       supabase.from('employee_tasks').select('*').order('created_at', { ascending: false }),
     ])
-    if (profilesRes.data && profilesRes.data.length > 0) setStaff(profilesRes.data)
-    if (tasksRes.data && tasksRes.data.length > 0) setTasks(tasksRes.data)
+    if (profilesRes.error || tasksRes.error) {
+      setMessage(`Could not load staff and tasks: ${profilesRes.error?.message || tasksRes.error?.message}`)
+      return
+    }
+    const actualStaff = profilesRes.data ?? []
+    setStaff(actualStaff)
+    setTasks((tasksRes.data ?? []).map((task: any) => ({
+      ...task,
+      assigned_to_name: actualStaff.find((member: any) => member.id === task.assigned_to)?.full_name || 'Unassigned',
+    })))
   }
 
   useEffect(() => {
@@ -108,19 +75,7 @@ export default function AdminEmployees() {
         setTaskModal(false)
         loadData()
       }
-    } else {
-      setTasks((prev) => [
-        {
-          id: `tsk-${Date.now()}`,
-          ...taskRecord,
-          assigned_to_name: staff.find((s) => s.id === taskForm.assigned_to)?.full_name || 'Staff',
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ])
-      setMessage('Task recorded locally.')
-      setTaskModal(false)
-    }
+    } else setMessage('The task was not saved because the store database is not configured.')
     setLoading(false)
   }
 
@@ -133,12 +88,19 @@ export default function AdminEmployees() {
     const next = staffMember.account_status === 'active' ? 'suspended' : 'active'
     const supabase = getSupabase()
 
-    if (supabase) {
-      await supabase.from('profiles').update({ account_status: next }).eq('id', staffMember.id)
-      loadData()
-    } else {
-      setStaff((prev) => prev.map((s) => (s.id === staffMember.id ? { ...s, account_status: next } : s)))
+    if (!supabase) {
+      setMessage('Staff accounts cannot be changed because the store database is not configured.')
+      return
     }
+    const { error } = await supabase.rpc('set_profile_status', {
+      p_profile_id: staffMember.id,
+      p_status: next,
+    })
+    if (error) {
+      setMessage(`Error: ${error.message}`)
+      return
+    }
+    await loadData()
     setMessage(`Account for ${staffMember.full_name} is now ${next}.`)
   }
 

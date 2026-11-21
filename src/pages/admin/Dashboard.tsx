@@ -10,6 +10,7 @@ import {
   Compass,
   ShoppingCart,
   TrendingUp,
+  TrendingDown,
   AlertTriangle,
   Plus,
   ArrowRight,
@@ -28,8 +29,8 @@ import { downloadCsv } from '@/lib/csv'
 type OrderRow = {
   id: string
   order_number: string
-  customer_name: string
-  customer_phone: string
+  guest_name: string
+  guest_phone: string
   total: number
   status: string
   created_at: string
@@ -69,11 +70,14 @@ export default function AdminDashboard() {
     grossProfit: 0,
     totalCustomers: 0,
     newCustomers: 0,
+    orderTrend: null as number | null,
+    revenueTrend: null as number | null,
   })
   const [recentOrders, setRecentOrders] = useState<OrderRow[]>([])
   const [ordersByStatus, setOrdersByStatus] = useState<Record<string, number>>({})
   const [topProducts, setTopProducts] = useState<Array<{ name: string; qty: number; revenue: number }>>([])
   const [loading, setLoading] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
   const rangeStart = (() => {
@@ -101,32 +105,34 @@ export default function AdminDashboard() {
 
   const loadDashboard = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
+    if (!supabase) {
+      setMessage('Dashboard data is unavailable because the store database is not configured.')
+      return
+    }
     setLoading(true)
+    setMessage(null)
     try {
-      // Sales summary via RPC (staff can view)
-      let salesData: any = null
-      if (canViewSales) {
-        const { data } = await supabase.rpc('sales_summary')
-        salesData = data
-      }
-
       // Finance summary via RPC (owner only)
       let financeData: any = null
       if (isOwner) {
-        const { data } = await supabase.rpc('finance_summary')
+        const { data, error } = await supabase.rpc('finance_summary')
+        if (error) throw error
         financeData = data
       }
 
       // Products overview
       const [prodRes, invRes, researchRes] = await Promise.all([
         supabase.from('products').select('id, publication_status, deleted_at'),
-        supabase.from('inventory_balances').select('owned_qty, reserved_qty, supplier_qty, supplier_reserved_qty'),
+        supabase.from('inventory_balances').select('product_id, owned_qty, reserved_qty, supplier_qty, supplier_reserved_qty'),
         supabase.from('research_listings').select('id, status'),
       ])
+      if (prodRes.error) throw prodRes.error
+      if (invRes.error) throw invRes.error
+      if (researchRes.error) throw researchRes.error
 
       const products = prodRes.data ?? []
-      const inventory = invRes.data ?? []
+      const activeProductIds = new Set(products.filter((product) => !product.deleted_at).map((product) => product.id))
+      const inventory = (invRes.data ?? []).filter((row) => activeProductIds.has(row.product_id))
       const research = researchRes.data ?? []
 
       const ownedStock = inventory.reduce((s, r) => s + Math.max(0, (r.owned_qty || 0) - (r.reserved_qty || 0)), 0)
@@ -143,9 +149,11 @@ export default function AdminDashboard() {
 
       // Orders
       const [ordersRes, customersRes] = await Promise.all([
-        supabase.from('orders').select('id, order_number, customer_name, customer_phone, total, status, created_at, user_id').order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, order_number, guest_name, guest_phone, total, status, created_at, user_id, payment_records(status)').order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, role, created_at, account_status'),
       ])
+      if (ordersRes.error) throw ordersRes.error
+      if (customersRes.error) throw customersRes.error
 
       const orders = (ordersRes.data ?? []) as OrderRow[]
       const profiles = customersRes.data ?? []
@@ -159,58 +167,78 @@ export default function AdminDashboard() {
       const ordersThisWeek = orders.filter((o) => o.created_at >= weekStart).length
       const ordersThisMonth = orders.filter((o) => o.created_at >= monthStart).length
 
+      const periodEnd = dateRange === 'custom' && customTo
+        ? new Date(`${customTo}T23:59:59.999`).toISOString()
+        : now.toISOString()
+      const periodOrders = orders.filter((order) => order.created_at >= rangeStart && order.created_at <= periodEnd)
+      const periodDuration = Math.max(1, new Date(periodEnd).getTime() - new Date(rangeStart).getTime())
+      const previousStart = new Date(new Date(rangeStart).getTime() - periodDuration).toISOString()
+      const previousOrders = orders.filter((order) => order.created_at >= previousStart && order.created_at < rangeStart)
+
       const statusCounts: Record<string, number> = {}
-      orders.forEach((o) => {
+      periodOrders.forEach((o) => {
         statusCounts[o.status] = (statusCounts[o.status] || 0) + 1
       })
 
-      const paidStatuses = ['paid', 'processing', 'ready_for_delivery', 'dispatched', 'delivered']
-      const completedOrders = orders.filter((o) => paidStatuses.includes(o.status)).length
-      const pendingOrders = orders.filter((o) => o.status === 'pending' || o.status === 'awaiting_payment').length
-      const cancelledOrders = orders.filter((o) => o.status === 'cancelled').length
+      const isPaymentConfirmed = (order: any) => order.status !== 'refunded'
+        && order.payment_records?.some((payment: any) => payment.status === 'confirmed')
+        && !order.payment_records?.some((payment: any) => payment.status === 'refunded')
+      const paidPeriodOrders = periodOrders.filter(isPaymentConfirmed)
+      const completedOrders = periodOrders.filter((order) => order.status === 'delivered').length
+      const pendingOrders = periodOrders.filter((o) => ['pending', 'awaiting_supplier_confirmation', 'confirmed', 'awaiting_payment'].includes(o.status)).length
+      const cancelledOrders = periodOrders.filter((o) => o.status === 'cancelled').length
 
-      const revenue = orders
-        .filter((o) => paidStatuses.includes(o.status))
-        .reduce((s, o) => s + Number(o.total || 0), 0)
-      const aov = completedOrders > 0 ? revenue / completedOrders : 0
+      const revenue = paidPeriodOrders.reduce((s, o) => s + Number(o.total || 0), 0)
+      const previousRevenue = previousOrders.filter(isPaymentConfirmed)
+        .reduce((sum, order) => sum + Number(order.total || 0), 0)
+      const trendPercent = (current: number, previous: number) => previous > 0
+        ? Math.round(((current - previous) / previous) * 100)
+        : current > 0 ? null : 0
+      const aov = paidPeriodOrders.length > 0 ? revenue / paidPeriodOrders.length : 0
 
       const totalCustomers = profiles.filter((p) => p.role === 'customer').length
       const newCustomers = profiles.filter(
-        (p) => p.role === 'customer' && p.created_at >= rangeStart
+        (p) => p.role === 'customer' && p.created_at >= rangeStart && p.created_at <= periodEnd
       ).length
 
       setStats({
-        totalProducts: products.length,
+        totalProducts: products.filter((product) => !product.deleted_at).length,
         publishedProducts,
         pendingApproval,
         ownedStock,
         supplierStock,
         lowStockCount: lowStock,
-        totalOrders: orders.length,
+        totalOrders: periodOrders.length,
         ordersToday,
         ordersThisWeek,
         ordersThisMonth,
         pendingOrders,
         cancelledOrders,
         completedOrders,
-        totalRevenue: salesData?.paid_total ?? revenue,
+        totalRevenue: revenue,
         averageOrderValue: aov,
         knownProductCost: financeData?.known_product_cost ?? 0,
         expensesTotal: financeData?.expenses_total ?? 0,
-        grossProfit: financeData?.gross_profit_estimate ?? 0,
+        grossProfit: financeData ? Number(financeData.gross_profit_estimate || 0) + Number(financeData.expenses_total || 0) : 0,
         totalCustomers,
         newCustomers,
+        orderTrend: trendPercent(periodOrders.length, previousOrders.length),
+        revenueTrend: trendPercent(revenue, previousRevenue),
       })
 
       setOrdersByStatus(statusCounts)
-      setRecentOrders(orders.slice(0, 10))
+      setRecentOrders(periodOrders.slice(0, 10))
 
-      // Top products by revenue (from order_items)
-      const itemsRes = await supabase
-        .from('order_items')
-        .select('product_id, product_name, quantity, unit_price, line_total')
-        .order('line_total', { ascending: false })
-        .limit(10)
+      // Top products are based on paid orders in the currently selected period.
+      const paidOrderIds = paidPeriodOrders.map((order) => order.id)
+      const itemsRes = paidOrderIds.length > 0
+        ? await supabase.from('order_items')
+          .select('order_id, product_id, product_name, quantity, unit_price, line_total')
+          .in('order_id', paidOrderIds)
+          .order('line_total', { ascending: false })
+          .limit(1000)
+        : { data: [], error: null }
+      if (itemsRes.error) throw itemsRes.error
       const itemsData = itemsRes.data ?? []
       if (itemsData.length > 0) {
         const productMap: Record<string, { name: string; qty: number; revenue: number }> = {}
@@ -223,7 +251,8 @@ export default function AdminDashboard() {
           productMap[key].revenue += Number(item.line_total || 0)
         })
         setTopProducts(Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5))
-      }
+      } else setTopProducts([])
+      setLastUpdated(new Date())
     } catch (err: any) {
       setMessage(`Error loading dashboard: ${err.message}`)
     } finally {
@@ -232,14 +261,16 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    loadDashboard()
+    void loadDashboard()
+    const timer = window.setInterval(() => { void loadDashboard() }, 30000)
+    return () => window.clearInterval(timer)
   }, [dateRange, customFrom, customTo, isOwner, canViewSales])
 
   const exportSalesCSV = () => {
     const rows = recentOrders.map((o) => ({
       order_number: o.order_number,
-      customer_name: o.customer_name,
-      customer_phone: o.customer_phone,
+      customer_name: o.guest_name,
+      customer_phone: o.guest_phone,
       total: o.total,
       status: o.status,
       created_at: o.created_at,
@@ -265,7 +296,8 @@ export default function AdminDashboard() {
     subtitle: string,
     Icon: React.ElementType,
     colorClass: string,
-    link?: string
+    link?: string,
+    trend?: number | null
   ) => (
     <div className="rounded-xl border border-line bg-card p-5 shadow-xs">
       <div className="flex items-center justify-between text-muted">
@@ -275,11 +307,13 @@ export default function AdminDashboard() {
       <p className="mt-2 font-display text-2xl font-bold text-ink">{value}</p>
       <div className="mt-2 flex items-center justify-between text-[11px] text-muted">
         <span>{subtitle}</span>
-        {link && (
-          <Link to={link} className="font-bold text-teal hover:underline">
-            View →
-          </Link>
-        )}
+        <span className="flex items-center gap-2">
+          {trend !== undefined && <span className={`inline-flex items-center gap-0.5 font-bold ${trend === null ? 'text-muted' : trend > 0 ? 'text-emerald-700' : trend < 0 ? 'text-error' : 'text-muted'}`} title="Compared with the previous matching period">
+            {trend !== null && (trend > 0 ? <TrendingUp className="h-3 w-3" /> : trend < 0 ? <TrendingDown className="h-3 w-3" /> : null)}
+            {trend === null ? 'New' : `${trend > 0 ? '+' : ''}${trend}%`}
+          </span>}
+          {link && <Link to={link} className="font-bold text-teal hover:underline">View →</Link>}
+        </span>
       </div>
     </div>
   )
@@ -331,6 +365,9 @@ export default function AdminDashboard() {
               <Download className="h-3.5 w-3.5" /> Export CSV
             </button>
           )}
+          <button type="button" onClick={() => void loadDashboard()} disabled={loading} className="btn btn-outline !h-9 gap-1.5 text-xs font-bold disabled:opacity-50" title={lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString('en-KE')}` : 'Refresh dashboard'}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />Refresh
+          </button>
           <Link to="/admin/products/new" className="btn btn-emerald !h-9 text-xs font-bold shadow-xs">
             <Plus className="h-4 w-4" /> Add Product
           </Link>
@@ -377,7 +414,8 @@ export default function AdminDashboard() {
           `${stats.ordersToday} today · ${stats.pendingOrders} pending · ${stats.cancelledOrders} cancelled`,
           ShoppingCart,
           'text-teal',
-          '/admin/orders'
+          '/admin/orders',
+          stats.orderTrend
         )}
         {statCard(
           'Revenue ' + rangeLabel(dateRange),
@@ -385,7 +423,8 @@ export default function AdminDashboard() {
           `AOV ${formatKES(stats.averageOrderValue)} · ${stats.completedOrders} completed`,
           TrendingUp,
           'text-tealdeep',
-          '/admin/orders'
+          '/admin/orders',
+          stats.revenueTrend
         )}
       </div>
 
@@ -393,30 +432,30 @@ export default function AdminDashboard() {
       {isOwner && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           {statCard(
-            'Gross Profit Estimate',
+            'Gross Profit Estimate (All Time)',
             formatKES(stats.grossProfit),
-            `Sales ${formatKES(stats.totalRevenue)} − Costs − Expenses`,
+            'All-time sales less recorded product costs',
             ShieldCheck,
             'text-tealdeep'
           )}
           {statCard(
-            'Known Product Cost',
+            'Known Product Cost (All Time)',
             formatKES(stats.knownProductCost),
-            'From recorded purchase costs',
+            'All-time recorded purchase costs',
             CreditCard,
             'text-muted'
           )}
           {statCard(
-            'Operating Expenses',
+            'Operating Expenses (All Time)',
             formatKES(stats.expensesTotal),
-            'Logged business expenses',
+            'All-time logged business expenses',
             AlertTriangle,
             'text-error'
           )}
           {statCard(
-            'Net Operating Profit',
-            formatKES(Math.max(0, stats.grossProfit - stats.expensesTotal)),
-            'After direct operational costs',
+            'Net Operating Profit (All Time)',
+            formatKES(stats.grossProfit - stats.expensesTotal),
+            'All-time estimate after recorded expenses',
             TrendingUp,
             stats.grossProfit > stats.expensesTotal ? 'text-tealdeep' : 'text-error'
           )}
@@ -443,7 +482,7 @@ export default function AdminDashboard() {
         {statCard(
           'Completed Orders',
           stats.completedOrders,
-          'Paid and fulfilled orders',
+          'Orders marked delivered in this period',
           CheckCircle2,
           'text-tealdeep',
           '/admin/orders'
@@ -511,7 +550,7 @@ export default function AdminDashboard() {
                   {recentOrders.map((o) => (
                     <tr key={o.id} className="hover:bg-mist/30">
                       <td className="px-4 py-2 font-mono font-bold text-ink">#{o.order_number}</td>
-                      <td className="px-4 py-2 text-muted">{o.customer_name}</td>
+                      <td className="px-4 py-2 text-muted">{o.guest_name}</td>
                       <td className="px-4 py-2 font-extrabold text-teal">{formatKES(o.total)}</td>
                       <td className="px-4 py-2">
                         <span

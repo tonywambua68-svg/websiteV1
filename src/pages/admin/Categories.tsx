@@ -6,17 +6,7 @@ import { slugify } from '@/lib/commerce'
 import { Plus, CheckCircle2, Layers, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
 
 export default function AdminCategories() {
-  const [categories, setCategories] = useState<Category[]>([
-    { id: '1', parent_id: null, name: 'Laptops', slug: 'laptops', description: 'All laptop models', menu_group: 'laptops', sort_order: 10, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '2', parent_id: null, name: 'Business Laptops', slug: 'business-laptops', description: 'Enterprise machines', menu_group: 'use', sort_order: 20, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '3', parent_id: null, name: 'Gaming Laptops', slug: 'gaming-laptops', description: 'High performance gaming', menu_group: 'use', sort_order: 30, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '4', parent_id: null, name: 'Student Laptops', slug: 'student-laptops', description: 'Affordable everyday laptops', menu_group: 'use', sort_order: 40, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '5', parent_id: null, name: 'Workstations', slug: 'workstations', description: 'Professional engineering laptops', menu_group: 'use', sort_order: 50, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '6', parent_id: null, name: 'Computer Accessories', slug: 'computer-accessories', description: 'Peripherals and adapters', menu_group: 'accessories', sort_order: 60, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '7', parent_id: null, name: 'Monitors', slug: 'monitors', description: 'High resolution external screens', menu_group: 'accessories', sort_order: 70, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '8', parent_id: null, name: 'Storage Devices', slug: 'storage-devices', description: 'SSDs, hard drives, and flash', menu_group: 'accessories', sort_order: 80, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-    { id: '9', parent_id: null, name: 'Networking Equipment', slug: 'networking-equipment', description: 'Routers, switches and cables', menu_group: 'accessories', sort_order: 90, is_active: true, seo_title: null, seo_description: null, seo_focus_keyword: null, seo_social_title: null, seo_social_description: null },
-  ])
+  const [categories, setCategories] = useState<Category[]>([])
 
   const [form, setForm] = useState({
     name: '',
@@ -36,9 +26,18 @@ export default function AdminCategories() {
 
   const loadCategories = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
-    const { data } = await supabase.from('categories').select('*').order('sort_order')
-    if (data && data.length > 0) setCategories(data as Category[])
+    if (!supabase) {
+      setCategories([])
+      setMessage('Categories cannot be loaded because the store database is not configured.')
+      return
+    }
+    const { data, error } = await supabase.from('categories').select('*').order('sort_order')
+    if (error) {
+      setCategories([])
+      setMessage(`Could not load categories: ${error.message}`)
+      return
+    }
+    setCategories((data ?? []) as Category[])
   }
 
   useEffect(() => {
@@ -82,11 +81,7 @@ export default function AdminCategories() {
         setForm({ name: '', slug: '', description: '', menu_group: 'use', sort_order: '100', seo_title: '', seo_description: '', seo_focus_keyword: '', seo_social_title: '', seo_social_description: '' })
         loadCategories()
       }
-    } else {
-      setCategories((prev) => [...prev, { id: `local-${Date.now()}`, parent_id: null, ...newCat }])
-      setMessage(`Category "${form.name}" added locally.`)
-      setForm({ name: '', slug: '', description: '', menu_group: 'use', sort_order: '100', seo_title: '', seo_description: '', seo_focus_keyword: '', seo_social_title: '', seo_social_description: '' })
-    }
+    } else setMessage('The category was not saved because the store database is not configured.')
     setLoading(false)
   }
 
@@ -95,10 +90,12 @@ export default function AdminCategories() {
     const nextState = !cat.is_active
 
     if (supabase) {
-      await supabase.from('categories').update({ is_active: nextState }).eq('id', cat.id)
+      const { error } = await supabase.from('categories').update({ is_active: nextState }).eq('id', cat.id)
+      if (error) setMessage(`Could not update ${cat.name}: ${error.message}`)
+      else setMessage(`${cat.name} ${nextState ? 'activated' : 'deactivated'}.`)
       loadCategories()
     } else {
-      setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, is_active: nextState } : c)))
+      setMessage('The category was not updated because the store database is not configured.')
     }
   }
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { useOrderStore } from '@/store/orderStore'
 import { getSupabase } from '@/lib/supabase'
 import { User, Package, Phone, LogOut, Shield, MapPin, Calendar, Clock, CheckCircle } from 'lucide-react'
@@ -8,10 +9,34 @@ import { formatKES, formatNairobi } from '@/lib/commerce'
 
 export default function Account() {
   const { user, isAuthenticated, logout } = useAuthStore()
+  const settings = useSettingsStore((state) => state.settings)
   const navigate = useNavigate()
   const { orders } = useOrderStore()
   const [dbOrders, setDbOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [profileForm, setProfileForm] = useState({ full_name: user?.full_name || '', phone: user?.phone || '' })
+  const [profileMessage, setProfileMessage] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  useEffect(() => {
+    setProfileForm({ full_name: user?.full_name || '', phone: user?.phone || '' })
+  }, [user?.full_name, user?.phone])
+
+  const saveProfile = async (event: FormEvent) => {
+    event.preventDefault()
+    const supabase = getSupabase()
+    if (!supabase || !user?.id) return setProfileMessage('Your account service is unavailable. Please try again.')
+    setSavingProfile(true)
+    setProfileMessage('')
+    const profileUpdate = await supabase.from('profiles').update({ full_name: profileForm.full_name.trim(), phone: profileForm.phone.trim() || null }).eq('id', user.id)
+    if (profileUpdate.error) setProfileMessage(profileUpdate.error.message)
+    else {
+      const customerUpdate = await supabase.from('customers').update({ full_name: profileForm.full_name.trim(), phone: profileForm.phone.trim() || null }).eq('user_id', user.id)
+      await useAuthStore.getState().refreshProfile()
+      setProfileMessage(customerUpdate.error ? 'Profile saved. The customer record could not be synchronized; please contact support.' : 'Your contact details have been updated.')
+    }
+    setSavingProfile(false)
+  }
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -165,6 +190,16 @@ export default function Account() {
             </div>
           </div>
 
+          <form onSubmit={saveProfile} className="rounded-xl border border-line bg-card p-6 shadow-xs">
+            <h3 className="font-display text-sm font-bold text-ink">Update your contact details</h3>
+            <label className="mt-3 block text-xs font-bold text-muted">Full name</label>
+            <input className="input mt-1 w-full text-xs" required value={profileForm.full_name} onChange={(event) => setProfileForm({ ...profileForm, full_name: event.target.value })} />
+            <label className="mt-3 block text-xs font-bold text-muted">Phone for order updates and M-PESA</label>
+            <input className="input mt-1 w-full text-xs" type="tel" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} placeholder="07… or +254…" />
+            {profileMessage && <p className="mt-2 text-xs text-muted">{profileMessage}</p>}
+            <button className="btn btn-emerald mt-3 !h-9 text-xs" type="submit" disabled={savingProfile}>{savingProfile ? 'Saving…' : 'Save details'}</button>
+          </form>
+
           <div className="rounded-xl border border-line bg-card p-6 shadow-xs">
             <h3 className="font-display text-sm font-bold text-ink">Need Assistance?</h3>
             <p className="mt-1 text-xs text-muted">
@@ -173,11 +208,11 @@ export default function Account() {
             <div className="mt-4 space-y-2 text-xs font-semibold">
               <div className="flex items-center gap-2 text-ink">
                 <Phone className="h-4 w-4 text-teal" />
-                <span>+254 700 000 000</span>
+                {settings.whatsapp_e164 ? <a href={`https://wa.me/${settings.whatsapp_e164.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{settings.whatsapp_e164}</a> : <span>Store contact number not configured</span>}
               </div>
               <div className="flex items-center gap-2 text-ink">
                 <MapPin className="h-4 w-4 text-teal" />
-                <span>Nairobi, Kenya</span>
+                <span>{settings.store_location || 'Kenya'}</span>
               </div>
             </div>
           </div>

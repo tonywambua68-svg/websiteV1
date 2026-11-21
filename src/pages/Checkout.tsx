@@ -1,9 +1,11 @@
 import { useState, FormEvent, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCartStore } from '@/store/cartStore'
-import { useOrderStore } from '@/store/orderStore'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { getSupabase } from '@/lib/supabase'
+import { isProductUuid } from '@/lib/productIds'
+import { getCheckoutAttemptToken } from '@/lib/checkoutAttempt'
 import {
   CheckCircle2,
   Truck,
@@ -11,14 +13,8 @@ import {
   Phone,
   ArrowLeft,
   AlertCircle,
-  Loader2,
-  RefreshCw,
 } from 'lucide-react'
 import { formatKES, normalizePhone, isKenyanPhone, whatsappHref } from '@/lib/commerce'
-import {
-  normalizeDarajaPhone,
-  isValidDarajaPhone,
-} from '@/lib/daraja'
 
 const KENYA_COUNTIES = [
   'Nairobi',
@@ -42,26 +38,36 @@ const KENYA_COUNTIES = [
 
 export default function Checkout() {
   const navigate = useNavigate()
-  const { items, totals, clearCart, syncToServer } = useCartStore()
-  const { addOrder } = useOrderStore()
+  const { items, totals, clearCart, refreshPrices } = useCartStore()
   const { user, isAuthenticated, checkAuth } = useAuthStore()
+  const supportPhone = useSettingsStore((state) => state.settings.whatsapp_e164)
   const { subtotal } = totals()
+  const paybillNumber = import.meta.env.VITE_MPESA_PAYBILL_NUMBER?.trim()
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [authReady, setAuthReady] = useState(false)
+  const submissionLock = useRef(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState('')
+  const [confirmedOrderTotal, setConfirmedOrderTotal] = useState<number | null>(null)
+  const [referenceSubmitted, setReferenceSubmitted] = useState(false)
   const [paymentReference, setPaymentReference] = useState('')
-  const [selectedPaymentMode, setSelectedPaymentMode] = useState<'mpesa' | 'delivery'>('mpesa')
+  const [stkPaymentState, setStkPaymentState] = useState<'idle' | 'starting' | 'pending' | 'confirmed' | 'failed' | 'manual' | 'unknown'>('idle')
+  const [stkPaymentMessage, setStkPaymentMessage] = useState<string | null>(null)
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState<'mpesa' | 'delivery'>(paybillNumber ? 'mpesa' : 'delivery')
 
-  // M-Pesa STK push state
-  const [stkPushStatus, setStkPushStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
-  const [stkPushLoading, setStkPushLoading] = useState(false)
-  const [checkoutRequestId, setCheckoutRequestId] = useState<string | null>(null)
-  const [stkMessage, setStkMessage] = useState<string | null>(null)
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Delivery fee state (computed server-side, never trusted from frontend)
+  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [deliveryZoneId, setDeliveryZoneId] = useState<string | null>(null)
+  const [deliveryZone, setDeliveryZone] = useState<string | null>(null)
+  const [deliverySupported, setDeliverySupported] = useState(false)
+  const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null)
+  const [codEligible, setCodEligible] = useState(false)
+  const [deliveryMethod, setDeliveryMethod] = useState<string | null>(null)
+  const [feeCalculating, setFeeCalculating] = useState(false)
+  const deliveryRequestId = useRef(0)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -76,52 +82,119 @@ export default function Checkout() {
 
   useEffect(() => {
     checkAuth().then(() => setAuthReady(true))
-    syncToServer()
-  }, [checkAuth, syncToServer])
+    refreshPrices()
+  }, [checkAuth, refreshPrices])
 
-  // Poll payment status from server
   useEffect(() => {
-    if (!checkoutRequestId || stkPushStatus !== 'pending') {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
+    if (!authReady || !user) return
+    const parts = (user.full_name || '').trim().split(/\s+/).filter(Boolean)
+    setFormData((current) => ({
+      ...current,
+      firstName: current.firstName || parts[0] || '',
+      lastName: current.lastName || parts.slice(1).join(' '),
+      phone: current.phone || user.phone || '',
+      email: current.email || user.email || '',
+    }))
+  }, [authReady, user])
+
+  // Calculate delivery fee server-side when location or subtotal changes
+  // Never trust a frontend-submitted delivery fee
+  useEffect(() => {
+    if (!formData.county || !formData.town) {
+      setDeliveryFee(0)
+      setDeliveryZoneId(null)
+      setDeliveryZone(null)
+      setDeliverySupported(false)
+      setDeliveryMessage(null)
+      setCodEligible(false)
+      setDeliveryMethod(null)
       return
     }
 
-    pollIntervalRef.current = setInterval(async () => {
+    setFeeCalculating(true)
+    const abortController = new AbortController()
+    const requestId = ++deliveryRequestId.current
+
+    ;(async () => {
       try {
         const supabase = getSupabase()
-        if (!supabase) return
+        if (!supabase) {
+          setDeliveryMessage('Delivery is temporarily unavailable. Please try again later.')
+          setFeeCalculating(false)
+          return
+        }
 
-        const { data, error } = await supabase.rpc('record_payment', {
-          p_order_id: '00000000-0000-0000-0000-000000000000', // placeholder, replaced below
-          p_provider: 'mpesa_daraja',
-          p_status: 'pending',
-          p_reference: '',
-          p_amount: 0,
+        const { data, error } = await supabase.functions.invoke('get-delivery-fees', {
+          body: {
+            county: formData.county,
+            town: formData.town,
+            subtotal: subtotal,
+          },
+          signal: abortController.signal,
         })
-        // We don't have a status-check RPC yet; poll the order via payment_records instead
-        // This is a placeholder — a dedicated get_payment_status RPC would be cleaner
-      } catch {
-        // ignore poll errors
-      }
-    }, 5000)
 
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
+        if (error) throw error
+        if (requestId !== deliveryRequestId.current) return
+
+        setDeliverySupported(data.supported ?? false)
+        setDeliveryZoneId(data.zone_id ?? null)
+        setDeliveryZone(data.zone_name ?? null)
+        setDeliveryFee(data.supported ? (data.delivery_fee ?? 0) : 0)
+        setDeliveryMessage(data.message ?? null)
+        setCodEligible(data.cod_eligible ?? false)
+        setDeliveryMethod(data.delivery_method ?? null)
+      } catch (err: any) {
+        if (err.name === 'AbortError') return
+        if (requestId !== deliveryRequestId.current) return
+        setDeliverySupported(false)
+        setDeliveryMessage('Delivery is temporarily unavailable. Please try again later.')
+        setDeliveryFee(0)
+      } finally {
+        if (requestId === deliveryRequestId.current) setFeeCalculating(false)
       }
+    })()
+
+    return () => abortController.abort()
+  }, [formData.county, formData.town, subtotal, getSupabase])
+
+  useEffect(() => {
+    if (!orderPlaced || selectedPaymentMode !== 'mpesa' || stkPaymentState !== 'pending') return
+    const supabase = getSupabase()
+    if (!supabase) return
+    let attempts = 0
+    const poll = async () => {
+      attempts += 1
+      const { data, error } = await supabase.rpc('track_order', {
+        p_number: confirmedOrderNumber,
+        p_phone: normalizePhone(formData.phone),
+      })
+      if (!error && data?.found) {
+        if (data.payment_status === 'confirmed') {
+          setStkPaymentState('confirmed')
+          setStkPaymentMessage('M-PESA payment confirmed.')
+          return true
+        }
+        if (data.payment_status === 'failed') {
+          setStkPaymentState('failed')
+          setStkPaymentMessage('The STK payment did not complete. Contact the store before retrying or paying again.')
+          return true
+        }
+      }
+      return attempts >= 12
     }
-  }, [checkoutRequestId, stkPushStatus])
+    let stopped = false
+    const timer = setInterval(() => {
+      void poll().then((done) => {
+        if (done && !stopped) clearInterval(timer)
+      })
+    }, 5000)
+    void poll().then((done) => {
+      if (done) clearInterval(timer)
+    })
+    return () => { stopped = true; clearInterval(timer) }
+  }, [orderPlaced, selectedPaymentMode, stkPaymentState, confirmedOrderNumber, formData.phone])
 
   if (!authReady) {
-    return null
-  }
-
-  if (!isAuthenticated && user === null) {
-    navigate('/login?from=/checkout')
     return null
   }
 
@@ -131,12 +204,12 @@ export default function Checkout() {
   }
 
   const hasSupplierItems = items.some((item) => item.availability === 'supplier')
-  const shippingFee = formData.county === 'Nairobi' ? 250 : 450
+  const shippingFee = deliveryFee
   const totalAmount = subtotal + shippingFee
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (submitting) return
+    if (submitting || submissionLock.current) return
     setErrorMessage(null)
 
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
@@ -153,9 +226,64 @@ export default function Checkout() {
       setErrorMessage('Please provide your town or neighborhood.')
       return
     }
+    if (feeCalculating || !deliverySupported || !deliveryZoneId) {
+      setErrorMessage(deliveryMessage || 'Wait for a supported delivery fee before placing your order.')
+      return
+    }
+    if (selectedPaymentMode === 'delivery' && !codEligible) {
+      setErrorMessage('Cash on delivery is not available for this location or order amount.')
+      return
+    }
+    if (selectedPaymentMode === 'mpesa' && !paybillNumber) {
+      setErrorMessage('M-PESA PayBill is not configured. Choose another available payment method or contact the store.')
+      return
+    }
 
+    submissionLock.current = true
     setSubmitting(true)
     setLoading(true)
+
+    let productsVerified = false
+    try {
+      productsVerified = await refreshPrices()
+    } catch {
+      setErrorMessage('We could not verify the products in your cart. Please try again before placing the order.')
+      setSubmitting(false)
+      setLoading(false)
+      submissionLock.current = false
+      return
+    }
+    if (!productsVerified) {
+      const cartStatus = useCartStore.getState()
+      setErrorMessage(cartStatus.error || 'A product is no longer available from the store. Review your cart and try again.')
+      setSubmitting(false)
+      setLoading(false)
+      submissionLock.current = false
+      return
+    }
+    const refreshedCart = useCartStore.getState()
+    const checkoutItems = refreshedCart.items
+    const refreshedSubtotal = refreshedCart.totals().subtotal
+    if (checkoutItems.length === 0) {
+      setErrorMessage('Your cart no longer has products available from the store. Please return to the shop and add available products.')
+      setSubmitting(false)
+      setLoading(false)
+      submissionLock.current = false
+      return
+    }
+    if (checkoutItems.some((item) => !isProductUuid(item.product_id))) {
+      setErrorMessage('A cart item could not be matched to a store product. Please remove it and add the product again from the shop.')
+      setSubmitting(false)
+      setLoading(false)
+      submissionLock.current = false
+      return
+    }
+    if (refreshedSubtotal !== subtotal) {
+      setErrorMessage('Your cart prices or stock were updated. Review the refreshed cart and delivery total before placing the order.')
+      setSubmitting(false)
+      setLoading(false)
+      return
+    }
 
     const normalizedPhone = normalizePhone(formData.phone)
     const customerFullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`
@@ -163,161 +291,112 @@ export default function Checkout() {
 
     try {
       const supabase = getSupabase()
-      let orderId: string | null = null
+      if (!supabase) {
+        throw new Error('Checkout is temporarily unavailable because the store database is not configured.')
+      }
 
-      if (supabase && user?.id) {
-        try {
-          const { data, error } = await supabase.rpc('place_order', {
+      try {
+        const orderFingerprint = JSON.stringify({
+          cart: checkoutItems.map((item) => [item.product_id, item.quantity]),
+          phone: normalizedPhone,
+          customer: customerFullName,
+          email: formData.email.trim().toLowerCase(),
+          destination: fullDestination,
+          instructions: formData.deliveryNotes.trim(),
+          payment_method: selectedPaymentMode === 'mpesa' ? 'mpesa_paybill' : 'cash_on_delivery',
+          delivery_zone_id: deliveryZoneId,
+          delivery_method: deliveryMethod,
+        })
+        const checkoutToken = getCheckoutAttemptToken(orderFingerprint)
+        const { data, error } = await supabase.rpc('place_order', {
+          payload: {
             customer_name: customerFullName,
             phone: normalizedPhone,
             email: formData.email.trim() || null,
             delivery_location: fullDestination,
-            delivery_instructions: `${formData.deliveryNotes.trim()} | Payment: ${selectedPaymentMode.toUpperCase()} Ref: ${paymentReference || 'PENDING'}`,
+            county: formData.county,
+            town: formData.town.trim(),
+            delivery_instructions: formData.deliveryNotes.trim() || null,
             coupon_code: null,
-            items: items.map((item) => ({
+            payment_method: selectedPaymentMode === 'mpesa' ? 'mpesa_paybill' : 'cash_on_delivery',
+            payment_reference: null,
+            checkout_token: checkoutToken,
+            delivery_zone_name: deliveryZone ?? null,
+            delivery_zone_id: deliveryZoneId ?? null,
+            delivery_method: deliveryMethod ?? null,
+            items: checkoutItems.map((item) => ({
               product_id: item.product_id,
               variant_id: null,
               quantity: item.quantity,
             })),
-          })
-
-          if (error) throw error
-          if (data) {
-            setConfirmedOrderNumber(String((data as any).order_number || (data as any).order_id))
-            orderId = String((data as any).order_id || (data as any).id)
-          }
-        } catch (dbErr: any) {
-          setErrorMessage(dbErr.message || 'Database order placement failed.')
-          setSubmitting(false)
-          setLoading(false)
-          return
-        }
-      }
-
-      // Store in client order tracker
-      addOrder({
-        customerName: customerFullName,
-        customerPhone: normalizedPhone,
-        customerEmail: formData.email.trim(),
-        shippingAddress: {
-          street: formData.street,
-          city: formData.town,
-          state: formData.county,
-          zipCode: '00100',
-          country: 'Kenya',
-        },
-        items: items.map((line) => ({
-          product: {
-            id: line.product_id,
-            name: line.name,
-            brand: 'Hardware',
-            category: 'Laptops',
-            price: line.unit_price,
-            image: line.image_url || undefined,
-            description: '',
           },
-          quantity: line.quantity,
-        })),
-        subtotal,
-        shippingCost: shippingFee,
-        total: totalAmount,
-        paymentMethod: selectedPaymentMode === 'mpesa' ? 'M-PESA PayBill' : 'Cash on Delivery',
-        notes: formData.deliveryNotes,
-      })
+        })
 
-      // If M-Pesa selected, initiate STK push
-      if (selectedPaymentMode === 'mpesa' && orderId && supabase) {
-        setStkPushStatus('pending')
-        setStkPushLoading(true)
-        setStkMessage('Initiating M-Pesa STK push…')
-
-        try {
-          const normalizedStkPhone = normalizeDarajaPhone(formData.phone)
-          if (!isValidDarajaPhone(normalizedStkPhone)) {
-            throw new Error('Invalid phone number for M-Pesa payment')
-          }
-
-          const { data: stkData, error: stkError } = await supabase.functions.invoke('daraja-stk-push', {
-            body: {
-              phone: normalizedStkPhone,
-              amount: totalAmount,
-              order_id: orderId,
-              account_reference: confirmedOrderNumber,
-              transaction_desc: `OREMITECH order ${confirmedOrderNumber}`,
-            },
-          })
-
-          if (stkError) throw stkError
-
-          setCheckoutRequestId(stkData.CheckoutRequestID)
-          setStkMessage('STK push sent to your phone. Enter your M-Pesa PIN to complete payment.')
-          setStkPushStatus('pending')
-
-          // Start polling for payment status (server callback updates payment_records)
-          // We'll poll via the order status or payment record
-          pollIntervalRef.current = setInterval(async () => {
-            try {
-              const { data: orderStatus } = await supabase
-                .from('orders')
-                .select('status, payment_status')
-                .eq('id', orderId)
-                .single()
-
-              if (orderStatus?.payment_status === 'confirmed' || orderStatus?.status === 'paid') {
-                setStkPushStatus('completed')
-                setStkMessage('Payment confirmed successfully!')
-                if (pollIntervalRef.current) {
-                  clearInterval(pollIntervalRef.current)
-                  pollIntervalRef.current = null
-                }
-                setOrderPlaced(true)
-                return
-              }
-
-              if (orderStatus?.payment_status === 'failed') {
-                setStkPushStatus('failed')
-                setStkMessage('Payment failed. Please try again or pay on delivery.')
-                if (pollIntervalRef.current) {
-                  clearInterval(pollIntervalRef.current)
-                  pollIntervalRef.current = null
-                }
-              }
-            } catch {
-              // ignore poll errors
-            }
-          }, 5000)
-
-        } catch (stkErr: any) {
-          setStkPushStatus('failed')
-          setStkMessage(stkErr.message || 'Failed to initiate M-Pesa payment. You can pay on delivery instead.')
-        } finally {
-          setStkPushLoading(false)
+        if (error) throw error
+        if (!data) throw new Error('The store did not confirm the order. Please try again.')
+        const orderId = String((data as any).order_id || (data as any).id || '')
+        const orderNumber = String((data as any).order_number || '')
+        const confirmedTotal = Number((data as any).total)
+        if (!isProductUuid(orderId) || !orderNumber || !Number.isFinite(confirmedTotal)) {
+          throw new Error('The store response was incomplete. Your order may have been recorded; retrying safely will check the same order.')
         }
-      } else {
-        await clearCart()
+        setConfirmedOrderNumber(orderNumber)
+        setConfirmedOrderTotal(confirmedTotal)
+        setReferenceSubmitted(false)
         setOrderPlaced(true)
+        const orderState = {
+          orderId,
+          phone: normalizedPhone,
+          email: formData.email.trim(),
+          startMpesa: selectedPaymentMode === 'mpesa',
+        }
+        void clearCart().catch((clearError) => console.error('Cart cleanup after confirmed order failed:', clearError))
+        navigate(`/order-confirmation/${encodeURIComponent(orderNumber)}`, { replace: true, state: orderState })
+        return
+      } catch (dbErr: any) {
+        if (/A product in the cart is not available/i.test(dbErr.message || '')) {
+          await refreshPrices()
+          setErrorMessage('A product became unavailable before the order was saved. Your cart has been refreshed; please review it and try again.')
+        } else {
+          setErrorMessage(dbErr.message || 'Database order placement failed.')
+        }
+        setSubmitting(false)
+        setLoading(false)
+        submissionLock.current = false
+        return
       }
+
+      // A confirmed order navigates above before background cart synchronization.
     } catch (err) {
       console.error('Checkout error:', err)
-      setErrorMessage('Could not complete order placement. Please check your connection.')
+      setErrorMessage(err instanceof Error ? err.message : 'Could not complete order placement. Please check your connection.')
     } finally {
       setSubmitting(false)
       setLoading(false)
+      submissionLock.current = false
     }
   }
 
-  // Cleanup interval on unmount
-  useEffect(() => {
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
+  const submitPaymentReference = async (event: FormEvent) => {
+    event.preventDefault()
+    const supabase = getSupabase()
+    if (!supabase || !paymentReference.trim()) return
+    const { error } = await supabase.rpc('submit_payment_reference', {
+      p_order_number: confirmedOrderNumber,
+      p_phone: normalizePhone(formData.phone),
+      p_reference: paymentReference.trim().toUpperCase(),
+    })
+    if (error) {
+      setErrorMessage(error.message)
+      return
     }
-  }, [])
+    setErrorMessage(null)
+    setReferenceSubmitted(true)
+  }
 
   if (orderPlaced) {
     const waText = `Hello OREMITECH, I just placed order #${confirmedOrderNumber} for delivery to ${formData.county}. Please confirm dispatch.`
-    const waLink = whatsappHref('254700000000', waText)
+    const waLink = supportPhone ? whatsappHref(supportPhone, waText) : null
 
     return (
       <div className="wrap max-w-2xl py-12">
@@ -328,7 +407,7 @@ export default function Checkout() {
 
           <h1 className="mt-5 font-display text-2xl font-bold text-ink">Order Received Successfully!</h1>
           <p className="mt-2 text-sm text-muted">
-            Thank you for shopping with OREMITECH Kenya. We have recorded your order and will contact you via phone/WhatsApp to coordinate delivery.
+            Thank you for shopping with OREMITECH Kenya. Your order has been recorded. We will contact you using the phone number you provided.
           </p>
 
           <div className="mt-6 rounded-xl border border-line bg-mist p-4 text-left">
@@ -350,13 +429,38 @@ export default function Checkout() {
             </div>
             <div className="mt-2 flex justify-between border-t border-line/60 pt-2 text-sm font-extrabold">
               <span className="text-ink">Order Total:</span>
-              <span className="text-teal">{formatKES(totalAmount)}</span>
+              <span className="text-teal">{formatKES(confirmedOrderTotal ?? totalAmount)}</span>
             </div>
           </div>
 
           {hasSupplierItems && (
             <div className="mt-4 rounded-lg border border-amber/30 bg-amber/10 p-3 text-left text-xs font-semibold text-amberdeep">
               Notice: Your order includes supplier-verified items. Our team will verify supplier physical availability before concluding final dispatch.
+            </div>
+          )}
+
+          {selectedPaymentMode === 'mpesa' && (
+            <div className="mt-4 rounded-lg border border-line bg-mist p-4 text-left text-xs">
+              <p className="font-bold text-ink">M-PESA payment: {stkPaymentState.replace(/_/g, ' ')}</p>
+              <p className="mt-1 text-muted">{stkPaymentMessage || 'Your order has not been marked paid.'}</p>
+              {(stkPaymentState === 'manual' || stkPaymentState === 'failed') && paybillNumber && !referenceSubmitted && (
+                <>
+                  <p className="mt-3 text-muted">PayBill: <strong>{paybillNumber}</strong> · Account: <strong>{confirmedOrderNumber}</strong> · Amount: <strong>{formatKES(confirmedOrderTotal ?? totalAmount)}</strong></p>
+                  <form className="mt-3 flex flex-col gap-2 sm:flex-row" onSubmit={submitPaymentReference}>
+                    <input
+                      type="text"
+                      value={paymentReference}
+                      onChange={(event) => setPaymentReference(event.target.value.toUpperCase())}
+                      placeholder="M-PESA transaction code"
+                      className="input min-w-0 flex-1 text-xs"
+                      required
+                    />
+                    <button type="submit" className="btn btn-outline !h-10 text-xs font-bold">Submit reference</button>
+                  </form>
+                </>
+              )}
+              {referenceSubmitted && <p className="mt-2 font-bold text-teal">Reference received for staff verification.</p>}
+              {errorMessage && <p className="mt-2 text-error">{errorMessage}</p>}
             </div>
           )}
 
@@ -515,7 +619,7 @@ export default function Checkout() {
           <div className="rounded-xl border border-line bg-card p-6 shadow-sm">
             <h2 className="font-display text-lg font-bold text-ink">3. Payment Channel</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label
+              {paybillNumber ? <label
                 className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
                   selectedPaymentMode === 'mpesa' ? 'border-teal bg-mint/30' : 'border-line bg-card'
                 }`}
@@ -528,101 +632,75 @@ export default function Checkout() {
                   className="mt-1"
                 />
                 <div>
-                  <span className="block text-sm font-extrabold text-ink">M-PESA PayBill / Till</span>
+                  <span className="block text-sm font-extrabold text-ink">M-PESA STK Push</span>
                   <span className="mt-1 block text-xs text-muted">
-                    Pay via M-Pesa STK push to your phone, or provide transaction code after ordering.
+                    {paybillNumber ? 'We will request payment on your phone. PayBill instructions are available if STK Push is unavailable.' : 'M-PESA is unavailable until payment is configured for this store.'}
                   </span>
                 </div>
-              </label>
+              </label> : <p className="col-span-2 rounded-lg border border-error/30 bg-error/10 p-3 text-xs text-error">M-PESA PayBill is not configured for this store.</p>}
 
-              <label
-                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
-                  selectedPaymentMode === 'delivery' ? 'border-teal bg-mint/30' : 'border-line bg-card'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={selectedPaymentMode === 'delivery'}
-                  onChange={() => setSelectedPaymentMode('delivery')}
-                  className="mt-1"
-                />
-                <div>
-                  <span className="block text-sm font-extrabold text-ink">Pay on Delivery</span>
-                  <span className="mt-1 block text-xs text-muted">
-                    Available in Nairobi and select urban centres.
-                  </span>
+              {codEligible && (
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
+                    selectedPaymentMode === 'delivery' ? 'border-teal bg-mint/30' : 'border-line bg-card'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={selectedPaymentMode === 'delivery'}
+                    onChange={() => setSelectedPaymentMode('delivery')}
+                    className="mt-1"
+                    disabled={!codEligible}
+                  />
+                  <div>
+                    <span className="block text-sm font-extrabold text-ink">Cash on Delivery</span>
+                    <span className="mt-1 block text-xs text-muted">
+                      Pay cash when your order is delivered. Confirmed at handover.
+                    </span>
+                  </div>
+                </label>
+              )}
+
+              {!codEligible && deliverySupported && (
+                <div className="col-span-2 rounded-lg border border-amber/30 bg-amber/5 p-3 text-xs text-amberdeep">
+                  Cash on Delivery is not available for this location or order amount.
                 </div>
-              </label>
+              )}
             </div>
 
+            {!deliverySupported && deliveryMessage && (
+              <div className="mt-4 rounded-lg border border-error/30 bg-error/10 p-3 text-xs text-error">
+                {deliveryMessage}
+              </div>
+            )}
+
             {selectedPaymentMode === 'mpesa' && (
-              <div className="mt-4 rounded-lg border border-line bg-mist p-4 text-xs">
-                <p className="font-bold text-ink">M-PESA Payment Details:</p>
-                <p className="mt-1 text-muted">
-                  We will send an M-Pesa STK push to your phone after you place the order. Enter your PIN to complete payment.
+              <div className="mt-4 rounded-lg border border-teal/30 bg-teal/5 p-4 text-xs">
+                <p className="font-bold text-ink flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-teal" /> M-PESA PayBill
                 </p>
-                <input
-                  type="text"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value.toUpperCase())}
-                  placeholder="M-Pesa transaction code (optional, if already paid)"
-                  className="input mt-2 w-full text-xs"
-                />
+                <div className="mt-2 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted">PayBill Number:</span>
+                    <span className="font-bold text-ink bg-mist px-2 py-0.5 rounded">{paybillNumber || 'Not configured'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Account Number:</span>
+                    <span className="font-bold text-ink bg-mist px-2 py-0.5 rounded">{confirmedOrderNumber || formData.phone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Amount (KSh):</span>
+                    <span className="font-bold text-ink">{formatKES(totalAmount)}</span>
+                  </div>
+                </div>
+                <p className="mt-2 text-muted">
+                  STK Push is sent after order creation. If it cannot be started, the confirmation screen will provide these PayBill details and a transaction-code form.
+                </p>
               </div>
             )}
           </div>
 
-          {/* M-Pesa STK Push Status */}
-          {selectedPaymentMode === 'mpesa' && stkPushStatus !== 'idle' && (
-            <div className="rounded-xl border p-4 shadow-sm ${
-              stkPushStatus === 'pending'
-                ? 'border-amber/30 bg-amber/5'
-                : stkPushStatus === 'completed'
-                ? 'border-teal/30 bg-teal/5'
-                : 'border-error/30 bg-error/5'
-            }">
-              {stkPushStatus === 'pending' && (
-                <div className="flex items-start gap-3">
-                  <Loader2 className="mt-0.5 h-5 w-5 text-amber animate-spin" />
-                  <div>
-                    <p className="text-xs font-bold text-amberdeep">{stkMessage || 'Processing M-Pesa payment…'}</p>
-                    <p className="mt-1 text-xs text-amber">
-                      Check your phone and enter your M-Pesa PIN to complete the payment.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Retry poll
-                      }}
-                      className="mt-2 text-xs underline text-amber hover:text-amberdeep"
-                    >
-                      Check payment status
-                    </button>
-                  </div>
-                </div>
-              )}
-              {stkPushStatus === 'completed' && (
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 text-teal" />
-                  <div>
-                    <p className="text-xs font-bold text-teal">{stkMessage || 'Payment confirmed!'}</p>
-                  </div>
-                </div>
-              )}
-              {stkPushStatus === 'failed' && (
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="mt-0.5 h-5 w-5 text-error" />
-                  <div>
-                    <p className="text-xs font-bold text-error">{stkMessage || 'Payment failed.'}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      You can still pay on delivery or enter a transaction reference below.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Sidebar Summary */}
@@ -647,10 +725,24 @@ export default function Checkout() {
               <span>Items Subtotal:</span>
               <span className="font-bold text-ink">{formatKES(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-muted">
-              <span>Delivery Fee ({formData.county}):</span>
-              <span className="font-bold text-ink">{formatKES(shippingFee)}</span>
-            </div>
+            {deliverySupported && deliveryZone && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">Delivery ({deliveryZone}):</span>
+                <span className="font-bold text-ink">{formatKES(deliveryFee)}</span>
+              </div>
+            )}
+            {!deliverySupported && deliveryMessage && (
+              <div className="flex justify-between text-xs text-error">
+                <span>Delivery:</span>
+                <span className="font-bold text-error">{deliveryMessage}</span>
+              </div>
+            )}
+            {!deliverySupported && !deliveryMessage && feeCalculating && (
+              <div className="flex justify-between text-xs text-muted">
+                <span>Delivery:</span>
+                <span className="font-bold text-muted">Calculating…</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-line pt-2 text-sm font-extrabold text-ink">
               <span>Total Payable:</span>
               <span className="text-base text-teal">{formatKES(totalAmount)}</span>
@@ -659,10 +751,12 @@ export default function Checkout() {
 
           <button
             type="submit"
-            disabled={loading || stkPushLoading}
+            disabled={loading || submitting || feeCalculating || !deliverySupported || !deliveryZoneId}
+            aria-live="polite"
+            aria-busy={loading || submitting}
             className="btn btn-emerald mt-6 w-full !h-12 text-sm font-bold shadow-md disabled:opacity-50"
           >
-            {stkPushLoading ? 'Sending STK Push…' : loading ? 'Processing Order…' : 'Place Order Now'}
+            {loading ? 'Processing Order…' : 'Place Order Now'}
           </button>
 
           <p className="mt-3 text-center text-[10px] text-muted">

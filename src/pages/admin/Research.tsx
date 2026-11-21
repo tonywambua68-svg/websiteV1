@@ -60,11 +60,16 @@ export default function AdminResearch() {
 
   const loadListings = async () => {
     const supabase = getSupabase()
-    if (!supabase) return
+    if (!supabase) {
+      setListings([])
+      setMessage('Research listings cannot be loaded because the store database is not configured.')
+      return
+    }
     setLoading(true)
     try {
-      const { data } = await supabase.from('research_listings').select('*').order('created_at', { ascending: false })
-      if (data) setListings(data)
+      const { data, error } = await supabase.from('research_listings').select('*').order('created_at', { ascending: false })
+      if (error) throw error
+      setListings(data ?? [])
     } catch (err: any) {
       setMessage(`Error loading research: ${err.message}`)
     } finally {
@@ -102,11 +107,7 @@ export default function AdminResearch() {
         setForm({ title: '', source: '', original_url: '', advertised_price: '', cpu: '', ram: '', storage: '', notes: '' })
         loadListings()
       }
-    } else {
-      setListings((prev) => [{ id: `res-${Date.now()}`, ...record, created_at: new Date().toISOString() }, ...prev])
-      setMessage('Discovered listing queued locally.')
-      setFormOpen(false)
-    }
+    } else setMessage('The listing was not saved because the store database is not configured.')
     setLoading(false)
   }
 
@@ -122,10 +123,7 @@ export default function AdminResearch() {
       } catch (err: any) {
         setMessage(`Error: ${err.message}`)
       }
-    } else {
-      setListings((prev) => prev.map((l) => (l.id === id ? { ...l, status: nextStatus } : l)))
-      setMessage(`Listing moved to ${nextStatus}.`)
-    }
+    } else setMessage('The listing status was not changed because the store database is not configured.')
   }
 
   const handleRecordVerification = async (e: FormEvent) => {
@@ -145,13 +143,8 @@ export default function AdminResearch() {
         setMessage('Physical verification recorded. Listing is now VERIFIED and ready for draft creation.')
         loadListings()
       }
-    } else {
-      setListings((prev) =>
-        prev.map((l) => (l.id === verifyModal.id ? { ...l, status: 'verified' } : l))
-      )
-      setMessage('Verification recorded locally.')
-    }
-    setVerifyModal(null)
+    } else setMessage('Physical verification was not recorded because the store database is not configured.')
+    if (supabase) setVerifyModal(null)
     setLoading(false)
   }
 

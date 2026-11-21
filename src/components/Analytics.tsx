@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useSettingsStore } from '@/store/settingsStore'
+import { applySeo } from '@/lib/seo'
 
 const MEASUREMENT = /^G-[A-Z0-9]+$/
 
@@ -8,24 +9,13 @@ export function usePageMeta(title: string, description?: string) {
   const settings = useSettingsStore((state) => state.settings)
   useEffect(() => {
     const name = settings.business_name || 'OREMITECH'
-    document.title = title.includes(name) ? title : `${title} · ${name}`
-    if (description) {
-      let meta = document.querySelector('meta[name="description"]')
-      if (!meta) {
-        meta = document.createElement('meta')
-        meta.setAttribute('name', 'description')
-        document.head.appendChild(meta)
-      }
-      meta.setAttribute('content', description)
-    }
-    const canonicalHref = `${window.location.origin}${window.location.pathname}`
-    let canonical = document.querySelector('link[rel="canonical"]')
-    if (!canonical) {
-      canonical = document.createElement('link')
-      canonical.setAttribute('rel', 'canonical')
-      document.head.appendChild(canonical)
-    }
-    canonical.setAttribute('href', canonicalHref)
+    const fullTitle = title.includes(name) ? title : `${title} · ${name}`
+    applySeo({
+      title: fullTitle,
+      description: description || null,
+      canonicalPath: window.location.pathname,
+      robots: 'index,follow',
+    })
   }, [title, description, settings.business_name])
 }
 

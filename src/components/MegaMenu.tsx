@@ -122,6 +122,9 @@ export default function MegaMenu({ isOpen: propIsOpen, onClose: propOnClose }: M
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onKeyDown={handleKeyDown}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onClose()
+      }}
     >
       <nav className="border-b border-line bg-card hidden lg:block" aria-label="Catalogue navigation">
         <ul className="wrap flex h-11 items-center gap-1">
@@ -132,6 +135,7 @@ export default function MegaMenu({ isOpen: propIsOpen, onClose: propOnClose }: M
                 setIsMenuOpen((prev) => !prev)
                 setActiveCategory(null)
               }}
+              onFocus={() => setIsMenuOpen(true)}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
               className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-bold text-ink hover:bg-amber hover:text-ink transition-colors duration-150"
@@ -256,6 +260,7 @@ function CategoryPanel({
                 key={cat.label}
                 type="button"
                 onMouseEnter={() => setHoveredCategory(cat.label)}
+                onFocus={() => setHoveredCategory(cat.label)}
                 onMouseLeave={hidePanel}
                 onClick={() => setActiveCategory(cat.label)}
                 className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
@@ -401,6 +406,7 @@ function AllCategoriesPanel({
                 key={cat.label}
                 type="button"
                 onMouseEnter={() => setHoveredCategory(cat.label)}
+                onFocus={() => setHoveredCategory(cat.label)}
                 onMouseLeave={hidePanel}
                 onClick={() => setActiveCategory(cat.label)}
                 className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
