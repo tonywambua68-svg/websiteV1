@@ -127,6 +127,19 @@ export async function scrapeProductUrl(rawUrl: string): Promise<Record<string, u
   const candidates = candidatePayload(identity, scoredImages, finalUrl)
   const verifiedImages = candidates.filter((c) => c.relevance === 'exact' || c.relevance === 'likely')
 
+  // Ensure every product ships with at least two images when the supplier page
+  // provides them. Prefer exact/likely matches, then fill from the next-best
+  // candidates (likely/unverified gallery images) so reviews always have
+  // alternates to choose from.
+  let selectedImages = verifiedImages
+  if (selectedImages.length < 2 && candidates.length > 0) {
+    const extras = candidates
+      .filter((c) => !selectedImages.some((s) => s.url === c.url))
+      .slice(0, 2 - selectedImages.length)
+    selectedImages = [...selectedImages, ...extras]
+  }
+  selectedImages = selectedImages.slice(0, 8)
+
   // Generate 8-section OREMITECH description
   const content = generateOremitechDescription(title, specs, provisional.provisionalPrice)
 
@@ -152,6 +165,7 @@ export async function scrapeProductUrl(rawUrl: string): Promise<Record<string, u
     source_url: rawUrl,
     final_url: finalUrl,
     title: title || 'Imported Product',
+    detected_product_name: title || null,
     brand: specs.brand || null,
     model: specs.model || null,
     category_slug: specs.category || 'laptops',
@@ -167,7 +181,7 @@ export async function scrapeProductUrl(rawUrl: string): Promise<Record<string, u
     markup_pct: provisional.markupPct,
     markup_tier_label: provisional.tierLabel,
     image_query: identity.query,
-    images: verifiedImages.map((c) => c.url),
+    images: selectedImages.map((c) => c.url),
     image_candidates: candidates,
     content: {
       title,

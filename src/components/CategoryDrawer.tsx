@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { X, Search, ChevronRight, ChevronDown, Menu, Laptop, Monitor, HardDrive, Cpu, Phone, ShieldCheck, Truck } from 'lucide-react'
+import { X, Search, ChevronRight, ChevronDown, Menu, Laptop, Monitor, HardDrive, Cpu, Phone, ShieldCheck, Truck, User } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/authStore'
 import type { Category, Brand } from '@/lib/domain'
 
 interface CategoryDrawerProps {
@@ -42,6 +43,7 @@ function CategoryIcon({ name }: { name: string }) {
 
 export default function CategoryDrawer({ isOpen, onClose }: CategoryDrawerProps) {
   const navigate = useNavigate()
+  const { user, isAuthenticated, logout } = useAuthStore()
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -230,6 +232,27 @@ export default function CategoryDrawer({ isOpen, onClose }: CategoryDrawerProps)
             <Link to="/order-tracking" onClick={onClose} className="block px-3 py-2 text-left text-sm font-bold text-teal hover:bg-mist">
               Track Your Order
             </Link>
+            <div className="border-t border-line/50 pt-3">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/account" onClick={onClose} className="block px-3 py-2 text-left text-sm font-bold text-ink hover:bg-mist">
+                    {user?.full_name?.split(' ')[0] || 'My Account'}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { logout().then(() => navigate('/')) } }
+                    className="block w-full text-left px-3 py-2 text-sm font-bold text-error hover:bg-mist/50"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" onClick={onClose} className="block px-3 py-2 text-left text-sm font-bold text-ink hover:bg-mist">
+                  <User className="h-3.5 w-3.5 shrink-0 mr-2" />
+                  Login / Create Account
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

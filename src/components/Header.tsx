@@ -66,8 +66,8 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <Link to="/login" className="hidden items-center gap-1 rounded-lg border border-line px-3 py-2 text-sm font-bold lg:flex">
-                <User className="h-4 w-4" /> Login
+              <Link to="/login" className="flex items-center gap-1 rounded-lg border border-line px-3 py-2 text-sm font-bold">
+                <User className="h-3.5 w-3.5" /> Login
               </Link>
             )}
             <Link to="/cart" className="btn btn-amber relative grid h-10 w-10 place-items-center" aria-label={`Cart, ${count} items`}>
