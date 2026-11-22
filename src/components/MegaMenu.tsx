@@ -277,81 +277,113 @@ function CategoryPanel({
         </nav>
       </div>
 
-      <div className="flex-1 p-6 bg-ink/90">
-        {hoveredItem ? (
-          <div className="grid gap-8 md:grid-cols-3">
-            {hoveredItem.columns.map((column) => (
-              <div key={column.title} className="space-y-3">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
-                  {column.title}
-                </h3>
-                <ul className="space-y-1.5">
-                  {column.links.map((link) => (
-                    <li key={link.to}>
-                      <Link
-                        to={link.to}
-                        onClick={() => {
-                          onNavClick(link.to)
-                          onClose()
-                        }}
-                        className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
-                Popular Right Now
-              </h3>
-              <div className="space-y-3">
-                {isPopularVisible && popularProducts.length > 0 ? (
-                  popularProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
-                    >
-                      <img
-                        src={product.image_url || '/images/products/laptop-placeholder.svg'}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded-md bg-white"
-                        loading="lazy"
-                      />
-                      <div className="flex-1 min-w-0">
+      <div className="flex-1 p-6 bg-ink/90 flex flex-col">
+        <div className="flex-1 min-w-0">
+          {hoveredItem ? (
+            <div className="grid gap-8 md:grid-cols-3">
+              {hoveredItem.columns.map((column) => (
+                <div key={column.title} className="space-y-3">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                    {column.title}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {column.links.map((link) => (
+                      <li key={link.to}>
                         <Link
-                          to={`/product/${product.slug}`}
+                          to={link.to}
                           onClick={() => {
-                            onNavClick(`/product/${product.slug}`)
+                            onNavClick(link.to)
                             onClose()
                           }}
-                          className="block text-sm font-semibold text-white truncate hover:text-amber"
-                          title={product.name}
+                          className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
                         >
-                          {product.name}
+                          {link.label}
                         </Link>
-                        <div className="mt-1 text-xs font-bold text-amber">
-                          {formatKES(product.selling_price)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              <div className="space-y-3">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                  Popular Right Now
+                </h3>
+                <div className="space-y-3">
+                  {popularProducts.length > 0 ? (
+                    popularProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
+                      >
+                        <img
+                          src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-md bg-white flex-shrink-0"
+                          loading="lazy"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            to={`/product/${product.slug}`}
+                            onClick={() => {
+                              onNavClick(`/product/${product.slug}`)
+                              onClose()
+                            }}
+                            className="block text-sm font-semibold text-white truncate hover:text-amber"
+                            title={product.name}
+                          >
+                            {product.name}
+                          </Link>
+                          <div className="mt-1 text-xs font-bold text-amber">
+                            {formatKES(product.selling_price)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-[#8ba19b] italic">
-                    Hover over a category to see popular products.
-                  </p>
-                )}
+                    ))
+                  ) : (
+                    <p className="text-xs text-[#8ba19b] italic">
+                      Hover over a category to see popular products.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
+              Hover over a category to view subcategories.
+            </div>
+          )}
+        </div>
+
+        {/* Always-visible featured products strip at the bottom */}
+        <div className="border-t border-white/10 pt-4">
+          <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber mb-3">
+            Featured Products
+          </h3>
+          <div className="grid gap-3 md:grid-cols-4">
+            {popularProducts.slice(0, 8).map((product) => (
+              <Link
+                key={product.id}
+                to={`/product/${product.slug}`}
+                onClick={() => { onNavClick(`/product/${product.slug}`); onClose() }}
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2 hover:bg-white/10 transition-colors"
+              >
+                <img
+                  src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                  alt={product.name}
+                  className="w-16 h-16 object-cover rounded-md bg-white flex-shrink-0"
+                  loading="lazy"
+                />
+                <span className="text-[11px] font-semibold text-white truncate text-center w-full leading-tight">
+                  {product.name}
+                </span>
+                <span className="text-[11px] font-bold text-amber">
+                  {formatKES(product.selling_price)}
+                </span>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
-            Hover over a category to view subcategories.
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -423,81 +455,113 @@ function AllCategoriesPanel({
         </nav>
       </div>
 
-      <div className="flex-1 p-6 bg-ink/90">
-        {hoveredItem ? (
-          <div className="grid gap-8 md:grid-cols-3">
-            {hoveredItem.columns.map((column) => (
-              <div key={column.title} className="space-y-3">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
-                  {column.title}
-                </h3>
-                <ul className="space-y-1.5">
-                  {column.links.map((link) => (
-                    <li key={link.to}>
-                      <Link
-                        to={link.to}
-                        onClick={() => {
-                          onNavClick(link.to)
-                          onClose()
-                        }}
-                        className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
-                Popular Right Now
-              </h3>
-              <div className="space-y-3">
-                {popularProducts.length > 0 ? (
-                  popularProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
-                    >
-                      <img
-                        src={product.image_url || '/images/products/laptop-placeholder.svg'}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded-md bg-white"
-                        loading="lazy"
-                      />
-                      <div className="flex-1 min-w-0">
+      <div className="flex-1 p-6 bg-ink/90 flex flex-col">
+        <div className="flex-1 min-w-0">
+          {hoveredItem ? (
+            <div className="grid gap-8 md:grid-cols-3">
+              {hoveredItem.columns.map((column) => (
+                <div key={column.title} className="space-y-3">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                    {column.title}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {column.links.map((link) => (
+                      <li key={link.to}>
                         <Link
-                          to={`/product/${product.slug}`}
+                          to={link.to}
                           onClick={() => {
-                            onNavClick(`/product/${product.slug}`)
+                            onNavClick(link.to)
                             onClose()
                           }}
-                          className="block text-sm font-semibold text-white truncate hover:text-amber"
-                          title={product.name}
+                          className="block rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 text-[#cbd5d1] hover:bg-white/10 hover:text-white"
                         >
-                          {product.name}
+                          {link.label}
                         </Link>
-                        <div className="mt-1 text-xs font-bold text-amber">
-                          {formatKES(product.selling_price)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              <div className="space-y-3">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-white mb-1">
+                  Popular Right Now
+                </h3>
+                <div className="space-y-3">
+                  {popularProducts.length > 0 ? (
+                    popularProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition-colors"
+                      >
+                        <img
+                          src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-md bg-white flex-shrink-0"
+                          loading="lazy"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            to={`/product/${product.slug}`}
+                            onClick={() => {
+                              onNavClick(`/product/${product.slug}`)
+                              onClose()
+                            }}
+                            className="block text-sm font-semibold text-white truncate hover:text-amber"
+                            title={product.name}
+                          >
+                            {product.name}
+                          </Link>
+                          <div className="mt-1 text-xs font-bold text-amber">
+                            {formatKES(product.selling_price)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-[#8ba19b] italic">
-                    No featured products available.
-                  </p>
-                )}
+                    ))
+                  ) : (
+                    <p className="text-xs text-[#8ba19b] italic">
+                      Hover over a category to see popular products.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
+              Hover over a category to view subcategories.
+            </div>
+          )}
+        </div>
+
+        {/* Always-visible featured products strip at the bottom */}
+        <div className="border-t border-white/10 pt-4">
+          <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber mb-3">
+            Featured Products
+          </h3>
+          <div className="grid gap-3 md:grid-cols-4">
+            {popularProducts.slice(0, 8).map((product) => (
+              <Link
+                key={product.id}
+                to={`/product/${product.slug}`}
+                onClick={() => { onNavClick(`/product/${product.slug}`); onClose() }}
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 p-2 hover:bg-white/10 transition-colors"
+              >
+                <img
+                  src={product.image_url || '/images/products/laptop-placeholder.svg'}
+                  alt={product.name}
+                  className="w-16 h-16 object-cover rounded-md bg-white flex-shrink-0"
+                  loading="lazy"
+                />
+                <span className="text-[11px] font-semibold text-white truncate text-center w-full leading-tight">
+                  {product.name}
+                </span>
+                <span className="text-[11px] font-bold text-amber">
+                  {formatKES(product.selling_price)}
+                </span>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[#8ba19b] text-sm">
-            Hover over a category to view subcategories.
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
