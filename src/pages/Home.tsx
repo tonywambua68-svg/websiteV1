@@ -79,23 +79,23 @@ export default function Home() {
       {/* Above-the-fold: Search + Categories + Featured */}
       <section className="wrap pt-4 md:pt-6">
         {/* Compact Hero */}
-        <div className="rounded-xl bg-footer-bg p-3 md:p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="rounded-xl bg-footer-bg p-2 md:p-3 mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-2">
             <div className="flex-1 lg:w-1/2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber/20 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-amber">
-                <Sparkles className="h-3.5 w-3.5 text-amber" /> Verified Hardware in Kenya
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber/20 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber">
+                <Sparkles className="h-3 w-3 text-amber" /> Verified Hardware in Kenya
               </span>
-              <h1 className="mt-2 font-display text-xl font-bold leading-tight text-white md:text-2xl lg:text-3xl">
-                Verified Laptops & Computer Hardware
+              <h1 className="mt-1 font-display text-lg font-bold leading-tight text-white md:text-xl lg:text-2xl">
+                Verified Laptops &amp; Computer Hardware
               </h1>
-              <p className="mt-2 text-xs text-[#cbd5d1] md:text-sm">
+              <p className="mt-1 text-[10px] text-[#cbd5d1] md:text-xs">
                 Shop HP, Dell, Lenovo, Apple workstations, monitors, storage, and accessories with authentic specifications and transparent KSh pricing.
               </p>
-              <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                <Link to="/shop" className="btn btn-amber !h-11 text-sm font-bold flex-1 sm:flex-none">
-                  Explore Products <ArrowRight className="h-4 w-4" />
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <Link to="/shop" className="btn btn-amber !h-10 text-[11px] font-bold flex-1 sm:flex-none px-3">
+                  Explore Products <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
-                <Link to="/shop?offers=1" className="btn btn-amber !h-11 text-sm font-bold flex-1 sm:flex-none">
+                <Link to="/shop?offers=1" className="btn btn-amber !h-10 text-[11px] font-bold flex-1 sm:flex-none px-3">
                   View Deals
                 </Link>
               </div>
@@ -160,7 +160,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="rounded-b-xl border border-t-0 border-line bg-card p-4 shadow-xs">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            <div className="grid gap-4 justify-items-start sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {deals.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

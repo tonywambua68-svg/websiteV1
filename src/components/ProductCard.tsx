@@ -17,13 +17,14 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
   const specs = specSummary([product.processor_model, product.ram, product.storage_capacity, product.screen_size])
 
   return (
-    <article className="market-card flex h-full flex-col">
+    <article className="market-card flex h-full flex-col min-h-[520px]">
       <div className="market-card-image">
         <Link to={`/product/${product.slug}`}>
           <img
             src={product.image_url || PLACEHOLDER}
             alt={product.images[0]?.alt || product.name}
             loading="lazy"
+            className="h-48 object-cover w-full"
             onError={(event) => {
               event.currentTarget.src = PLACEHOLDER
             }}
@@ -40,14 +41,14 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
       </div>
       <div className="market-card-info flex flex-1 flex-col">
         <p className="market-card-brand">{product.brand_name || 'Unbranded'}</p>
-        <h3 className="market-card-title">
+        <h3 className="market-card-title line-clamp-2 leading-tight">
           <Link to={`/product/${product.slug}`}>{product.name}</Link>
         </h3>
         <p className="mt-1 min-h-8 text-[11px] leading-snug text-muted">{specs || product.category_name}</p>
         <div className="market-card-price mt-2">
-          <span>{formatKES(product.selling_price)}</span>
+          <span className="text-sm font-bold text-ink">{formatKES(product.selling_price)}</span>
           {product.comparison_price && product.comparison_price > product.selling_price && (
-            <span className="market-card-oldprice">{formatKES(product.comparison_price)}</span>
+            <span className="market-card-oldprice text-[11px] font-bold text-error">{formatKES(product.comparison_price)}</span>
           )}
         </div>
         <p className="mt-1 text-[11px] font-semibold text-muted">{conditionLabel(product.laptop_condition)}</p>
@@ -55,12 +56,12 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
           {availabilityLabel(product.availability)}
         </p>
         <div className="mt-auto grid gap-2 pt-3 sm:grid-cols-2">
-          <Link to={`/product/${product.slug}`} className="btn btn-emerald btn-sm !w-full text-center">
+          <Link to={`/product/${product.slug}`} className="btn btn-emerald btn-sm !h-10 !w-full text-center text-[11px] font-bold">
             Details
           </Link>
           <button
             type="button"
-            className="btn btn-amber btn-sm !w-full text-center"
+            className="btn btn-amber btn-sm !h-10 !w-full text-center text-[11px] font-bold"
             disabled={!available}
             onClick={async () => {
               const ok = await addItem(product, 1)
