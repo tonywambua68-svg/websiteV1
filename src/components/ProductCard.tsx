@@ -54,13 +54,13 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
         <p className={`mt-1 text-[11px] font-bold ${product.availability === 'unavailable' ? 'text-error' : 'text-teal'}`}>
           {availabilityLabel(product.availability)}
         </p>
-        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-          <Link to={`/product/${product.slug}`} className="btn btn-emerald btn-sm">
+        <div className="mt-auto grid gap-2 pt-3 sm:grid-cols-2">
+          <Link to={`/product/${product.slug}`} className="btn btn-emerald btn-sm !w-full text-center">
             Details
           </Link>
           <button
             type="button"
-            className="btn btn-amber btn-sm"
+            className="btn btn-amber btn-sm !w-full text-center"
             disabled={!available}
             onClick={async () => {
               const ok = await addItem(product, 1)

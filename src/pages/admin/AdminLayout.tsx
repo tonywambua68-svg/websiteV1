@@ -119,30 +119,30 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-x-hidden">
           {/* Top Bar */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-card/90 px-6 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-card/90 px-4 sm:px-6 backdrop-blur">
             <div>
-              <h1 className="font-display text-xl font-bold text-ink">{title}</h1>
-              {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
+              <h1 className="font-display text-base sm:text-xl font-bold text-ink truncate">{title}</h1>
+              {subtitle && <p className="text-[10px] sm:text-xs text-muted truncate">{subtitle}</p>}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {actions}
-              <Link to="/employee" className="btn btn-outline !h-9 text-xs font-bold lg:hidden">
+              <Link to="/employee" className="btn btn-outline !h-8 sm:!h-9 text-[10px] sm:text-xs font-bold px-2 sm:px-3 lg:hidden">
                 Staff
               </Link>
             </div>
           </header>
 
-          <nav className="flex gap-1 overflow-x-auto border-b border-line bg-card px-3 py-2 lg:hidden" aria-label="Admin navigation">
+          <nav className="flex gap-1 overflow-x-auto border-b border-line bg-card px-3 sm:px-4 py-2 lg:hidden" aria-label="Admin navigation">
             {visibleNavItems.map((item) => {
               const Icon = item.icon
               const active = location.pathname === item.to || (item.to !== '/admin' && location.pathname.startsWith(item.to))
-              return <Link key={item.to} to={item.to} className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold ${active ? 'bg-emerald text-white' : 'text-muted hover:bg-mist hover:text-ink'}`}><Icon className="h-3.5 w-3.5" />{item.label}</Link>
+              return <Link key={item.to} to={item.to} className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[10px] sm:text-[11px] font-bold ${active ? 'bg-emerald text-white' : 'text-muted hover:bg-mist hover:text-ink'}`}><Icon className="h-3.5 w-3.5" />{item.label}</Link>
             })}
           </nav>
 
           {/* Page Body */}
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-3 sm:p-4">{children}</main>
         </div>
       </div>
     </Guard>
