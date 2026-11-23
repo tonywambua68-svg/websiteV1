@@ -11,6 +11,9 @@ import {
   detectDuplicate,
   buildCsvPlan,
   fetchImports,
+  deleteImport,
+  deleteImports,
+  deleteAllImports,
   type SupplierOption,
   type CsvImportPlan,
   type DuplicateCheck,
@@ -36,9 +39,11 @@ import {
   Check,
   X,
   Search,
+  Trash2,
+  Sparkles,
 } from 'lucide-react'
 
-type Tab = 'url' | 'csv' | 'manual'
+type Tab = 'url' | 'search' | 'csv' | 'manual'
 type UrlMode = 'single' | 'bulk'
 
 export interface ExtractedImageCandidate {
@@ -71,6 +76,7 @@ interface ExtractedProduct {
   specs?: Record<string, string>
   specs_provenance?: Record<string, any>
   completeness_score?: number
+  discovered_product_urls?: string[]
 }
 
 function relevanceBadgeClass(relevance: string | undefined): string {
@@ -217,6 +223,16 @@ export default function AdminProductImport() {
   const [queue, setQueue] = useState<ProductImportRow[]>([])
   const [queueFilter, setQueueFilter] = useState('')
 
+  // Selection and bulk delete state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+
+  // Search & Discover tab
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchBrand, setSearchBrand] = useState('')
+  const [searchCategory, setSearchCategory] = useState('laptops')
+  const [searchCost, setSearchCost] = useState('')
+
   // Quick price editor modal / state
   const [editingRow, setEditingRow] = useState<ProductImportRow | null>(null)
   const [editPriceForm, setEditPriceForm] = useState({
@@ -269,6 +285,183 @@ export default function AdminProductImport() {
   })
 
   // -------------------------------------------------------------------------
+  // Batch Selection & Bulk Deletion Handlers
+  // -------------------------------------------------------------------------
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredQueue.length && filteredQueue.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredQueue.map((r) => r.id)))
+    }
+  }
+
+  const handleSelectRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleDeleteSingle = async (id: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}" from the import list?`)) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteImport(id)
+      setMessage(`Deleted "${title}" from the imported list.`)
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      refreshQueue()
+    } catch (err: any) {
+      setError(err.message || 'Could not delete item.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    const count = selectedIds.size
+    if (count === 0) return
+    if (!window.confirm(`Are you sure you want to delete ${count} selected product(s) from the import list?`)) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteImports(Array.from(selectedIds))
+      setMessage(`Successfully deleted ${count} selected product(s).`)
+      setSelectedIds(new Set())
+      refreshQueue()
+    } catch (err: any) {
+      setError(err.message || 'Could not delete selected items.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteAllImports()
+      setMessage(`All ${queue.length} products have been deleted from the import staging list.`)
+      setSelectedIds(new Set())
+      setConfirmDeleteAll(false)
+      refreshQueue()
+    } catch (err: any) {
+      setError(err.message || 'Could not delete all items.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Search & Discover (Google / Keywords)
+  // -------------------------------------------------------------------------
+  const handleSearchDiscoverCreate = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+    const raw = searchQuery.trim()
+    if (raw.length < 3) {
+      setError('Please enter a product title, model, or keywords to search.')
+      return
+    }
+    setBusy(true)
+    try {
+      const fx = Number(fxRate) || 1
+      const price = searchCost ? Number(searchCost) : null
+      const catSlug = searchCategory || guessCategory(raw)
+
+      const specs: Record<string, string> = {}
+      let detectedBrand = searchBrand.trim()
+      if (!detectedBrand) {
+        if (/\bhp\b/i.test(raw)) detectedBrand = 'HP'
+        else if (/\bdell\b/i.test(raw)) detectedBrand = 'Dell'
+        else if (/\blenovo\b/i.test(raw)) detectedBrand = 'Lenovo'
+        else if (/\bapple\b|\bmacbook\b/i.test(raw)) detectedBrand = 'Apple'
+        else if (/\basus\b/i.test(raw)) detectedBrand = 'ASUS'
+        else if (/\bacer\b/i.test(raw)) detectedBrand = 'Acer'
+        else if (/\bsamsung\b/i.test(raw)) detectedBrand = 'Samsung'
+        else if (/\btoshiba\b/i.test(raw)) detectedBrand = 'Toshiba'
+        else if (/\bmsi\b/i.test(raw)) detectedBrand = 'MSI'
+      }
+
+      const procMatch = raw.match(/\b(Core\s+i[3579](?:-\w+)?|Ryzen\s+[3579](?:\s+PRO)?(?:\s+\w+)?|M[123](?:\s+Pro|\s+Max)?|Celeron|Pentium|Xeon)\b/i)
+      if (procMatch) specs['processor_model'] = procMatch[1]
+
+      const ramMatch = raw.match(/\b(\d{1,2}\s?GB)\s*(?:RAM|Memory|DDR[345])?\b/i)
+      if (ramMatch) specs['ram'] = ramMatch[1].replace(/\s+/g, '')
+
+      const storageMatch = raw.match(/\b(\d{3,4}\s?GB|\d\s?TB)\s*(?:SSD|NVMe|HDD|Storage|PCIe)?\b/i)
+      if (storageMatch) specs['storage_capacity'] = storageMatch[1].replace(/\s+/g, '')
+
+      const displayMatch = raw.match(/\b(\d{2}(?:\.\d)?)\s*(?:["']|-inch|inch)\b/i)
+      if (displayMatch) specs['screen_size'] = `${displayMatch[1]}"`
+
+      const bundle = await deriveBundle({
+        title: raw,
+        brand: detectedBrand || null,
+        model: null,
+        categorySlug: catSlug,
+        description: null,
+        specs,
+        supplierPrice: price,
+        supplierCurrency: currency,
+        fxRate: fx,
+        competitorPrice: null,
+        imagesCount: 0,
+      })
+
+      const imgQuery = buildImageQuery({
+        title: raw,
+        brand: detectedBrand || null,
+        model: null,
+        categorySlug: catSlug,
+      })
+
+      const row = await createImport({
+        source_type: 'manual',
+        source_url: `https://www.google.com/search?q=${encodeURIComponent(raw)}`,
+        ...supplierPatch(),
+        title: raw,
+        brand_name: detectedBrand || null,
+        model: null,
+        category_slug: catSlug,
+        description: null,
+        specs,
+        supplier_price: price,
+        supplier_currency: currency,
+        fx_rate_to_kes: fx,
+        extraction_status: 'extracted',
+        image_query: imgQuery,
+      })
+
+      await updateImport(row.id, {
+        content: bundle.content as unknown as Record<string, unknown>,
+        seo: bundle.seo as unknown as Record<string, unknown>,
+        pricing: bundle.pricing as unknown as Record<string, unknown>,
+        completeness_score: bundle.completeness.score,
+        missing_fields: bundle.completeness.missing,
+        status: 'images_pending',
+      })
+
+      setMessage(`Product "${raw}" staged successfully! You can verify specs, check pricing, and select Google/Bing images.`)
+      setSearchQuery('')
+      setSearchCost('')
+      refreshQueue()
+      navigate(`/admin/product-review/${row.id}`)
+    } catch (err: any) {
+      setError(err.message || 'Could not stage product.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // URL Single Scrape
   // -------------------------------------------------------------------------
   const handleUrlFetch = async (e: FormEvent) => {
@@ -298,7 +491,9 @@ export default function AdminProductImport() {
       setExtracted(data as ExtractedProduct)
       if (data.supplier_currency) setCurrency(data.supplier_currency)
       if (data.fx_rate_to_kes) setFxRate(String(data.fx_rate_to_kes))
-      if (!data.title) {
+      if (data.discovered_product_urls && data.discovered_product_urls.length > 0) {
+        setMessage(`Discovered ${data.discovered_product_urls.length} product links on this catalog page! You can load them all below into the bulk scraper.`)
+      } else if (!data.title) {
         setError('The page loaded, but no product title was found. Review and fill details manually.')
       }
     } catch (err: any) {
@@ -851,6 +1046,7 @@ export default function AdminProductImport() {
       <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-line bg-card p-1">
         {([
           { id: 'url', label: 'Supplier URL Scraper', icon: Link2 },
+          { id: 'search', label: 'Search & Auto-Stage', icon: Sparkles },
           { id: 'csv', label: 'Spreadsheet / CSV', icon: FileSpreadsheet },
           { id: 'manual', label: 'Manual Entry', icon: PenLine },
         ] as const).map((t) => {
@@ -860,7 +1056,7 @@ export default function AdminProductImport() {
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`inline-flex flex-1 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${
+              className={`inline-flex flex-1 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
                 tab === t.id ? 'bg-emerald text-white' : 'text-muted hover:bg-mist hover:text-ink'
               }`}
             >
@@ -998,6 +1194,32 @@ export default function AdminProductImport() {
                     </div>
                   </div>
 
+                  {/* Discovered Catalog Products */}
+                  {extracted.discovered_product_urls && extracted.discovered_product_urls.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-teal/40 bg-mint/40 p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <p className="font-extrabold text-sm text-tealdeep flex items-center gap-1.5">
+                            <CheckCircle2 className="h-4 w-4 text-teal" /> Discovered Catalog Page with {extracted.discovered_product_urls.length} Products!
+                          </p>
+                          <p className="text-xs text-muted mt-0.5">
+                            This page has multiple product links. You can import all discovered products directly in bulk.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBulkUrlsText(extracted.discovered_product_urls?.join('\n') || '')
+                            setUrlMode('bulk')
+                          }}
+                          className="btn btn-emerald text-xs font-bold !h-9 shadow-xs"
+                        >
+                          <Layers className="h-3.5 w-3.5 mr-1" /> Load All {extracted.discovered_product_urls.length} into Bulk Scraper →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
@@ -1076,6 +1298,79 @@ export default function AdminProductImport() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Search & Discover Tab (Google / Keywords) */}
+      {tab === 'search' && (
+        <form onSubmit={handleSearchDiscoverCreate} className="space-y-4 rounded-xl border border-line bg-card p-5 shadow-xs">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber" />
+            <div>
+              <p className="text-sm font-extrabold text-ink">Search & Auto-Stage Product</p>
+              <p className="text-xs text-muted">
+                Enter any product name, model, or keywords (e.g. from Google or supplier). The engine extracts specs, applies Kenyan pricing tiers, builds SEO, and prepares Google/Bing image queries.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="block text-xs font-bold text-muted sm:col-span-2">
+              Product Title / Search Keywords *
+              <input
+                type="text"
+                required
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="e.g. HP EliteBook 840 G8 Core i5 16GB RAM 512GB SSD"
+                className="input mt-1 w-full text-xs font-bold"
+              />
+            </label>
+            <label className="block text-xs font-bold text-muted">
+              Brand (optional)
+              <input
+                type="text"
+                value={searchBrand}
+                onChange={(e) => setSearchBrand(e.target.value)}
+                placeholder="Auto-detected if blank"
+                className="input mt-1 w-full text-xs"
+              />
+            </label>
+            <label className="block text-xs font-bold text-muted">
+              Category
+              <select
+                value={searchCategory}
+                onChange={(e) => setSearchCategory(e.target.value)}
+                className="input mt-1 w-full text-xs font-semibold"
+              >
+                {CATEGORY_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-bold text-muted">
+              Supplier Acquisition Cost ({currency})
+              <input
+                type="number"
+                value={searchCost}
+                onChange={(e) => setSearchCost(e.target.value)}
+                placeholder="e.g. 45000 (optional)"
+                className="input mt-1 w-full text-xs font-bold text-teal"
+              />
+            </label>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={busy}
+                className="btn btn-emerald !h-10 w-full text-xs font-bold shadow-xs disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Extract Specs & Stage for Review →
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
       {/* CSV Import */}
@@ -1176,9 +1471,9 @@ export default function AdminProductImport() {
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-extrabold text-ink">Imported Products List ({queue.length})</p>
-            <p className="text-xs text-muted">Review, adjust pricing, and approve items before publishing to the live catalog.</p>
+            <p className="text-xs text-muted">Review, adjust pricing, delete test items, and approve products before publishing to the live catalog.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted" />
               <input
@@ -1186,24 +1481,70 @@ export default function AdminProductImport() {
                 value={queueFilter}
                 onChange={(e) => setQueueFilter(e.target.value)}
                 placeholder="Filter imports..."
-                className="input !h-8 pl-8 text-xs w-48"
+                className="input !h-8 pl-8 text-xs w-44"
               />
             </div>
+            {queue.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteAll(true)}
+                className="btn btn-outline border-error/40 text-error hover:bg-error/10 !h-8 text-xs font-bold"
+                title="Delete all staged products"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete All
+              </button>
+            )}
             <Link to="/admin/product-publishing" className="btn btn-outline !h-8 text-xs font-bold">
               Bulk Publishing →
             </Link>
           </div>
         </div>
 
+        {/* Selected Batch Action Bar */}
+        {selectedIds.size > 0 && (
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-error/30 bg-error/5 p-3 text-xs">
+            <div className="flex items-center gap-2 font-bold text-ink">
+              <span className="rounded-md bg-error px-2 py-0.5 text-white font-extrabold">{selectedIds.size}</span>
+              <span>product{selectedIds.size === 1 ? '' : 's'} selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={busy}
+                className="btn btn-error !h-8 text-xs font-bold shadow-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete Selected ({selectedIds.size})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="btn btn-outline !h-8 text-xs font-bold"
+              >
+                Deselect All
+              </button>
+            </div>
+          </div>
+        )}
+
         {queue.length === 0 ? (
           <div className="rounded-xl border border-line bg-card p-8 text-center text-xs text-muted">
-            No products in the import list yet. Use the URL scraper or CSV uploader above to import products.
+            No products in the import list yet. Use the URL scraper, Google search discovery, or CSV uploader above to import products.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-line bg-card shadow-xs">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-line bg-mist text-[10px] font-extrabold uppercase text-muted">
                 <tr>
+                  <th className="w-8 px-3 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filteredQueue.length > 0 && selectedIds.size === filteredQueue.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-line"
+                      title="Select all"
+                    />
+                  </th>
                   <th className="px-3 py-2.5">Product Title</th>
                   <th className="px-3 py-2.5">Category</th>
                   <th className="px-3 py-2.5">Supplier Cost</th>
@@ -1214,8 +1555,16 @@ export default function AdminProductImport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {filteredQueue.slice(0, 50).map((row) => (
-                  <tr key={row.id} className="hover:bg-mist/50">
+                {filteredQueue.slice(0, 100).map((row) => (
+                  <tr key={row.id} className={`hover:bg-mist/50 transition-colors ${selectedIds.has(row.id) ? 'bg-mist/80' : ''}`}>
+                    <td className="w-8 px-3 py-2.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id)}
+                        onChange={() => handleSelectRow(row.id)}
+                        className="rounded border-line"
+                      />
+                    </td>
                     <td className="px-3 py-2.5">
                       <p className="font-bold text-ink">{row.title}</p>
                       <p className="text-[10px] text-muted">{row.brand_name || 'Generic'} · {row.source_type.toUpperCase()}</p>
@@ -1253,10 +1602,18 @@ export default function AdminProductImport() {
                       </button>
                       <Link
                         to={`/admin/product-review/${row.id}`}
-                        className="btn btn-emerald !h-7 !px-2.5 text-[11px] font-bold"
+                        className="btn btn-emerald !h-7 !px-2.5 text-[11px] font-bold mr-1.5"
                       >
                         Review →
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSingle(row.id, row.title)}
+                        className="btn btn-outline border-error/30 text-error hover:bg-error/10 !h-7 !px-2 text-[11px] font-bold"
+                        title="Delete this import"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -1265,6 +1622,38 @@ export default function AdminProductImport() {
           </div>
         )}
       </div>
+
+      {/* CONFIRM DELETE ALL MODAL */}
+      {confirmDeleteAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-error/30 bg-card p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-error">
+              <AlertTriangle className="h-6 w-6" />
+              <h3 className="font-extrabold text-base text-ink">Delete All Staged Imports?</h3>
+            </div>
+            <p className="mt-3 text-xs text-muted leading-relaxed">
+              Are you sure you want to delete all <strong className="text-ink">{queue.length}</strong> imported products in the staging queue? This will completely clear your staging list and cannot be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-2 border-t border-line pt-4">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteAll(false)}
+                className="btn btn-outline !h-9 text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={busy}
+                className="btn btn-error !h-9 text-xs font-bold"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />} Yes, Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QUICK PRICE EDITOR MODAL */}
       {editingRow && (

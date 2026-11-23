@@ -111,6 +111,62 @@ export function findProductJsonLd(objects: any[]): any | null {
   return null
 }
 
+export function findAllProductsJsonLd(objects: any[]): any[] {
+  const products: any[] = []
+  for (const obj of objects) {
+    if (!obj || typeof obj !== 'object') continue
+    const type = String(obj['@type'] || '').toLowerCase()
+    if (type === 'product' || type.endsWith('/product')) {
+      products.push(obj)
+    } else if (type === 'itemlist' || type.endsWith('/itemlist')) {
+      const items = Array.isArray(obj.itemListElement) ? obj.itemListElement : []
+      for (const item of items) {
+        const itemObj = item?.item || item
+        if (itemObj && typeof itemObj === 'object') {
+          products.push(itemObj)
+        }
+      }
+    }
+  }
+  return products
+}
+
+export function extractCatalogProductUrls(html: string, baseUrl: string): string[] {
+  const urls: Set<string> = new Set()
+  try {
+    const base = new URL(baseUrl)
+    const matches = html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>/gi)
+    for (const m of matches) {
+      const href = m[1].trim()
+      if (!href || href.startsWith('#') || href.startsWith('javascript:')) continue
+      try {
+        const resolved = new URL(href, base).href
+        const u = new URL(resolved)
+        if (u.origin !== base.origin) continue
+        const path = u.pathname.toLowerCase()
+        if (
+          (path.includes('/product/') ||
+           path.includes('/item/') ||
+           path.includes('/p/') ||
+           path.includes('/laptop/') ||
+           path.includes('/computers/')) &&
+          !path.includes('/cart') &&
+          !path.includes('/checkout') &&
+          !path.includes('/login') &&
+          !path.includes('/tag/')
+        ) {
+          urls.add(resolved)
+        }
+      } catch {
+        // Ignore invalid URL resolution
+      }
+    }
+  } catch {
+    // Ignore invalid base
+  }
+  return Array.from(urls).slice(0, 50)
+}
+
 // ---------------------------------------------------------------------------
 // Meta & OpenGraph Extractor
 // ---------------------------------------------------------------------------

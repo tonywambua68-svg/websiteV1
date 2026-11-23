@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 /** Existing OREMITECH mark already used in the header. Do not swap this artwork. */
 export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#0a1f1c" />
-      <path d="M10 22V10h4v12z" fill="#f5a31a" />
-      <path d="M18 10l6 12h-4.5L15 13z" fill="#0b7a63" />
-    </svg>
+    <img
+      src="/logo.svg?v=4"
+      alt="OREMITECH"
+      className={className}
+      aria-hidden="true"
+    />
   )
 }
 

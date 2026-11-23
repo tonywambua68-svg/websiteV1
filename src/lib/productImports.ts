@@ -384,6 +384,31 @@ export async function fetchImport(id: string): Promise<ProductImportRow | null> 
   return data ? normalizeImportRow(data as Record<string, unknown>) : null
 }
 
+export async function deleteImport(id: string): Promise<void> {
+  const supabase = client()
+  const { error } = await supabase.from('product_imports').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteImports(ids: string[]): Promise<void> {
+  if (!ids || ids.length === 0) return
+  const supabase = client()
+  const { error } = await supabase.from('product_imports').delete().in('id', ids)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteAllImports(options?: { onlyDrafts?: boolean }): Promise<void> {
+  const supabase = client()
+  let query = supabase.from('product_imports').delete()
+  if (options?.onlyDrafts) {
+    query = query.in('status', ['draft', 'extracted', 'images_pending', 'in_review'])
+  } else {
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000')
+  }
+  const { error } = await query
+  if (error) throw new Error(error.message)
+}
+
 // ---------------------------------------------------------------------------
 // Images
 // ---------------------------------------------------------------------------
