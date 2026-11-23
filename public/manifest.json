@@ -1,0 +1,16 @@
+{
+  "name": "OREMITECH",
+  "short_name": "OREMITECH",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#087f73",
+  "theme_color": "#087f73",
+  "description": "Verified laptops and computer accessories in Kenya. Genuine stock, KSh prices, delivery across all 47 counties.",
+  "icons": [
+    {
+      "src": "/logo.svg?v=2",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
