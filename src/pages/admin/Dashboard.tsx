@@ -23,6 +23,9 @@ import {
   User,
   RefreshCw,
   Download,
+  UploadCloud,
+  Sparkles,
+  BookOpen,
 } from 'lucide-react'
 import { downloadCsv } from '@/lib/csv'
 
@@ -389,6 +392,90 @@ export default function AdminDashboard() {
           Please select both dates for custom range.
         </div>
       )}
+
+      {/* Quick Action Command Center */}
+      <div className="mb-6 rounded-2xl border border-line bg-card p-5 shadow-xs">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-4">
+          <div>
+            <h2 className="font-display text-base font-bold text-ink flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber" /> OREMITECH Operations & Scraper Hub
+            </h2>
+            <p className="text-xs text-muted">Direct shortcuts to scrape products, manage live catalog, and run store operations</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald/10 px-2.5 py-1 text-[11px] font-extrabold text-emerald">
+              KES Store Currency · Nairobi
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <Link
+            to="/admin/product-import"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-mist/50 p-3.5 text-center transition hover:border-emerald hover:bg-card hover:shadow-xs"
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-teal/10 text-teal">
+              <UploadCloud className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ink">Product Scraper</p>
+              <p className="text-[10px] text-muted">Single & Bulk (up to 100)</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/product-import"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-mist/50 p-3.5 text-center transition hover:border-emerald hover:bg-card hover:shadow-xs"
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber/10 text-amberdeep">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ink">Search & Auto-Stage</p>
+              <p className="text-[10px] text-muted">Google / Keyword discovery</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/product-publishing"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-mist/50 p-3.5 text-center transition hover:border-emerald hover:bg-card hover:shadow-xs"
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald/10 text-emerald">
+              <Package className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ink">Publishing Hub</p>
+              <p className="text-[10px] text-muted">Batch live publishing</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/blog"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-mist/50 p-3.5 text-center transition hover:border-emerald hover:bg-card hover:shadow-xs"
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky/10 text-sky">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ink">Knowledge Centre</p>
+              <p className="text-[10px] text-muted">SEO articles & guides</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/orders"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-line bg-mist/50 p-3.5 text-center transition hover:border-emerald hover:bg-card hover:shadow-xs col-span-2 sm:col-span-1"
+          >
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald/10 text-emerald">
+              <ShoppingCart className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-ink">Orders & Delivery</p>
+              <p className="text-[10px] text-muted">Verify payments & dispatch</p>
+            </div>
+          </Link>
+        </div>
+      </div>
 
       {/* Top Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">

@@ -10,6 +10,8 @@ import { assertSafeUrl, safeFetchHtml } from './ssrf.ts'
 import {
   extractHtmlSpecs,
   findProductJsonLd,
+  findAllProductsJsonLd,
+  extractCatalogProductUrls,
   getMetaTag,
   normalizeHardware,
   parseAllJsonLd,
@@ -160,10 +162,13 @@ export async function scrapeProductUrl(rawUrl: string): Promise<Record<string, u
   const completedCount = coreFields.length - missingFields.length
   const completenessScore = Math.round((completedCount / coreFields.length) * 100)
 
+  const discoveredProductUrls = extractCatalogProductUrls(html, finalUrl)
+
   return {
     ok: true,
     source_url: rawUrl,
     final_url: finalUrl,
+    discovered_product_urls: discoveredProductUrls,
     title: title || 'Imported Product',
     detected_product_name: title || null,
     brand: specs.brand || null,
