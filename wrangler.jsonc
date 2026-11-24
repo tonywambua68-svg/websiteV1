@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "websitev1",
+  "compatibility_date": "2024-09-23",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "env": {
+    "staging": {
+      "name": "websitev1-staging"
+    }
+    // NOTE: Production remains the root Worker "websitev1" so that existing
+    // live domains (oremitech.co.ke and www.oremitech.co.ke) remain untouched.
+  }
+}
