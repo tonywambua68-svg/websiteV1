@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-
 export default function Maintenance() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-mist p-4 sm:p-6 md:p-8">
@@ -19,12 +17,12 @@ export default function Maintenance() {
           OREMITECH is temporarily unavailable while we apply updates. We'll be back shortly.
         </p>
         <div className="space-y-3">
-          <Link to="/" className="btn-emerald w-full sm:w-auto">
+          <a href="/" className="btn-emerald w-full sm:w-auto">
             Visit homepage
-          </Link>
-          <Link to="/shop" className="btn-amber w-full sm:w-auto">
+          </a>
+          <a href="/shop" className="btn-amber w-full sm:w-auto">
             Browse products
-          </Link>
+          </a>
         </div>
         <p className="mt-8 text-xs text-muted">
           OREMITECH &mdash; Verified laptops &amp; computer accessories in Kenya
