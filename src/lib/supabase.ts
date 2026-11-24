@@ -1,20 +1,25 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-let client: SupabaseClient | null | undefined
+let client: SupabaseClient | null = null
 
 export function supabaseConfigured(): boolean {
   return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
 }
 
 /** Anon client only. The service role key must never be imported here. */
-export function getSupabase(): SupabaseClient | null {
-  if (client !== undefined) return client
+export function getSupabase(): SupabaseClient {
+  if (client) return client
+
   const url = import.meta.env.VITE_SUPABASE_URL
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+
   if (!url || !key) {
-    client = null
-    return client
+    throw new Error(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables. ' +
+      'Use only the Supabase anon/public key (starts with eyJ), never the service_role key.'
+    )
   }
+
   client = createClient(url, key, {
     auth: {
       persistSession: true,
@@ -25,5 +30,5 @@ export function getSupabase(): SupabaseClient | null {
   return client
 }
 
-/** Convenience export — may be null if env vars are missing. */
-export const supabase: SupabaseClient | null = getSupabase()
+/** Convenience export — throws if Supabase env vars are missing. */
+export const supabase: SupabaseClient = getSupabase()

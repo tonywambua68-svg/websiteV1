@@ -17,6 +17,7 @@ import ResetPassword from '@/pages/ResetPassword'
 import Account from '@/pages/Account'
 import NotFound from '@/pages/NotFound'
 import Wishlist from '@/pages/Wishlist'
+import Maintenance from '@/pages/Maintenance'
 import AdminDashboard from '@/pages/admin/Dashboard'
 import AdminProducts from '@/pages/admin/Products'
 import AdminProductForm from '@/pages/admin/ProductForm'
@@ -38,7 +39,13 @@ import AdminProductPublishing from '@/pages/admin/ProductPublishing'
 import AdminPricingRules from '@/pages/admin/PricingRules'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
+const MAINTENANCE_MODE = import.meta.env.VITE_SITE_MAINTENANCE_MODE === 'true'
+
 function App() {
+  if (MAINTENANCE_MODE) {
+    return <Maintenance />
+  }
+
   return (
     <Router>
       <Routes>

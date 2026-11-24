@@ -10,9 +10,7 @@
     "preview": "vite preview",
     "server": "node server/server.mjs",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
-    "start": "npm run dev",
-    "deploy": "npx wrangler deploy",
-    "deploy:staging": "npx wrangler deploy --env staging"
+    "start": "npm run dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
