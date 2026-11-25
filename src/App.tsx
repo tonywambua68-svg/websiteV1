@@ -39,7 +39,7 @@ import AdminProductPublishing from '@/pages/admin/ProductPublishing'
 import AdminPricingRules from '@/pages/admin/PricingRules'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
-const MAINTENANCE_MODE = import.meta.env.VITE_SITE_MAINTENANCE_MODE === 'true'
+const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
 
 function App() {
   if (MAINTENANCE_MODE) {
