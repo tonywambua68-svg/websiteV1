@@ -16,17 +16,13 @@ export default function Maintenance() {
         <p className="text-muted text-base mb-8">
           OREMITECH is temporarily unavailable while we apply updates. We'll be back shortly.
         </p>
-        <div className="space-y-3">
-          <a href="/" className="btn-emerald w-full sm:w-auto">
-            Visit homepage
-          </a>
-          <a href="/shop" className="btn-amber w-full sm:w-auto">
-            Browse products
-          </a>
-        </div>
         <div className="mt-8 pt-6 border-t border-line">
           <p className="mt-1 text-xs text-muted">
-            <b>Contact:</b> oremitech@gmail.com &nbsp;|&nbsp;
+            <b>Contact:</b>
+            <a href="mailto:[TYPE YOUR REAL EMAIL HERE]" className="text-emerald font-bold underline">
+              [TYPE YOUR REAL EMAIL HERE, or delete this line if oremitech@gmail.com is correct]
+            </a>
+            &nbsp;|&nbsp;
             <a href="https://wa.me/254143198930" className="text-emerald font-bold underline">
               WhatsApp +254 143 198 930
             </a>
