@@ -40,6 +40,28 @@ type ProductRow = {
   owned_available: number
   supplier_available: number
   image_url: string | null
+  processor_manufacturer: string | null
+  processor_model: string | null
+  processor_generation: string | null
+  ram: string | null
+  ram_type: string | null
+  storage_capacity: string | null
+  storage_type: string | null
+  screen_size: string | null
+  screen_resolution: string | null
+  graphics: string | null
+  operating_system: string | null
+  warranty: string | null
+  battery_condition: string | null
+  keyboard_layout: string | null
+  weight: string | null
+  colour: string | null
+  seo_title: string | null
+  seo_description: string | null
+  seo_focus_keyword: string | null
+  seo_secondary_keywords: string | null
+  seo_social_title: string | null
+  seo_social_description: string | null
 }
 
 export default function AdminProducts() {
@@ -61,7 +83,7 @@ const [csvPreview, setCsvPreview] = useState<Array<Record<string, string>>>([])
 const [csvErrors, setCsvErrors] = useState<string[]>([])
 const [csvImporting, setCsvImporting] = useState(false)
 
-  const loadProducts = async () => {
+const loadProducts = async () => {
     const supabase = getSupabase()
     if (!supabase) return
     setLoading(true)
@@ -72,6 +94,12 @@ const [csvImporting, setCsvImporting] = useState(false)
           id, slug, name, model, description, category_id, brand_id,
           selling_price, comparison_price, laptop_condition, publication_status,
           featured, created_at, updated_at, deleted_at,
+          processor_manufacturer, processor_model, processor_generation,
+          ram, ram_type, storage_capacity, storage_type,
+          screen_size, screen_resolution, graphics, operating_system,
+          warranty, battery_condition, keyboard_layout, weight, colour,
+          seo_title, seo_description, seo_focus_keyword,
+          seo_secondary_keywords, seo_social_title, seo_social_description,
           categories(name),
           brands(name),
           inventory_balances(owned_qty, supplier_qty, reserved_qty),
@@ -108,6 +136,28 @@ const [csvImporting, setCsvImporting] = useState(false)
                 .sort((a: any, b: any) => a.sort_order - b.sort_order)[0]?.url ||
               p.product_images?.[0]?.url ||
               null,
+            processor_manufacturer: p.processor_manufacturer,
+            processor_model: p.processor_model,
+            processor_generation: p.processor_generation,
+            ram: p.ram,
+            ram_type: p.ram_type,
+            storage_capacity: p.storage_capacity,
+            storage_type: p.storage_type,
+            screen_size: p.screen_size,
+            screen_resolution: p.screen_resolution,
+            graphics: p.graphics,
+            operating_system: p.operating_system,
+            warranty: p.warranty,
+            battery_condition: p.battery_condition,
+            keyboard_layout: p.keyboard_layout,
+            weight: p.weight,
+            colour: p.colour,
+            seo_title: p.seo_title,
+            seo_description: p.seo_description,
+            seo_focus_keyword: p.seo_focus_keyword,
+            seo_secondary_keywords: p.seo_secondary_keywords,
+            seo_social_title: p.seo_social_title,
+            seo_social_description: p.seo_social_description,
           }))
         )
       }
@@ -248,7 +298,32 @@ const [csvImporting, setCsvImporting] = useState(false)
     }
   }
 
-  const exportCsv = () => {
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return
+    if (!isOwner) {
+      setMessage('Only the Owner can delete products.')
+      return
+    }
+    const names = products.filter((p) => selected.has(p.id)).map((p) => p.name).join(', ')
+    if (!window.confirm(`Delete ${selected.size} product(s): ${names}? This removes them from the storefront but keeps order history.`)) return
+    const supabase = getSupabase()
+    if (!supabase) return
+    setLoading(true)
+    const ids = Array.from(selected)
+    try {
+      const { error } = await supabase.from('products').update({ deleted_at: new Date().toISOString() }).in('id', ids)
+      if (error) throw error
+      setMessage(`${ids.length} product(s) removed from the storefront. Order history is preserved.`)
+      setSelected(new Set())
+      loadProducts()
+    } catch (err: any) {
+      setMessage(`Bulk delete error: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+const exportCsv = () => {
     const rows = filtered.map((p) => ({
       id: p.id,
       slug: p.slug,
@@ -263,12 +338,34 @@ const [csvImporting, setCsvImporting] = useState(false)
       owned_available: p.owned_available,
       supplier_available: p.supplier_available,
       image_url: p.image_url || '',
+      processor_manufacturer: p.processor_manufacturer || '',
+      processor_model: p.processor_model || '',
+      processor_generation: p.processor_generation || '',
+      ram: p.ram || '',
+      ram_type: p.ram_type || '',
+      storage_capacity: p.storage_capacity || '',
+      storage_type: p.storage_type || '',
+      screen_size: p.screen_size || '',
+      screen_resolution: p.screen_resolution || '',
+      graphics: p.graphics || '',
+      operating_system: p.operating_system || '',
+      warranty: p.warranty || '',
+      battery_condition: p.battery_condition || '',
+      keyboard_layout: p.keyboard_layout || '',
+      weight: p.weight || '',
+      colour: p.colour || '',
+      seo_title: p.seo_title || '',
+      seo_description: p.seo_description || '',
+      seo_focus_keyword: p.seo_focus_keyword || '',
+      seo_secondary_keywords: p.seo_secondary_keywords || '',
+      seo_social_title: p.seo_social_title || '',
+      seo_social_description: p.seo_social_description || '',
     }))
     downloadCsv(`OREMITECH_products_${new Date().toISOString().slice(0, 10)}.csv`, rows)
     setMessage('Product CSV exported.')
   }
 
-  const downloadSampleCsv = () => {
+const downloadSampleCsv = () => {
     const sampleRows = [
       {
         name: 'HP EliteBook 840 G8',
@@ -282,13 +379,20 @@ const [csvImporting, setCsvImporting] = useState(false)
         description: 'Core i7 11th Gen, 16GB RAM, 512GB SSD, 14-inch FHD, Windows 11 Pro',
         processor_manufacturer: 'Intel',
         processor_model: 'Core i7 11th Gen',
+        processor_generation: '11th Gen',
         ram: '16GB',
         ram_type: 'DDR4',
         storage_capacity: '512GB',
         storage_type: 'SSD',
         screen_size: '14-inch FHD',
+        screen_resolution: '1920x1080',
+        graphics: 'Integrated Intel Iris Xe',
         operating_system: 'Windows 11 Pro',
         warranty: '6 months',
+        battery_condition: 'Healthy (100%)',
+        keyboard_layout: 'Standard QWERTY',
+        weight: '1.4 kg',
+        colour: 'Silver',
         initial_stock: '1',
         seo_title: '',
         seo_description: '',
@@ -309,13 +413,20 @@ const [csvImporting, setCsvImporting] = useState(false)
         description: 'Core i5 12th Gen, 8GB RAM, 256GB SSD, 14-inch FHD, Windows 10 Pro',
         processor_manufacturer: 'Intel',
         processor_model: 'Core i5 12th Gen',
+        processor_generation: '12th Gen',
         ram: '8GB',
         ram_type: 'DDR4',
         storage_capacity: '256GB',
         storage_type: 'SSD',
         screen_size: '14-inch FHD',
+        screen_resolution: '1920x1080',
+        graphics: 'Integrated Intel Iris Xe',
         operating_system: 'Windows 10 Pro',
         warranty: '3 months',
+        battery_condition: 'Good (85%)',
+        keyboard_layout: 'Standard QWERTY',
+        weight: '1.37 kg',
+        colour: 'Grey',
         initial_stock: '1',
         seo_title: '',
         seo_description: '',
@@ -336,13 +447,20 @@ const [csvImporting, setCsvImporting] = useState(false)
         description: 'Apple M1 chip, 8GB RAM, 256GB SSD, 13.3-inch Retina, macOS',
         processor_manufacturer: 'Apple',
         processor_model: 'M1',
+        processor_generation: 'M1',
         ram: '8GB',
         ram_type: 'Unified Memory',
         storage_capacity: '256GB',
         storage_type: 'SSD',
         screen_size: '13.3-inch Retina',
+        screen_resolution: '2560x1600',
+        graphics: 'Apple M1 8-core GPU',
         operating_system: 'macOS',
         warranty: '3 months',
+        battery_condition: 'Excellent (95%)',
+        keyboard_layout: 'Standard QWERTY (US)',
+        weight: '1.4 kg',
+        colour: 'Space Grey',
         initial_stock: '1',
         seo_title: '',
         seo_description: '',
@@ -487,7 +605,7 @@ const [csvImporting, setCsvImporting] = useState(false)
           failures.push(`${row.name}: Comparison price must be greater than the selling price.`)
           continue
         }
-        const { data: product, error } = await supabase.from('products').insert({
+const { data: product, error } = await supabase.from('products').insert({
           slug,
           name: row.name,
           model: row.model || null,
@@ -499,13 +617,20 @@ const [csvImporting, setCsvImporting] = useState(false)
           laptop_condition: row.condition || 'unspecified',
           processor_manufacturer: row.processor_manufacturer || null,
           processor_model: row.processor_model || null,
+          processor_generation: row.processor_generation || null,
           ram: row.ram || null,
           ram_type: row.ram_type || null,
           storage_capacity: row.storage_capacity || null,
           storage_type: row.storage_type || null,
           screen_size: row.screen_size || null,
+          screen_resolution: row.screen_resolution || null,
+          graphics: row.graphics || null,
           operating_system: row.operating_system || null,
           warranty: row.warranty || null,
+          battery_condition: row.battery_condition || null,
+          keyboard_layout: row.keyboard_layout || null,
+          weight: row.weight || null,
+          colour: row.colour || null,
           seo_title: row.seo_title || null,
           seo_description: row.seo_description || null,
           seo_focus_keyword: row.seo_focus_keyword || null,
@@ -639,6 +764,14 @@ const [csvImporting, setCsvImporting] = useState(false)
               className="btn btn-emerald !h-8 text-[10px] font-bold"
             >
               Archive Selected
+            </button>}
+            {isOwner && <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={loading}
+              className="btn btn-error !h-8 text-[10px] font-bold shadow-xs disabled:opacity-50"
+            >
+              {loading ? 'Deleting…' : 'Delete Selected'}
             </button>}
           </div>
         </div>

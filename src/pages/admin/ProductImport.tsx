@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AdminLayout from './AdminLayout'
 import { getSupabase } from '@/lib/supabase'
+import * as XLSX from 'xlsx'
 import {
   createImport,
   updateImport,
@@ -36,6 +37,7 @@ import {
   Plus,
   Layers,
   Edit3,
+  Edit,
   Check,
   X,
   Search,
@@ -235,6 +237,8 @@ export default function AdminProductImport() {
 
   // Quick price editor modal / state
   const [editingRow, setEditingRow] = useState<ProductImportRow | null>(null)
+  const [editForm, setEditForm] = useState<Record<string, string | number | boolean | Record<string, string>>>({})
+  const [savingEdit, setSavingEdit] = useState(false)
   const [editPriceForm, setEditPriceForm] = useState({
     supplier_price: '',
     supplier_currency: 'KES',
@@ -743,6 +747,59 @@ export default function AdminProductImport() {
     })
   }
 
+  // -------------------------------------------------------------------------
+  // Full Edit Modal - loads ALL fields for persistence
+  // -------------------------------------------------------------------------
+  const openFullEditor = (row: ProductImportRow) => {
+    setEditingRow(row)
+    setEditForm({
+      title: row.title || '',
+      brand_name: row.brand_name || '',
+      model: row.model || '',
+      category_slug: row.category_slug || '',
+      description: row.description || '',
+      specs: row.specs || {},
+      supplier_price: row.supplier_price ?? '',
+      supplier_currency: row.supplier_currency || 'KES',
+      fx_rate_to_kes: String(row.fx_rate_to_kes || 1),
+      competitor_price: row.competitor_price ?? '',
+      availability_status: row.availability_status || 'available',
+      availability_verified: row.availability_verified || false,
+      image_query: row.image_query || '',
+    })
+  }
+
+  const handleSaveFullEdit = async () => {
+    if (!editingRow) return
+    setSavingEdit(true)
+    try {
+      const patch: Record<string, unknown> = {
+        title: editForm.title,
+        brand_name: editForm.brand_name,
+        model: editForm.model,
+        category_slug: editForm.category_slug,
+        description: editForm.description,
+        specs: editForm.specs,
+        supplier_price: editForm.supplier_price ? Number(editForm.supplier_price) : null,
+        supplier_currency: editForm.supplier_currency,
+        fx_rate_to_kes: Number(editForm.fx_rate_to_kes) || 1,
+        competitor_price: editForm.competitor_price ? Number(editForm.competitor_price) : null,
+        availability_status: editForm.availability_status,
+        availability_verified: Boolean(editForm.availability_verified),
+        image_query: editForm.image_query,
+      }
+      await updateImport(editingRow.id, patch)
+      setMessage(`Saved all changes for "${editingRow.title}"`)
+      setEditingRow(null)
+      setEditForm({})
+      refreshQueue()
+    } catch (err: any) {
+      setError(err.message || 'Could not save changes.')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   const handleSavePrice = async () => {
     if (!editingRow) return
     setSavingPrice(true)
@@ -795,6 +852,31 @@ export default function AdminProductImport() {
     const text = await file.text()
     setCsvText(text)
     await handleCsvParse(text)
+  }
+
+  // -------------------------------------------------------------------------
+  // Excel import (.xlsx / .xls) via SheetJS -> CSV -> same plan pipeline
+  // -------------------------------------------------------------------------
+  const handleExcelFile = async (file: File) => {
+    setError(null)
+    setMessage(null)
+    setBusy(true)
+    try {
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+      if (!firstSheet) {
+        setError('The Excel file contains no readable sheets.')
+        return
+      }
+      const csv = XLSX.utils.sheet_to_csv(firstSheet)
+      setCsvText(csv)
+      await handleCsvParse(csv)
+    } catch (err: any) {
+      setError(err.message || 'Could not parse the Excel file. Save it as CSV and try again, or check the sheet is not empty.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const handleCsvParse = async (text?: string) => {
@@ -1047,7 +1129,7 @@ export default function AdminProductImport() {
         {([
           { id: 'url', label: 'Supplier URL Scraper', icon: Link2 },
           { id: 'search', label: 'Search & Auto-Stage', icon: Sparkles },
-          { id: 'csv', label: 'Spreadsheet / CSV', icon: FileSpreadsheet },
+          { id: 'csv', label: 'CSV / Excel', icon: FileSpreadsheet },
           { id: 'manual', label: 'Manual Entry', icon: PenLine },
         ] as const).map((t) => {
           const Icon = t.icon
@@ -1379,13 +1461,18 @@ export default function AdminProductImport() {
           <div className="rounded-xl border border-line bg-card p-4 shadow-xs">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <label className="block flex-1 text-xs font-bold text-muted">
-                Upload CSV / spreadsheet export
+                Upload CSV / Excel spreadsheet
                 <input
                   type="file"
-                  accept=".csv,text/csv,text/plain"
+                  accept=".csv,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                   onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) handleCsvFile(file)
+                    if (!file) return
+                    if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+                      handleExcelFile(file)
+                    } else {
+                      handleCsvFile(file)
+                    }
                   }}
                   className="mt-1 block w-full text-xs"
                 />
@@ -1600,6 +1687,13 @@ export default function AdminProductImport() {
                       >
                         <Edit3 className="h-3 w-3 mr-1" /> Edit Price
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => openFullEditor(row)}
+                        className="btn btn-outline !h-7 !px-2 text-[11px] font-bold mr-1.5"
+                      >
+                        <Edit className="h-3 w-3 mr-1" /> Edit All
+                      </button>
                       <Link
                         to={`/admin/product-review/${row.id}`}
                         className="btn btn-emerald !h-7 !px-2.5 text-[11px] font-bold mr-1.5"
@@ -1724,6 +1818,176 @@ export default function AdminProductImport() {
                 className="btn btn-emerald !h-9 text-xs font-bold"
               >
                 {savingPrice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save Price
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL EDIT MODAL - All Fields */}
+      {editingRow && Object.keys(editForm).length > 0 && !editPriceForm.supplier_price && !editPriceForm.selling_price && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-line bg-card p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <p className="text-sm font-extrabold text-ink">Edit Product Import</p>
+              <button onClick={() => { setEditingRow(null); setEditForm({}) }} className="text-muted hover:text-ink">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs font-semibold text-muted line-clamp-1">{editingRow.title}</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block text-xs font-bold text-muted">
+                Product Title *
+                <input
+                  type="text"
+                  value={String(editForm.title)}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="input mt-1 w-full text-xs font-bold"
+                  required
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-muted">
+                  Brand
+                  <input
+                    type="text"
+                    value={String(editForm.brand_name)}
+                    onChange={(e) => setEditForm({ ...editForm, brand_name: e.target.value })}
+                    className="input mt-1 w-full text-xs"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted">
+                  Model
+                  <input
+                    type="text"
+                    value={String(editForm.model)}
+                    onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+                    className="input mt-1 w-full text-xs"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-bold text-muted">
+                Category Slug *
+                <input
+                  type="text"
+                  value={String(editForm.category_slug)}
+                  onChange={(e) => setEditForm({ ...editForm, category_slug: e.target.value })}
+                  className="input mt-1 w-full text-xs"
+                  required
+                />
+              </label>
+              <label className="block text-xs font-bold text-muted">
+                Description
+                <textarea
+                  value={String(editForm.description)}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={3}
+                  className="input mt-1 w-full text-xs"
+                />
+              </label>
+              <label className="block text-xs font-bold text-muted">
+                Specs (JSON)
+                <textarea
+                  value={JSON.stringify(editForm.specs, null, 2)}
+                  onChange={(e) => { try { setEditForm({ ...editForm, specs: JSON.parse(e.target.value) }) } catch {} }}
+                  rows={4}
+                  className="input mt-1 w-full text-xs font-mono"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-muted">
+                  Supplier Price
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={String(editForm.supplier_price)}
+                    onChange={(e) => setEditForm({ ...editForm, supplier_price: e.target.value })}
+                    className="input mt-1 w-full text-xs font-bold"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted">
+                  Currency
+                  <input
+                    type="text"
+                    value={String(editForm.supplier_currency)}
+                    onChange={(e) => setEditForm({ ...editForm, supplier_currency: e.target.value.toUpperCase() })}
+                    className="input mt-1 w-full text-xs font-bold"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-muted">
+                  FX Rate to KES
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={String(editForm.fx_rate_to_kes)}
+                    onChange={(e) => setEditForm({ ...editForm, fx_rate_to_kes: e.target.value })}
+                    className="input mt-1 w-full text-xs font-bold"
+                  />
+                </label>
+                <label className="block text-xs font-bold text-muted">
+                  Competitor Price
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={String(editForm.competitor_price)}
+                    onChange={(e) => setEditForm({ ...editForm, competitor_price: e.target.value })}
+                    className="input mt-1 w-full text-xs font-bold"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-muted">
+                  Availability Status
+                  <select
+                    value={String(editForm.availability_status)}
+                    onChange={(e) => setEditForm({ ...editForm, availability_status: e.target.value })}
+                    className="input mt-1 w-full text-xs"
+                  >
+                    <option value="available">Available</option>
+                    <option value="preorder">Pre-order</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </label>
+                <label className="block text-xs font-bold text-muted flex items-end">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editForm.availability_verified)}
+                    onChange={(e) => setEditForm({ ...editForm, availability_verified: e.target.checked })}
+                    className="mr-2 h-4 w-4 rounded border-line"
+                  />
+                  Availability Verified
+                </label>
+              </div>
+              <label className="block text-xs font-bold text-muted">
+                Image Search Query
+                <input
+                  type="text"
+                  value={String(editForm.image_query)}
+                  onChange={(e) => setEditForm({ ...editForm, image_query: e.target.value })}
+                  className="input mt-1 w-full text-xs"
+                  placeholder="Exact model search query for images"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2 border-t border-line pt-3">
+              <button
+                type="button"
+                onClick={() => { setEditingRow(null); setEditForm({}) }}
+                className="btn btn-outline !h-9 text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveFullEdit}
+                disabled={savingEdit}
+                className="btn btn-emerald !h-9 text-xs font-bold"
+              >
+                {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save All Changes
               </button>
             </div>
           </div>

@@ -3,9 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 import { useCartStore } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
+import { useAuthStore } from '@/store/authStore'
 import { usePageMeta } from '@/components/Analytics'
 import { useSettingsStore } from '@/store/settingsStore'
 import type { CatalogueProduct } from '@/lib/domain'
+import { getSupabase } from '@/lib/supabase'
 import ProductCard from '@/components/ProductCard'
 import ProductImageGallery from '@/components/ProductImageGallery'
 import {
@@ -29,12 +31,18 @@ import {
   Minus,
   Plus,
   Share2,
+  Star,
+  User,
+  Send,
+  Clock,
+  Edit2,
 } from 'lucide-react'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
 
 export default function ProductDetail() {
   const supportPhone = useSettingsStore((state) => state.settings.whatsapp_e164)
+  const { user } = useAuthStore()
   const { slug, id } = useParams<{ slug?: string; id?: string }>()
   const identifier = slug || id
   const navigate = useNavigate()
@@ -51,6 +59,26 @@ export default function ProductDetail() {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Reviews
+  const [reviews, setReviews] = useState<Array<{ id: string; rating: number; body: string; created_at: string; profiles?: { full_name: string | null } | null }>>([])
+  const [avgRating, setAvgRating] = useState(0)
+  const [reviewCount, setReviewCount] = useState(0)
+  const [userReview, setUserReview] = useState<{ id: string; rating: number; body: string; status: string } | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewBody, setReviewBody] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null)
+
+  // Enquire / request a call
+  const [enqName, setEnqName] = useState('')
+  const [enqPhone, setEnqPhone] = useState('')
+  const [enqMessage, setEnqMessage] = useState('')
+  const [submittingEnq, setSubmittingEnq] = useState(false)
+  const [enqFeedback, setEnqFeedback] = useState<string | null>(null)
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
+
   // SEO meta tags — updates document head when product data loads
   const pageTitle = product ? (product.seo_title || product.name) : 'Product · OREMITECH'
   const pageDescription = product ? (product.seo_description || product.description || '') : ''
@@ -66,13 +94,14 @@ export default function ProductDetail() {
     }
 
     setLoading(true)
-    fetchProductBySlug(identifier).then((found) => {
+    fetchProductBySlug(identifier).then(async (found) => {
       if (!isMounted) return
       setProduct(found)
       if (found) {
         fetchRelated(found).then((rel) => {
           if (isMounted) setRelated(rel)
         })
+        await loadReviews(found.id)
       }
       setLoading(false)
     })
@@ -81,6 +110,32 @@ export default function ProductDetail() {
       isMounted = false
     }
   }, [identifier, fetchProductBySlug, fetchRelated])
+
+  const loadReviews = async (productId: string) => {
+    const supabase = getSupabase()
+    if (!supabase) return
+    try {
+      const [publishedRes, ownRes] = await Promise.all([
+        supabase
+          .from('product_reviews')
+          .select(`id, rating, body, created_at, profiles(full_name)`)
+          .eq('product_id', productId)
+          .eq('status', 'published')
+          .order('created_at', { ascending: false }),
+        user
+          ? supabase.from('product_reviews').select('id, rating, body, status').eq('product_id', productId).eq('user_id', user.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ])
+      if (publishedRes.error) throw publishedRes.error
+      const rows = (publishedRes.data ?? []) as unknown as Array<{ id: string; rating: number; body: string; created_at: string; profiles?: { full_name: string | null } | null }>
+      setReviews(rows)
+      setReviewCount(rows.length)
+      setAvgRating(rows.length > 0 ? Math.round((rows.reduce((s, r) => s + r.rating, 0) / rows.length) * 10) / 10 : 0)
+      if (ownRes && !ownRes.error && ownRes.data) setUserReview(ownRes.data as { id: string; rating: number; body: string; status: string })
+    } catch (err: any) {
+      setReviewFeedback(`Could not load reviews: ${err.message}`)
+    }
+  }
 
   // Inject Open Graph, canonical, and JSON-LD into document head for SEO
   useEffect(() => {
@@ -249,6 +304,81 @@ export default function ProductDetail() {
     }
   }
 
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) {
+      setReviewFeedback('Please sign in to leave a review.')
+      return
+    }
+    if (userReview) {
+      setReviewFeedback('You have already submitted a review for this product.')
+      return
+    }
+    if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
+      setReviewFeedback('Please select a rating between 1 and 5 stars.')
+      return
+    }
+    if (!reviewBody || reviewBody.trim().length < 2) {
+      setReviewFeedback('Please write a short review (2+ characters).')
+      return
+    }
+    const supabase = getSupabase()
+    if (!supabase) return
+    setSubmittingReview(true)
+    setReviewFeedback(null)
+    try {
+      const { error } = await supabase.from('product_reviews').insert({
+        product_id: product!.id,
+        user_id: user.id,
+        rating: reviewRating,
+        body: reviewBody.trim(),
+      })
+      if (error) throw error
+      setReviewFeedback('Thanks! Your review is pending approval before it appears.')
+      setReviewRating(0)
+      setReviewBody('')
+      setUserReview({ id: '', rating: reviewRating, body: reviewBody.trim(), status: 'pending' })
+      await loadReviews(product!.id)
+    } catch (err: any) {
+      setReviewFeedback(`Could not submit review: ${err.message}`)
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const handleSubmitEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!enqName || enqName.trim().length < 2) {
+      setEnqFeedback('Please enter your name.')
+      return
+    }
+    if (!enqMessage || enqMessage.trim().length < 5) {
+      setEnqFeedback('Please write a short message (5+ characters).')
+      return
+    }
+    const supabase = getSupabase()
+    if (!supabase) return
+    setSubmittingEnq(true)
+    setEnqFeedback(null)
+    try {
+      const { error } = await supabase.from('customer_inquiries').insert({
+        name: enqName.trim(),
+        phone: enqPhone.trim() || null,
+        message: enqMessage.trim(),
+        product_id: product!.id,
+      })
+      if (error) throw error
+      setEnqFeedback('Your enquiry has been logged. We’ll contact you shortly.')
+      setEnqName('')
+      setEnqPhone('')
+      setEnqMessage('')
+    } catch (err: any) {
+      setEnqFeedback(`Could not log enquiry: ${err.message}`)
+    } finally {
+      setSubmittingEnq(false)
+    }
+  }
+
   const waText = `Hello OREMITECH, I am interested in: ${product.name} (Price: ${formatKES(product.selling_price)}). Is it currently available for delivery?`
   const waLink = supportPhone ? whatsappHref(supportPhone, waText) : null
 
@@ -338,25 +468,6 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* Description */}
-          <div className="mt-5 border-t border-line pt-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">Overview</h2>
-            <div className="mt-1.5 prose prose-sm text-ink/80 max-w-none">
-              {product.description ? (
-                parse(DOMPurify.sanitize(product.description), {
-                  replace: (domNode: any) => {
-                    if (domNode.tagName === 'A') {
-                      return { ...domNode, target: '_blank', rel: 'noopener noreferrer' }
-                    }
-                    return domNode
-                  },
-                })
-              ) : (
-                <p className="text-sm text-muted">No description available.</p>
-              )}
-            </div>
-          </div>
-
           {/* Quantity and Actions */}
           <div className="mt-6 space-y-3 border-t border-line pt-5">
             <div className="flex items-center gap-4">
@@ -421,6 +532,46 @@ export default function ProductDetail() {
                 <Phone className="h-4 w-4 text-emerald-600" /> Inquire via WhatsApp
               </a>
             )}
+
+            {/* Enquire / request a call — logged so the team can follow up */}
+            <form onSubmit={handleSubmitEnquiry} className="mt-3 border rounded-xl p-3 space-y-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted">Request a call or enquire</h4>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  type="text"
+                  value={enqName}
+                  onChange={(e) => setEnqName(e.target.value)}
+                  placeholder="Your name"
+                  className="input text-xs"
+                  required
+                />
+                <input
+                  type="tel"
+                  value={enqPhone}
+                  onChange={(e) => setEnqPhone(e.target.value)}
+                  placeholder="Phone (WhatsApp)"
+                  className="input text-xs"
+                />
+              </div>
+              <textarea
+                value={enqMessage}
+                onChange={(e) => setEnqMessage(e.target.value)}
+                rows={2}
+                placeholder="What would you like to know about this product?"
+                className="input w-full text-xs"
+                required
+              />
+              {enqFeedback && (
+                <p className={`text-xs font-bold ${enqFeedback.startsWith('Your enquiry') ? 'text-tealdeep' : 'text-error'}`}>{enqFeedback}</p>
+              )}
+              <button
+                type="submit"
+                disabled={submittingEnq}
+                className="btn btn-emerald !h-9 w-full text-xs font-bold shadow-xs disabled:opacity-50"
+              >
+                {submittingEnq ? 'Logging…' : 'Send Enquiry'}
+              </button>
+            </form>
           </div>
 
           {/* Guarantees */}
@@ -505,6 +656,150 @@ export default function ProductDetail() {
             <div className="flex justify-between border-b border-line/60 py-2 text-xs">
               <span className="font-semibold text-muted">Colour</span>
               <span className="font-bold text-ink">{product.colour}</span>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Description / Reviews tabs */}
+      <section className="mt-14 rounded-2xl border border-line bg-card shadow-sm">
+        <div className="border-b border-line flex">
+          <button
+            type="button"
+            onClick={() => setActiveTab('description')}
+            className={`-mb-px border-b-2 px-5 py-3 text-sm font-bold ${activeTab === 'description' ? 'border-teal text-tealdeep' : 'border-transparent text-muted hover:text-ink'}`}
+          >
+            Description
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('reviews')}
+            className={`-mb-px border-b-2 px-5 py-3 text-sm font-bold ${activeTab === 'reviews' ? 'border-teal text-tealdeep' : 'border-transparent text-muted hover:text-ink'}`}
+          >
+            Reviews ({reviewCount})
+          </button>
+        </div>
+
+        <div className="p-6">
+          {activeTab === 'description' && (
+            <div className="prose prose-sm text-ink/80 max-w-none">
+              {product.description ? (
+                parse(DOMPurify.sanitize(product.description), {
+                  replace: (domNode: any) => {
+                    if (domNode.tagName === 'A') {
+                      return { ...domNode, target: '_blank', rel: 'noopener noreferrer' }
+                    }
+                    return domNode
+                  },
+                })
+              ) : (
+                <p className="text-sm text-muted">No description available.</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-extrabold text-ink">{avgRating.toFixed(1)}</span>
+                  <span className="text-lg text-muted">({reviewCount} review{reviewCount === 1 ? '' : 's'})</span>
+                </div>
+                <div className="mt-2 flex gap-1">
+                  {[5, 4, 3, 2, 1].map((star) => (
+                    <span key={star} className="flex items-center gap-1 text-[11px]">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className={`h-4 w-4 ${s <= avgRating ? 'fill-current text-amber-400' : 'text-muted'}`} />
+                      ))}
+                      <span className="text-muted"> {star}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <h3 className="text-sm font-bold text-ink mb-3">Customer Reviews</h3>
+                {reviews.length === 0 ? (
+                  <p className="text-sm text-muted">No reviews yet. Be the first to share your experience.</p>
+                ) : (
+                  reviews.map((r) => (
+                    <div key={r.id} className="pb-4 border-b border-line/60 last:border-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-ink">{r.profiles?.full_name || 'A customer'}</span>
+                        <span className="text-xs text-muted">{r.created_at.slice(0, 10)}</span>
+                      </div>
+                      <div className="flex gap-1 text-amber-400">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star key={s} className={`h-4 w-4 ${s <= r.rating ? 'fill-current' : 'text-muted'}`} />
+                        ))}
+                      </div>
+                      <p className="mt-1 text-sm text-ink/90">{r.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {user ? (
+                userReview ? (
+                  <div className="rounded-xl border border-teal/30 bg-mint/50 p-3 text-xs">
+                    <p className="font-bold text-tealdeep">Your review (pending approval)</p>
+                    <p className="mt-1 text-tealdeep/90">{userReview.body}</p>
+                    <div className="mt-2 flex gap-1 text-amber-400">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className={`h-4 w-4 ${s <= userReview.rating ? 'fill-current' : 'text-muted'}`} />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmitReview} className="border rounded-xl p-4 space-y-3">
+                    <h3 className="text-sm font-bold text-ink">Leave a Review</h3>
+                    <div>
+                      <label className="block text-xs font-bold text-muted mb-1">Your rating</label>
+                      <div className="flex gap-1" role="radiogroup" aria-label="Star rating">
+                        {[5, 4, 3, 2, 1].map((s) => (
+                          <button
+                            type="button"
+                            key={s}
+                            onClick={() => setReviewRating(s)}
+                            aria-label={`Rate ${s} stars`}
+                            className={`rounded p-1 ${reviewRating === s ? 'text-amber-400' : 'text-muted hover:text-amber-400'}`}
+                          >
+                            <Star className="h-5 w-5" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-muted mb-1">Your review</label>
+                      <textarea
+                        value={reviewBody}
+                        onChange={(e) => setReviewBody(e.target.value)}
+                        rows={3}
+                        placeholder="Share your experience with this laptop…"
+                        className="input w-full text-xs"
+                      />
+                    </div>
+                    {reviewFeedback && (
+                      <p className={`text-xs font-bold ${reviewFeedback.startsWith('Thanks') || reviewFeedback.startsWith('You') ? 'text-tealdeep' : 'text-error'}`}>{reviewFeedback}</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={submittingReview || !reviewRating || !reviewBody.trim()}
+                      className="btn btn-emerald !h-9 text-xs font-bold shadow-xs disabled:opacity-50"
+                    >
+                      {submittingReview ? 'Submitting…' : 'Submit Review'}
+                    </button>
+                  </form>
+                )
+              ) : (
+                <div className="rounded-xl border border-line bg-mist p-4 text-center">
+                  <p className="text-sm font-bold text-ink">Sign in to leave a review</p>
+                  <p className="mt-1 text-xs text-muted">Reviews are reviewed before they appear.</p>
+                  <Link to="/login" className="mt-3 inline-block btn btn-emerald !h-9 text-xs font-bold shadow-xs">
+                    <User className="h-3.5 w-3.5 mr-1" /> Sign in
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
