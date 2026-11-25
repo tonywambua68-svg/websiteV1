@@ -19,8 +19,8 @@ export default function Maintenance() {
         <div className="mt-8 pt-6 border-t border-line">
           <p className="mt-1 text-xs text-muted">
             <b>Contact:</b>
-            <a href="mailto:[TYPE YOUR REAL EMAIL HERE]" className="text-emerald font-bold underline">
-              [TYPE YOUR REAL EMAIL HERE, or delete this line if oremitech@gmail.com is correct]
+            <a href="mailto:oremitech@gmail.com" className="text-emerald font-bold underline">
+              oremitech@gmail.com
             </a>
             &nbsp;|&nbsp;
             <a href="https://wa.me/254143198930" className="text-emerald font-bold underline">
