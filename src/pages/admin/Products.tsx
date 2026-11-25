@@ -561,12 +561,11 @@ const downloadSampleCsv = () => {
         errors.push(`Row ${index + 2}: Comparison price must be greater than the selling price`)
       }
     })
-    const slugs = rows.map((row) => row.slug.toLowerCase())
-    if (new Set(slugs).size !== slugs.length) errors.push('Two or more products use the same URL slug. Give each product a unique slug.')
+    // Note: duplicate slugs within the CSV or vs DB are now handled gracefully during import (skipped, not rejected)
     return errors
   }
 
-  const handleCsvImport = async () => {
+const handleCsvImport = async () => {
     if (!csvFile || csvPreview.length === 0 || csvErrors.length > 0) return
     const supabase = getSupabase()
     if (!supabase) return
@@ -582,8 +581,17 @@ const downloadSampleCsv = () => {
       const categories = catRes.data ?? []
       const brands = brandRes.data ?? []
 
+      // Pre-fetch existing slugs to avoid duplicate key errors
+      const slugsToCheck = csvPreview.map((r) => r.slug || slugify(r.name || '')).filter(Boolean)
+      const { data: existingProducts } = await supabase
+        .from('products')
+        .select('slug')
+        .in('slug', slugsToCheck)
+      const existingSlugs = new Set((existingProducts ?? []).map((p) => p.slug))
+
       const successes: string[] = []
       const failures: string[] = []
+      const skipped: string[] = []
 
       for (const row of csvPreview) {
         const catName = row.category || ''
@@ -605,7 +613,14 @@ const downloadSampleCsv = () => {
           failures.push(`${row.name}: Comparison price must be greater than the selling price.`)
           continue
         }
-const { data: product, error } = await supabase.from('products').insert({
+
+        // Skip if product with this slug already exists
+        if (existingSlugs.has(slug)) {
+          skipped.push(`${row.name} (slug: ${slug}) — already exists`)
+          continue
+        }
+
+        const { data: product, error } = await supabase.from('products').insert({
           slug,
           name: row.name,
           model: row.model || null,
@@ -642,6 +657,7 @@ const { data: product, error } = await supabase.from('products').insert({
         if (error) {
           failures.push(`${row.name}: ${error.message}`)
         } else {
+          existingSlugs.add(slug) // track newly inserted so duplicates in same CSV are skipped
           const initialStock = Number(row.initial_stock || 0)
           if (initialStock > 0) {
             const { error: stockError } = await supabase.rpc('adjust_stock', {
@@ -665,7 +681,11 @@ const { data: product, error } = await supabase.from('products').insert({
       setCsvPreview([])
       setCsvErrors([])
       loadProducts()
-      setMessage(`Imported ${successes.length} product(s) as drafts${failures.length > 0 ? `; ${failures.length} row(s) need attention: ${failures.slice(0, 3).join(' • ')}` : '. Review products, inspection, and publication before they go live.'}`)
+      const parts: string[] = []
+      if (successes.length) parts.push(`Imported ${successes.length} product(s) as drafts`)
+      if (skipped.length) parts.push(`Skipped ${skipped.length} existing product(s): ${skipped.slice(0, 5).join(', ')}${skipped.length > 5 ? ' …' : ''}`)
+      if (failures.length) parts.push(`${failures.length} row(s) failed: ${failures.slice(0, 3).join(' • ')}`)
+      setMessage(parts.join('. ') + '. Review products, inspection, and publication before they go live.')
     } catch (err: any) {
       setCsvImporting(false)
       setMessage(`CSV import error: ${err.message}`)
