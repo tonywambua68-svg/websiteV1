@@ -5,8 +5,6 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  v_count int;
 begin
   if public.current_profile_role() is distinct from 'owner' then
     raise exception 'Only the owner can approve or publish products';
@@ -30,11 +28,6 @@ begin
       where id = p_id and deleted_at is null;
   else
     raise exception 'Unknown decision';
-  end if;
-
-  get diagnostics v_count = row_count;
-  if v_count = 0 then
-    raise exception 'The product could not be updated. Approve it before publishing, and keep a verification on file.';
   end if;
 end;
 $$;
