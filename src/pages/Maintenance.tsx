@@ -24,7 +24,15 @@ export default function Maintenance() {
             Browse products
           </a>
         </div>
-        <p className="mt-8 text-xs text-muted">
+        <div className="mt-8 pt-6 border-t border-line">
+          <p className="mt-1 text-xs text-muted">
+            <b>Contact:</b> oremitech@gmail.com &nbsp;|&nbsp;
+            <a href="https://wa.me/254143198930" className="text-emerald font-bold underline">
+              WhatsApp +254 143 198 930
+            </a>
+          </p>
+        </div>
+        <p className="mt-4 text-xs text-muted">
           OREMITECH &mdash; Verified laptops &amp; computer accessories in Kenya
         </p>
       </div>
