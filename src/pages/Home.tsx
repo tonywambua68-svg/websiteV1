@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 import ProductCard from '@/components/ProductCard'
 import RecentlyViewed from '@/components/RecentlyViewed'
+import { getSupabase } from '@/lib/supabase'
 import {
   Truck,
   CreditCard,
@@ -21,6 +22,7 @@ import {
   Gamepad2,
   Flame,
   Clock,
+  Zap,
   ChevronLeft,
 } from 'lucide-react'
 import { formatKES } from '@/lib/commerce'
@@ -98,10 +100,36 @@ const USE_CARDS = [
 export default function Home() {
   const { products, fetchProducts, loading } = useProductStore()
   const [slideIndex, setSlideIndex] = useState(0)
+  const [flashSales, setFlashSales] = useState<any[]>([])
+  const [campaign, setCampaign] = useState<any | null>(null)
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
+
+  useEffect(() => {
+    const supabase = getSupabase()
+    if (!supabase) return
+    const nowIso = new Date().toISOString()
+    supabase
+      .from('flash_sales')
+      .select('*')
+      .eq('is_active', true)
+      .lte('starts_at', nowIso)
+      .gt('ends_at', nowIso)
+      .order('created_at', { ascending: false })
+      .limit(12)
+      .then(({ data }) => setFlashSales(data || []))
+    supabase
+      .from('campaigns')
+      .select('*')
+      .eq('is_active', true)
+      .lte('starts_at', nowIso)
+      .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+      .order('sort_order')
+      .limit(1)
+      .then(({ data }) => setCampaign(data && data[0] ? data[0] : null))
+  }, [])
 
   // Automatic hero slider rotation
   useEffect(() => {
@@ -230,6 +258,73 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* CAMPAIGN BANNER (DB-driven, only when an active campaign exists) */}
+      {campaign && (
+        <section className="wrap mt-4">
+          <Link
+            to={campaign.href || '/shop?offers=1'}
+            className="block overflow-hidden rounded-xl border border-line bg-gradient-to-r from-slate-900 to-blue-950 p-6 text-white shadow-sm transition hover:shadow-md"
+          >
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-cyan">Featured Campaign</p>
+            <h2 className="mt-1 font-display text-xl font-extrabold sm:text-2xl">{campaign.name}</h2>
+            {campaign.description && <p className="mt-1 max-w-2xl text-sm text-slate-300">{campaign.description}</p>}
+            <span className="btn btn-primary mt-4 !h-10 text-xs font-bold">Shop now →</span>
+          </Link>
+        </section>
+      )}
+
+      {/* FLASH SALES (DB-driven, only when active sales exist) */}
+      {flashSales.length > 0 && (
+        <section className="wrap mt-8">
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <div>
+              <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink sm:text-xl">
+                <Zap className="h-5 w-5 text-error" /> Flash Sales
+              </h2>
+              <p className="text-xs text-muted">Limited-time prices while the timer runs.</p>
+            </div>
+            <Link to="/shop?offers=1" className="text-xs font-bold text-primary hover:underline">
+              All offers →
+            </Link>
+          </div>
+          <div className={`mt-4 ${PRODUCT_GRID}`}>
+            {flashSales.map((f) => {
+              const p = products.find((x) => x.id === f.product_id)
+              if (!p) return null
+              const off = p.selling_price > 0 ? Math.round(((p.selling_price - f.promo_price) / p.selling_price) * 100) : 0
+              return (
+                <div key={f.id} className="market-card group relative flex flex-col overflow-hidden rounded-xl border border-line bg-white shadow-xs">
+                  <Link to={`/product/${p.slug}`} className="relative block aspect-square border-b border-line bg-white p-3">
+                    <img
+                      src={p.image_url || PLACEHOLDER}
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = PLACEHOLDER
+                      }}
+                    />
+                    {off > 0 && (
+                      <span className="absolute left-2 top-2 rounded bg-error px-1.5 py-0.5 text-[10px] font-extrabold text-white">-{off}%</span>
+                    )}
+                  </Link>
+                  <div className="flex flex-1 flex-col gap-1.5 p-3">
+                    <Link to={`/product/${p.slug}`} className="line-clamp-2 min-h-[2.4em] text-xs font-semibold text-ink hover:text-primary">
+                      {p.name}
+                    </Link>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-base font-extrabold text-ink">{formatKES(f.promo_price)}</span>
+                      {off > 0 && <span className="text-[11px] text-muted line-through">{formatKES(p.selling_price)}</span>}
+                    </div>
+                    <Countdown endsAt={f.ends_at} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 2. POPULAR CATEGORIES (repositioned below the hero) */}
       <section className="wrap mt-8">
@@ -491,5 +586,25 @@ export default function Home() {
         </div>
       </section>
     </div>
+  )
+}
+
+function Countdown({ endsAt }: { endsAt: string }) {
+  const end = new Date(endsAt).getTime()
+  const [remaining, setRemaining] = useState(() => Math.max(0, end - Date.now()))
+  useEffect(() => {
+    const t = setInterval(() => setRemaining(Math.max(0, end - Date.now())), 1000)
+    return () => clearInterval(t)
+  }, [end])
+  if (remaining <= 0) return <span className="text-[11px] font-bold text-error">Offer ended</span>
+  const h = Math.floor(remaining / 3600000)
+  const m = Math.floor((remaining % 3600000) / 60000)
+  const s = Math.floor((remaining % 60000) / 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-ink">
+      <Clock className="h-3.5 w-3.5 text-error" />
+      Ends in {pad(h)}:{pad(m)}:{pad(s)}
+    </span>
   )
 }
