@@ -7,20 +7,19 @@ export default function AboutUs() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-ink mb-6">About Oremitech</h1>
         <p className="text-lg text-muted mb-8 leading-relaxed">
-          Oremitech is Kenya&rsquo;s trusted source for verified laptops and computing hardware. Every device we list is
-          physically inspected and tested before it goes live on our platform, so you buy with confidence &mdash; no
-          surprises, no hidden faults.
+          Oremitech is Kenya&rsquo;s source for laptops and computing hardware. Each product page lists the
+          specifications provided for that item, so you can compare your options and buy with confidence.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {[{
             icon: ShieldCheck,
-            title: 'Verified Quality',
-            text: 'Every laptop undergoes physical verification before publication.',
+            title: 'Verified Information',
+            text: 'Products are reviewed by our team before they are published.',
           }, {
             icon: Truck,
-            title: 'Nationwide Delivery',
-            text: 'We ship across Kenya with tracking and clear delivery timelines.',
+            title: 'Delivery Options',
+            text: 'Enter your location at checkout to see the delivery options and charges available to you.',
           }, {
             icon: Headphones,
             title: 'Dedicated Support',
@@ -42,9 +41,9 @@ export default function AboutUs() {
             <div>
               <h2 className="text-xl font-bold mb-2">Why buy verified?</h2>
               <p className="text-teal-100 leading-relaxed">
-                Buying a used laptop online can be risky. At Oremitech, every unit is inspected by our technicians,
-                graded honestly, and priced transparently. Payment is confirmed only after your provider reference is
-                verified &mdash; your money is protected until you&rsquo;re satisfied.
+                Buying a laptop online can feel risky. At Oremitech, each product is described with clear specifications
+                and transparent pricing. Payment is only confirmed once it has been verified &mdash; your order is not
+                marked as paid until then.
               </p>
             </div>
           </div>

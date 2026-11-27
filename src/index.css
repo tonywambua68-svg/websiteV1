@@ -29,6 +29,12 @@
   --color-warning: #F59E0B;         /* Amber warning */
   --color-amber: #F5A31A;           /* Amber/Gold for Ratings & Special Badges */
   --color-error: #DC2626;           /* Crisp Red for Discounts & Errors */
+
+  /* Back-compat aliases (legacy token names still referenced across the app).
+     Mapped onto the premium navy/electric-blue system so no styles break. */
+  --color-tealdeep: #0062CC;        /* Legacy "teal deep" -> primary hover blue */
+  --color-mint: #EAF3FF;            /* Legacy "mint" -> light blue tint surface */
+  --color-emeralddeep: #15803D;     /* Legacy "emerald deep" -> dark success green */
 }
 
 @layer base {
@@ -288,7 +294,7 @@
 .market-card {
   background: #ffffff;
   border: 1px solid var(--color-line);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   overflow: hidden;
   transition: all 0.2s ease;
   display: flex;

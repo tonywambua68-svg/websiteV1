@@ -70,6 +70,8 @@ export default function ProductDetail() {
   const [reviewBody, setReviewBody] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null)
+  // null = not yet checked / check unavailable; true = verified purchaser; false = not eligible
+  const [canReview, setCanReview] = useState<boolean | null>(null)
 
   // Enquire / request a call
   const [enqName, setEnqName] = useState('')
@@ -135,6 +137,13 @@ export default function ProductDetail() {
       setReviewCount(rows.length)
       setAvgRating(rows.length > 0 ? Math.round((rows.reduce((s, r) => s + r.rating, 0) / rows.length) * 10) / 10 : 0)
       if (ownRes && !ownRes.error && ownRes.data) setUserReview(ownRes.data as { id: string; rating: number; body: string; status: string })
+      // Purchase verification: only verified buyers may review (graceful fallback if RPC not yet deployed)
+      if (user) {
+        const { data: eligible, error: eligErr } = await supabase.rpc('has_purchased_product', {
+          p_product_id: productId,
+        })
+        if (!eligErr) setCanReview(Boolean(eligible))
+      }
     } catch (err: any) {
       setReviewFeedback(`Could not load reviews: ${err.message}`)
     }
@@ -581,11 +590,11 @@ export default function ProductDetail() {
           <div className="mt-8 grid grid-cols-2 gap-3 rounded-xl border border-line bg-white p-4 text-xs shadow-xs">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-primary shrink-0" />
-              <span>Doorstep delivery nationwide in Kenya</span>
+              <span>Delivery options shown at checkout</span>
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-success shrink-0" />
-              <span>{product.warranty || 'Physical warranty verification included'}</span>
+              <span>{product.warranty || 'See specifications for warranty details'}</span>
             </div>
           </div>
         </div>
@@ -708,15 +717,22 @@ export default function ProductDetail() {
                   <span className="text-4xl font-extrabold text-ink">{avgRating.toFixed(1)}</span>
                   <span className="text-lg text-muted">({reviewCount} review{reviewCount === 1 ? '' : 's'})</span>
                 </div>
-                <div className="mt-2 flex gap-1">
-                  {[5, 4, 3, 2, 1].map((star) => (
-                    <span key={star} className="flex items-center gap-1 text-[11px]">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className={`h-4 w-4 ${s <= avgRating ? 'fill-current text-amber-400' : 'text-muted'}`} />
-                      ))}
-                      <span className="text-muted"> {star}</span>
-                    </span>
-                  ))}
+                <div className="mt-3 max-w-sm space-y-1.5">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = reviews.filter((r) => r.rating === star).length
+                    const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0
+                    return (
+                      <div key={star} className="flex items-center gap-2 text-[11px]">
+                        <span className="flex w-9 items-center gap-0.5 font-semibold text-muted">
+                          {star} <Star className="h-3 w-3 fill-current text-amber-400" />
+                        </span>
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-6 text-right font-semibold text-muted">{count}</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -752,6 +768,13 @@ export default function ProductDetail() {
                         <Star key={s} className={`h-4 w-4 ${s <= userReview.rating ? 'fill-current' : 'text-muted'}`} />
                       ))}
                     </div>
+                  </div>
+                ) : canReview === false ? (
+                  <div className="rounded-xl border border-line bg-mist p-4 text-center">
+                    <p className="text-sm font-bold text-ink">Verified purchase required</p>
+                    <p className="mt-1 text-xs text-muted">
+                      You can review this product once you have a delivered order for it. This keeps reviews genuine.
+                    </p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmitReview} className="border rounded-xl p-4 space-y-3">

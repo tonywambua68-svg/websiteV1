@@ -153,7 +153,7 @@ export default function Account() {
                         </span>
                       </div>
                       <Link
-                        to="/order-tracking"
+                        to={`/order-tracking?number=${encodeURIComponent(orderNum)}`}
                         className="font-bold text-teal hover:underline"
                       >
                         Track Status →

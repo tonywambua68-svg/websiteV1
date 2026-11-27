@@ -52,8 +52,8 @@ export default function Footer() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-white">100% Genuine Specs</p>
-              <p className="text-[11px] text-slate-400">Authentic Hardware Tested</p>
+              <p className="text-xs font-bold text-white">Verified Specs</p>
+              <p className="text-[11px] text-slate-400">Detailed Product Information</p>
             </div>
           </div>
 
@@ -62,8 +62,8 @@ export default function Footer() {
               <RotateCcw className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-white">Inspection Warranty</p>
-              <p className="text-[11px] text-slate-400">Physical Check on Delivery</p>
+              <p className="text-xs font-bold text-white">Order Tracking</p>
+              <p className="text-[11px] text-slate-400">Follow Your Delivery</p>
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@ export default function Footer() {
         <div>
           <Logo light />
           <p className="mt-4 text-xs leading-relaxed text-slate-400">
-            {settings.tagline || 'Kenya’s verified technology and laptop marketplace. Genuine stock, transparent KSh pricing, and guaranteed delivery.'}
+            {settings.tagline || 'Kenya’s technology and laptop marketplace. Clear specifications, transparent KSh pricing, and order tracking.'}
           </p>
 
           <div className="mt-4 space-y-2 text-xs">

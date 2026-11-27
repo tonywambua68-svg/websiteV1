@@ -9,19 +9,19 @@ const FAQS = [
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'We accept mobile money (M-Pesa, Airtel Money), bank transfers, and card payments. Payment is confirmed only after your provider reference is verified.',
+    a: 'The available payment methods are shown at checkout. An order is only marked as paid once your payment has been verified by our team.',
   },
   {
     q: 'Do you deliver nationwide in Kenya?',
-    a: 'Yes. We deliver to all major towns and cities across Kenya with tracking. Delivery fees are calculated at checkout based on your location.',
+    a: 'Enter your county and address at checkout to see the delivery options available for your location. Any delivery fees are calculated there before you pay.',
   },
   {
     q: 'What is your return policy?',
-    a: 'If the device you receive doesn&rsquo;t match its listing condition, you can request a return within 7 days of delivery. Contact our support team to start the process.',
+    a: 'If an item does not match its listing, contact our support team to request a return. Our team will confirm the process and any applicable conditions with you.',
   },
   {
     q: 'How long does delivery take?',
-    a: 'Nairobi deliveries typically arrive within 1&ndash;2 business days. Upcountry deliveries take 2&ndash;4 business days, depending on your location and courier availability.',
+    a: 'Delivery timing depends on your location and courier availability. Our team will confirm the estimated timing for your area when your order is processed.',
   },
   {
     q: 'Can I track my order?',

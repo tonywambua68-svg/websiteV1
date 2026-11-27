@@ -36,7 +36,7 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
   }
 
   return (
-    <article className="market-card group flex h-full flex-col bg-white border border-line rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-lg transition-all duration-200">
+    <article className="market-card group flex h-full flex-col bg-white border border-line rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-200">
       {/* Product Image & Badges */}
       <div className="relative aspect-square w-full bg-white p-3 overflow-hidden border-b border-slate-100 flex items-center justify-center">
         <Link to={`/product/${product.slug}`} className="block w-full h-full">

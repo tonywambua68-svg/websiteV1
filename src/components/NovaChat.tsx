@@ -69,19 +69,19 @@ export default function NovaChat() {
     }
 
     if (lower.includes('price') || lower.includes('cost') || lower.includes('how much')) {
-      return 'Our prices are clearly listed on each product page. We offer competitive pricing with genuine products and full warranty. Would you like me to help you find something within a specific budget?';
+      return 'Our prices are clearly listed on each product page in Kenyan Shillings. Would you like me to help you find something within a specific budget?';
     }
 
     if (lower.includes('delivery') || lower.includes('shipping')) {
-      return 'We offer fast delivery across Kenya! Same-day delivery in Nairobi for orders before 2 PM, and 1-3 days nationwide. Delivery fees start at KSh 300, and orders over KSh 30,000 get free delivery!';
+      return 'Delivery options and any applicable charges are shown at checkout once you enter your county and address. Our team can confirm the timing for your area on WhatsApp.';
     }
 
     if (lower.includes('payment') || lower.includes('mpesa')) {
-      return 'We accept M-PESA PayBill for secure payments. After placing your order, you\'ll receive payment instructions via WhatsApp. It\'s fast, secure, and convenient!';
+      return 'Place your order and the available payment methods will be shown at checkout. Our team will confirm your payment details with you before the order is marked as paid.';
     }
 
     if (lower.includes('warranty') || lower.includes('guarantee')) {
-      return 'All our products come with genuine manufacturer warranties, typically 12-24 months. We also offer our own OREMITECH warranty support via WhatsApp for any issues.';
+      return 'Warranty details are listed on each product page where the supplier provides them. For specific warranty questions about a product, please contact our team on WhatsApp.';
     }
 
     if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {

@@ -249,7 +249,7 @@ export default function Compare() {
               <td className="p-3.5 font-bold text-muted bg-slate-50/50">Warranty</td>
               {products.map((p) => (
                 <td key={p.id} className="p-3.5 text-ink font-medium">
-                  {p.warranty || 'Physical Inspection Warranty'}
+                  {p.warranty || 'Not specified'}
                 </td>
               ))}
             </tr>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getSupabase } from '@/lib/supabase'
 import { Package, Truck, CheckCircle, Clock, XCircle, Phone, Link as LinkIcon, MapPin } from 'lucide-react'
 
@@ -57,7 +58,8 @@ function getStatusColor(status: OrderStatus) {
 }
 
 export default function OrderTracking() {
-  const [searchOrderNumber, setSearchOrderNumber] = useState('')
+  const [searchParams] = useSearchParams()
+  const [searchOrderNumber, setSearchOrderNumber] = useState(searchParams.get('number') || '')
   const [searchPhone, setSearchPhone] = useState('')
   const [order, setOrder] = useState<TrackResult | null>(null)
   const [searched, setSearched] = useState(false)

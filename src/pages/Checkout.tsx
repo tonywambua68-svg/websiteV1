@@ -760,7 +760,7 @@ export default function Checkout() {
           </button>
 
           <p className="mt-3 text-center text-[10px] text-muted">
-            By placing your order, you agree to OREMITECH Kenya terms of service and physical inspection policies.
+            By placing your order, you agree to OREMITECH Kenya terms of service and returns policy.
           </p>
         </div>
       </form>

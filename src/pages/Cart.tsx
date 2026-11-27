@@ -135,7 +135,7 @@ export default function Cart() {
             <Link to="/shop" className="font-bold text-primary hover:underline">
               ← Continue Shopping
             </Link>
-            <span>Verified hardware specs · Inspection on delivery</span>
+            <span>Prices in Kenyan Shillings (KES)</span>
           </div>
         </div>
 
@@ -162,7 +162,7 @@ export default function Cart() {
           </div>
 
           <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-            Payment confirmed via official M-PESA Till/Paybill or bank verification. No hidden charges.
+            Review your items, delivery details and total before placing your order. Any applicable delivery charges are shown at checkout.
           </p>
 
           <button
@@ -176,11 +176,11 @@ export default function Cart() {
           <div className="mt-6 space-y-2.5 border-t border-line pt-4 text-[11px] text-muted">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-primary shrink-0" />
-              <span>Doorstep delivery across all 47 counties in Kenya</span>
+              <span>Delivery options and charges shown at checkout</span>
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-success shrink-0" />
-              <span>Full diagnostic hardware check on every laptop</span>
+              <span>Track your order from confirmation to delivery</span>
             </div>
           </div>
         </div>

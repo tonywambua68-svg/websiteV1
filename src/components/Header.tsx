@@ -53,12 +53,12 @@ export default function Header() {
           <div className="flex items-center gap-4 truncate">
             <span className="flex items-center gap-1.5 text-cyan">
               <Truck className="h-3.5 w-3.5 text-cyan" />
-              <span className="text-white/90 font-semibold">Fast Delivery Across Kenya</span>
+              <span className="text-white/90 font-semibold">Secure Shopping Across Kenya</span>
             </span>
             <span className="hidden sm:inline-block text-white/40">|</span>
             <span className="hidden sm:flex items-center gap-1.5 text-white/80">
               <ShieldCheck className="h-3.5 w-3.5 text-success" />
-              <span>Genuine Hardware Specs · Physical Warranty</span>
+              <span>Verified Product Specifications</span>
             </span>
           </div>
 
