@@ -3,7 +3,8 @@ import type { CatalogueProduct } from '@/lib/domain'
 import { availabilityLabel, conditionLabel, formatKES, specSummary } from '@/lib/commerce'
 import { useCartStore } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
-import { Heart, ShoppingCart, Check, ShieldCheck } from 'lucide-react'
+import { useCompareStore } from '@/store/compareStore'
+import { Heart, ShoppingCart, Check, ShieldCheck, Scale } from 'lucide-react'
 import { useState } from 'react'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
@@ -12,6 +13,8 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
   const addItem = useCartStore((state) => state.addItem)
   const inWishlist = useWishlistStore((state) => state.ids.includes(product.id))
   const toggleWishlist = useWishlistStore((state) => state.toggle)
+  const inCompare = useCompareStore((state) => state.has(product.id))
+  const toggleCompare = useCompareStore((state) => state.toggle)
   const [added, setAdded] = useState(false)
   const available = product.owned_available + product.supplier_available > 0
   const specs = specSummary([product.processor_model, product.ram, product.storage_capacity, product.screen_size])
@@ -62,17 +65,31 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
           </span>
         )}
 
-        {/* Wishlist Heart Button */}
-        <button
-          type="button"
-          aria-label={inWishlist ? 'Remove from wishlist' : 'Save product'}
-          onClick={() => toggleWishlist(product.id)}
-          className={`absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white/95 shadow-sm transition-colors ${
-            inWishlist ? 'text-error border-error/30' : 'text-slate-400 hover:text-slate-700'
-          }`}
-        >
-          <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
-        </button>
+        {/* Action icons: Wishlist & Compare */}
+        <div className="absolute right-2 top-2 flex flex-col gap-1.5 z-10">
+          <button
+            type="button"
+            aria-label={inWishlist ? 'Remove from wishlist' : 'Save product'}
+            onClick={() => toggleWishlist(product.id)}
+            className={`grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white/95 shadow-sm transition-colors ${
+              inWishlist ? 'text-error border-error/30' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
+          </button>
+
+          <button
+            type="button"
+            aria-label={inCompare ? 'Remove from comparison' : 'Compare product'}
+            onClick={() => toggleCompare(product.id)}
+            title={inCompare ? 'In Comparison' : 'Compare'}
+            className={`grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white/95 shadow-sm transition-colors ${
+              inCompare ? 'text-primary border-primary/40 bg-blue-50' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <Scale className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Product Information */}

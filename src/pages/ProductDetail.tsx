@@ -10,6 +10,8 @@ import type { CatalogueProduct } from '@/lib/domain'
 import { getSupabase } from '@/lib/supabase'
 import ProductCard from '@/components/ProductCard'
 import ProductImageGallery from '@/components/ProductImageGallery'
+import RecentlyViewed, { recordRecentlyViewed } from '@/components/RecentlyViewed'
+import { useCompareStore } from '@/store/compareStore'
 import {
   formatKES,
   availabilityLabel,
@@ -98,6 +100,7 @@ export default function ProductDetail() {
       if (!isMounted) return
       setProduct(found)
       if (found) {
+        recordRecentlyViewed(found.id)
         fetchRelated(found).then((rel) => {
           if (isMounted) setRelated(rel)
         })
@@ -828,6 +831,9 @@ export default function ProductDetail() {
           </div>
         </section>
       )}
+
+      {/* Recently Viewed Products */}
+      <RecentlyViewed currentProductId={product.id} />
     </div>
   )
 }

@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Search,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
 import SearchBox from '@/components/SearchBox'
 import MegaMenu from '@/components/MegaMenu'
@@ -37,6 +37,13 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [megaOpen, setMegaOpen] = useState(false)
   const navigate = useNavigate()
+
+  // Support opening category drawer from MobileBottomNav
+  useEffect(() => {
+    const handler = () => setDrawerOpen(true)
+    window.addEventListener('open-category-drawer', handler)
+    return () => window.removeEventListener('open-category-drawer', handler)
+  }, [])
 
   return (
     <header className="sticky top-0 z-40 w-full shadow-md">

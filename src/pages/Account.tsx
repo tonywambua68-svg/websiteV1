@@ -70,25 +70,25 @@ export default function Account() {
     <div className="wrap py-8">
       <div className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-teal/10 font-display text-xl font-bold text-teal">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 font-display text-xl font-bold text-primary">
             {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-ink">{user.full_name || 'Customer Account'}</h1>
             <p className="text-xs text-muted">
-              {user.email} · Role: <span className="font-bold uppercase text-teal">{user.role}</span>
+              {user.email} · Role: <span className="font-bold uppercase text-primary">{user.role}</span>
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {(user.role === 'owner' || user.role === 'manager') && (
-            <Link to="/admin" className="btn btn-emerald !h-10 text-xs font-bold">
+            <Link to="/admin" className="btn btn-primary !h-10 text-xs font-bold">
               <Shield className="h-4 w-4" /> Open Admin Portal
             </Link>
           )}
           {['product_researcher', 'inventory_assistant', 'sales_assistant'].includes(user.role) && (
-            <Link to="/employee" className="btn btn-emerald !h-10 text-xs font-bold">
+            <Link to="/employee" className="btn btn-primary !h-10 text-xs font-bold">
               <Shield className="h-4 w-4" /> Employee Portal
             </Link>
           )}

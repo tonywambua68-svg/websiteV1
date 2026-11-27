@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 import ProductCard from '@/components/ProductCard'
+import RecentlyViewed from '@/components/RecentlyViewed'
 import {
   Truck,
   CreditCard,
@@ -366,6 +367,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Recently Viewed Products */}
+      <RecentlyViewed />
 
       {/* 7. WHY CHOOSE OREMITECH (Trust & Guarantee Cards) */}
       <section className="wrap mt-14">

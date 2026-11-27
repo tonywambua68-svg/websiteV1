@@ -40,8 +40,8 @@ export default function Wishlist() {
           <p className="mt-1 text-xs text-muted">
             Click the heart icon on any product card to save it for quick access later.
           </p>
-          <Link to="/shop" className="btn btn-emerald mt-6 text-xs font-bold">
-            Explore Laptops & Accessories
+          <Link to="/shop" className="btn btn-primary mt-6 text-xs font-bold shadow-md">
+            Explore Laptops &amp; Accessories
           </Link>
         </div>
       ) : (

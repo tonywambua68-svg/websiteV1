@@ -17,6 +17,7 @@ import ResetPassword from '@/pages/ResetPassword'
 import Account from '@/pages/Account'
 import NotFound from '@/pages/NotFound'
 import Wishlist from '@/pages/Wishlist'
+import Compare from '@/pages/Compare'
 import Maintenance from '@/pages/Maintenance'
 import AdminDashboard from '@/pages/admin/Dashboard'
 import AdminProducts from '@/pages/admin/Products'
@@ -58,6 +59,7 @@ function App() {
           <Route path="order-tracking" element={<OrderTracking />} />
           <Route path="order-confirmation/:orderNumber" element={<OrderConfirmation />} />
           <Route path="wishlist" element={<Wishlist />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Login />} />
           <Route path="blog" element={<BlogListing />} />

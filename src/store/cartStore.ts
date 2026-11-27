@@ -20,7 +20,10 @@ export interface CartLine {
 interface CartState {
   items: CartLine[]
   error: string | null
-  addItem: (product: CatalogueProduct, quantity?: number) => Promise<boolean>
+  isDrawerOpen: boolean
+  lastAddedItem: CartLine | null
+  setDrawerOpen: (open: boolean) => void
+  addItem: (product: CatalogueProduct, quantity?: number, openDrawer?: boolean) => Promise<boolean>
   updateQuantity: (productId: string, quantity: number) => Promise<void>
   removeItem: (productId: string) => Promise<void>
   clearCart: () => Promise<void>
@@ -49,8 +52,11 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       error: null,
+      isDrawerOpen: false,
+      lastAddedItem: null,
+      setDrawerOpen: (open) => set({ isDrawerOpen: open }),
 
-      addItem: async (product, quantity = 1) => {
+      addItem: async (product, quantity = 1, openDrawer = true) => {
         const maxAvailable = availableUnits(product.owned_available, product.supplier_available)
         if (maxAvailable < 1) {
           set({ error: 'This product is not available.' })
@@ -69,6 +75,8 @@ export const useCartStore = create<CartState>()(
           items: existing
             ? get().items.map((item) => (item.product_id === product.id ? line : item))
             : [...get().items, line],
+          isDrawerOpen: openDrawer,
+          lastAddedItem: line,
         })
         await get().syncToServer()
         return true

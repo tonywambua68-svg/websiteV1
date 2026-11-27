@@ -1,14 +1,13 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-export const MAX_COMPARE = 4;
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 interface CompareState {
-  ids: string[];
-  add: (id: string) => boolean; // returns false when full
-  remove: (id: string) => void;
-  clear: () => void;
-  has: (id: string) => boolean;
+  ids: string[]
+  add: (id: string) => void
+  remove: (id: string) => void
+  clear: () => void
+  has: (id: string) => boolean
+  toggle: (id: string) => void
 }
 
 export const useCompareStore = create<CompareState>()(
@@ -16,16 +15,27 @@ export const useCompareStore = create<CompareState>()(
     (set, get) => ({
       ids: [],
       add: (id) => {
-        const { ids } = get();
-        if (ids.includes(id)) return true;
-        if (ids.length >= MAX_COMPARE) return false;
-        set({ ids: [...ids, id] });
-        return true;
+        const current = get().ids
+        if (!current.includes(id) && current.length < 4) {
+          set({ ids: [...current, id] })
+        }
       },
-      remove: (id) => set((s) => ({ ids: s.ids.filter((x) => x !== id) })),
+      remove: (id) => {
+        set({ ids: get().ids.filter((i) => i !== id) })
+      },
       clear: () => set({ ids: [] }),
       has: (id) => get().ids.includes(id),
+      toggle: (id) => {
+        const current = get().ids
+        if (current.includes(id)) {
+          set({ ids: current.filter((i) => i !== id) })
+        } else if (current.length < 4) {
+          set({ ids: [...current, id] })
+        }
+      },
     }),
-    { name: 'oremitech-compare' }
+    {
+      name: 'oremitech-compare',
+    }
   )
-);
+)

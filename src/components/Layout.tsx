@@ -6,6 +6,8 @@ import Analytics from './Analytics'
 import StructuredData from './StructuredData'
 import ScrollToTop from './ScrollToTop'
 import CompareBar from './CompareBar'
+import CartDrawer from './CartDrawer'
+import MobileBottomNav from './MobileBottomNav'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 
@@ -19,7 +21,7 @@ export default function Layout() {
   }, [checkAuth, loadSettings])
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-14 lg:pb-0">
       <StructuredData />
       <ScrollToTop />
       <Analytics />
@@ -28,6 +30,8 @@ export default function Layout() {
         <Outlet />
       </main>
       <CompareBar />
+      <CartDrawer />
+      <MobileBottomNav />
       <Footer />
     </div>
   )

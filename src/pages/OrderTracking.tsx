@@ -105,7 +105,7 @@ export default function OrderTracking() {
   return (
     <div className="wrap py-8">
       <div className="flex items-center gap-2 mb-8">
-        <Package className="w-6 h-6 text-teal-600" />
+        <Package className="w-6 h-6 text-primary" />
         <h1 className="text-3xl font-bold text-ink">Track Your Order</h1>
       </div>
       <p className="text-muted mb-8">
@@ -140,7 +140,7 @@ export default function OrderTracking() {
           type="submit"
           disabled={loading}
           className={`w-full py-3 rounded-lg font-bold text-white transition-colors ${
-            loading ? 'bg-muted cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700'
+            loading ? 'bg-muted cursor-not-allowed' : 'bg-primary hover:bg-primary-hover shadow-md'
           }`}
         >
           {loading ? 'Looking up order…' : 'Track Order'}
