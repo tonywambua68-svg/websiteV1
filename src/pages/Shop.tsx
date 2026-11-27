@@ -163,10 +163,10 @@ export default function Shop() {
       <div className="flex flex-col gap-4 border-b border-line pb-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-ink md:text-3xl">
-            {currentCategory ? `${currentCategory} in Kenya` : 'All Laptops & Computer Accessories'}
+            {currentCategory ? `${currentCategory} in Kenya` : 'All Laptops & Computer Hardware'}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            {total} {total === 1 ? 'product' : 'products'} found · Prices in Kenyan Shillings (KES)
+            {total} {total === 1 ? 'product' : 'products'} available · Prices in Kenyan Shillings (KES)
           </p>
         </div>
 
@@ -178,11 +178,11 @@ export default function Shop() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search model, specs…"
-              className="input !h-9 w-full pr-8 text-xs"
+              className="input !h-9 w-full pr-8 text-xs bg-white"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-teal"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary"
               aria-label="Search"
             >
               <Search className="h-4 w-4" />
@@ -190,8 +190,8 @@ export default function Shop() {
           </form>
 
           {/* Sort dropdown */}
-          <div className="flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold">
-            <ArrowUpDown className="h-3.5 w-3.5 text-muted" />
+          <div className="flex items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-1 text-xs font-semibold shadow-xs">
+            <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
             <select
               value={currentSort}
               onChange={(e) => updateParams({ sort: e.target.value })}
@@ -224,7 +224,7 @@ export default function Shop() {
           {activeChips.map((chip, idx) => (
             <span
               key={idx}
-              className="inline-flex items-center gap-1.5 rounded-full border border-teal/30 bg-mint/50 px-2.5 py-1 text-xs font-bold text-tealdeep"
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-blue-50 px-2.5 py-1 text-xs font-bold text-primary"
             >
               {chip.label}
               <button
@@ -253,7 +253,7 @@ export default function Shop() {
         <aside
           className={`space-y-6 lg:block ${
             mobileFilterOpen
-              ? 'fixed inset-0 z-50 overflow-y-auto bg-card p-6'
+              ? 'fixed inset-0 z-50 overflow-y-auto bg-white p-6 shadow-2xl'
               : 'hidden'
           }`}
         >
@@ -278,7 +278,7 @@ export default function Shop() {
                 type="button"
                 onClick={() => updateParams({ category: null })}
                 className={`block w-full text-left font-semibold ${
-                  !currentCategory ? 'text-teal font-extrabold' : 'text-ink hover:text-teal'
+                  !currentCategory ? 'text-primary font-extrabold' : 'text-ink hover:text-primary'
                 }`}
               >
                 All Categories
@@ -290,8 +290,8 @@ export default function Shop() {
                   onClick={() => updateParams({ category: cat.toLowerCase().replace(/\s+/g, '-') })}
                   className={`block w-full text-left font-semibold ${
                     currentCategory === cat.toLowerCase().replace(/\s+/g, '-')
-                      ? 'text-teal font-extrabold'
-                      : 'text-ink hover:text-teal'
+                      ? 'text-primary font-extrabold'
+                      : 'text-ink hover:text-primary'
                   }`}
                 >
                   {cat}
@@ -312,9 +312,9 @@ export default function Shop() {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleBrand(brandName)}
-                      className="rounded border-line text-teal"
+                      className="rounded border-line text-primary focus:ring-primary"
                     />
-                    <span className={`font-semibold ${checked ? 'text-teal' : 'text-ink'}`}>
+                    <span className={`font-semibold ${checked ? 'text-primary' : 'text-ink'}`}>
                       {brandName}
                     </span>
                   </label>
@@ -332,42 +332,42 @@ export default function Shop() {
                 placeholder="Min KSh"
                 value={currentMin}
                 onChange={(e) => updateParams({ min: e.target.value || null })}
-                className="input !h-8 text-xs"
+                className="input !h-8 text-xs bg-white"
               />
               <input
                 type="number"
                 placeholder="Max KSh"
                 value={currentMax}
                 onChange={(e) => updateParams({ max: e.target.value || null })}
-                className="input !h-8 text-xs"
+                className="input !h-8 text-xs bg-white"
               />
             </div>
             <div className="mt-2 space-y-1 text-[11px]">
               <button
                 type="button"
                 onClick={() => updateParams({ min: null, max: '60000' })}
-                className="block text-muted hover:text-teal"
+                className="block text-muted hover:text-primary"
               >
                 Under KSh 60,000
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ min: '60000', max: '90000' })}
-                className="block text-muted hover:text-teal"
+                className="block text-muted hover:text-primary"
               >
                 KSh 60,000 – 90,000
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ min: '90000', max: '140000' })}
-                className="block text-muted hover:text-teal"
+                className="block text-muted hover:text-primary"
               >
                 KSh 90,000 – 140,000
               </button>
               <button
                 type="button"
                 onClick={() => updateParams({ min: '140000', max: null })}
-                className="block text-muted hover:text-teal"
+                className="block text-muted hover:text-primary"
               >
                 Above KSh 140,000
               </button>
@@ -384,7 +384,7 @@ export default function Shop() {
                   type="button"
                   onClick={() => updateParams({ processor: currentProcessor === proc ? null : proc })}
                   className={`block w-full text-left font-semibold ${
-                    currentProcessor === proc ? 'text-teal font-extrabold' : 'text-muted hover:text-ink'
+                    currentProcessor === proc ? 'text-primary font-extrabold' : 'text-muted hover:text-ink'
                   }`}
                 >
                   {proc}
@@ -404,8 +404,8 @@ export default function Shop() {
                   onClick={() => updateParams({ ram: currentRam === ram ? null : ram })}
                   className={`rounded-md border px-2 py-1 text-xs font-bold transition ${
                     currentRam === ram
-                      ? 'border-teal bg-teal text-white'
-                      : 'border-line bg-card text-muted hover:border-ink'
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-line bg-white text-muted hover:border-ink'
                   }`}
                 >
                   {ram}
@@ -425,8 +425,8 @@ export default function Shop() {
                   onClick={() => updateParams({ storage: currentStorage === st ? null : st })}
                   className={`rounded-md border px-2 py-1 text-xs font-bold transition ${
                     currentStorage === st
-                      ? 'border-teal bg-teal text-white'
-                      : 'border-line bg-card text-muted hover:border-ink'
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-line bg-white text-muted hover:border-ink'
                   }`}
                 >
                   {st}
@@ -446,7 +446,7 @@ export default function Shop() {
                     name="condition"
                     checked={currentCondition === cond.value}
                     onChange={() => updateParams({ condition: cond.value })}
-                    className="text-teal"
+                    className="text-primary focus:ring-primary"
                   />
                   <span className="font-semibold text-ink">{cond.label}</span>
                 </label>
@@ -461,7 +461,7 @@ export default function Shop() {
                 type="checkbox"
                 checked={currentAvailability === 'in_stock'}
                 onChange={(e) => updateParams({ availability: e.target.checked ? 'in_stock' : null })}
-                className="rounded border-line text-teal"
+                className="rounded border-line text-primary focus:ring-primary"
               />
               In Stock at Oremitech
             </label>
@@ -471,7 +471,7 @@ export default function Shop() {
             <button
               type="button"
               onClick={() => setMobileFilterOpen(false)}
-              className="btn btn-emerald w-full text-xs font-bold"
+              className="btn btn-primary w-full text-xs font-bold mt-4"
             >
               Apply Filters
             </button>
@@ -482,11 +482,11 @@ export default function Shop() {
         <main>
           {loading ? (
             <div className="py-20 text-center">
-              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-teal border-t-transparent" />
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="mt-3 text-xs font-bold text-muted">Updating catalogue…</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="rounded-2xl border border-line bg-card p-12 text-center">
+            <div className="rounded-xl border border-line bg-white p-12 text-center shadow-xs">
               <h2 className="font-display text-xl font-bold text-ink">No products match your criteria</h2>
               <p className="mt-2 text-xs text-muted">
                 Try loosening your filters or searching for another laptop model or specification.
@@ -500,7 +500,7 @@ export default function Shop() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -511,4 +511,3 @@ export default function Shop() {
     </div>
   )
 }
-

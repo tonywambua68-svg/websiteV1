@@ -305,7 +305,7 @@ function CategoryPanel({
           <Link
             to="/shop"
             onClick={() => { onNavClick('/shop'); onClose() }}
-            className="flex items-center justify-between w-full mb-3 px-3 py-2 rounded-lg bg-teal text-white font-bold text-xs shadow-xs hover:bg-tealdeep transition-colors"
+            className="flex items-center justify-between w-full mb-3 px-3 py-2 rounded-lg bg-primary text-white font-bold text-xs shadow-xs hover:bg-primary-hover transition-colors"
           >
             <span>⚡ View All Products</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -325,8 +325,8 @@ function CategoryPanel({
                   onClick={() => setActiveCategory(cat.label)}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
                     isActive
-                      ? 'bg-amber text-ink font-bold'
-                      : 'text-[#cbd5d1] hover:bg-white/10 hover:text-white'
+                      ? 'bg-primary text-white font-bold'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -494,7 +494,7 @@ function AllCategoriesPanel({
           <Link
             to="/shop"
             onClick={() => { onNavClick('/shop'); onClose() }}
-            className="flex items-center justify-between w-full mb-3 px-3 py-2 rounded-lg bg-teal text-white font-bold text-xs shadow-xs hover:bg-tealdeep transition-colors"
+            className="flex items-center justify-between w-full mb-3 px-3 py-2 rounded-lg bg-primary text-white font-bold text-xs shadow-xs hover:bg-primary-hover transition-colors"
           >
             <span>⚡ View All Products</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -513,8 +513,8 @@ function AllCategoriesPanel({
                   onClick={() => setActiveCategory(cat.label)}
                   className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
                     isActive
-                      ? 'bg-amber text-ink font-bold'
-                      : 'text-[#cbd5d1] hover:bg-white/10 hover:text-white'
+                      ? 'bg-primary text-white font-bold'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />

@@ -249,7 +249,7 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <div className="wrap py-16 text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-teal border-t-transparent" />
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         <p className="mt-4 font-display text-sm font-semibold text-muted">Loading product specifications…</p>
       </div>
     )
@@ -396,7 +396,7 @@ export default function ProductDetail() {
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-teal"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-primary"
         >
           <Share2 className="h-3.5 w-3.5" /> {copied ? 'Link copied!' : 'Share product'}
         </button>
@@ -424,10 +424,10 @@ export default function ProductDetail() {
         {/* Right: Product Details & Actions */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-teal/10 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-teal">
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-primary">
               {product.brand_name || 'Verified Tech'}
             </span>
-            <span className="rounded-full bg-mist px-2.5 py-0.5 text-[11px] font-semibold text-muted">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-muted">
               {conditionLabel(product.laptop_condition)}
             </span>
           </div>
@@ -441,7 +441,7 @@ export default function ProductDetail() {
           </p>
 
           {/* Pricing */}
-          <div className="mt-5 flex items-baseline gap-3 rounded-xl border border-line bg-card p-4">
+          <div className="mt-5 flex items-baseline gap-3 rounded-xl border border-line bg-white p-4 shadow-xs">
             <span className="font-display text-3xl font-extrabold text-ink">
               {formatKES(product.selling_price)}
             </span>
@@ -450,20 +450,20 @@ export default function ProductDetail() {
                 {formatKES(product.comparison_price)}
               </span>
             )}
-            <span className="ml-auto text-xs font-bold text-teal">
-              Tax Inclusive
+            <span className="ml-auto text-xs font-bold text-success flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Genuine Price
             </span>
           </div>
 
           {/* Availability Status */}
           <div className="mt-4 flex items-center gap-2 text-xs">
-            <CheckCircle2 className={`h-4 w-4 ${isAvailable ? 'text-teal' : 'text-error'}`} />
-            <span className={`font-bold ${isAvailable ? 'text-teal' : 'text-error'}`}>
+            <CheckCircle2 className={`h-4 w-4 ${isAvailable ? 'text-success' : 'text-error'}`} />
+            <span className={`font-bold ${isAvailable ? 'text-success' : 'text-error'}`}>
               {availabilityLabel(product.availability)}
             </span>
             {isAvailable && (
               <span className="text-muted">
-                ({product.owned_available > 0 ? `${product.owned_available} units at Oremitech` : 'Fulfilled from verified supplier'})
+                ({product.owned_available > 0 ? `${product.owned_available} units in Nairobi stock` : 'Fulfilled from verified supplier'})
               </span>
             )}
           </div>
@@ -472,12 +472,12 @@ export default function ProductDetail() {
           <div className="mt-6 space-y-3 border-t border-line pt-5">
             <div className="flex items-center gap-4">
               <span className="text-xs font-bold text-muted">Quantity:</span>
-              <div className="flex items-center rounded-lg border border-line bg-card">
+              <div className="flex items-center rounded-lg border border-line bg-white">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => clampQuantity(q - 1, maxStock))}
                   disabled={quantity <= 1}
-                  className="grid h-9 w-9 place-items-center hover:bg-mist disabled:opacity-40"
+                  className="grid h-9 w-9 place-items-center hover:bg-slate-100 disabled:opacity-40"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="h-4 w-4" />
@@ -487,7 +487,7 @@ export default function ProductDetail() {
                   type="button"
                   onClick={() => setQuantity((q) => clampQuantity(q + 1, maxStock))}
                   disabled={quantity >= maxStock}
-                  className="grid h-9 w-9 place-items-center hover:bg-mist disabled:opacity-40"
+                  className="grid h-9 w-9 place-items-center hover:bg-slate-100 disabled:opacity-40"
                   aria-label="Increase quantity"
                 >
                   <Plus className="h-4 w-4" />
@@ -501,7 +501,7 @@ export default function ProductDetail() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={!isAvailable}
-                className="btn btn-amber !h-12 w-full font-bold shadow-sm disabled:opacity-50"
+                className="btn btn-primary !h-12 w-full font-bold shadow-sm disabled:opacity-50"
               >
                 <ShoppingCart className="h-4 w-4" /> Add to Cart
               </button>
@@ -510,14 +510,14 @@ export default function ProductDetail() {
                 type="button"
                 onClick={handleBuyNow}
                 disabled={!isAvailable}
-                className="btn btn-outline !h-12 w-full font-bold shadow-sm disabled:opacity-50"
+                className="btn btn-dark !h-12 w-full font-bold shadow-sm disabled:opacity-50"
               >
                 Buy Now
               </button>
             </div>
 
             {feedback && (
-              <div className="rounded-lg border border-teal/30 bg-mint/40 p-3 text-center text-xs font-bold text-tealdeep animate-fade">
+              <div className="rounded-lg border border-primary/20 bg-blue-50 p-3 text-center text-xs font-bold text-primary animate-fade">
                 {feedback}
               </div>
             )}
@@ -529,7 +529,7 @@ export default function ProductDetail() {
                 rel="noreferrer"
                 className="btn btn-outline !h-11 w-full gap-2 text-xs font-bold"
               >
-                <Phone className="h-4 w-4 text-emerald-600" /> Inquire via WhatsApp
+                <Phone className="h-4 w-4 text-success" /> Inquire via WhatsApp
               </a>
             )}
 
@@ -567,7 +567,7 @@ export default function ProductDetail() {
               <button
                 type="submit"
                 disabled={submittingEnq}
-                className="btn btn-emerald !h-9 w-full text-xs font-bold shadow-xs disabled:opacity-50"
+                className="btn btn-primary !h-9 w-full text-xs font-bold shadow-xs disabled:opacity-50"
               >
                 {submittingEnq ? 'Logging…' : 'Send Enquiry'}
               </button>
@@ -575,13 +575,13 @@ export default function ProductDetail() {
           </div>
 
           {/* Guarantees */}
-          <div className="mt-8 grid grid-cols-2 gap-3 rounded-xl border border-line bg-card p-4 text-xs">
+          <div className="mt-8 grid grid-cols-2 gap-3 rounded-xl border border-line bg-white p-4 text-xs shadow-xs">
             <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-teal shrink-0" />
+              <Truck className="h-4 w-4 text-primary shrink-0" />
               <span>Doorstep delivery nationwide in Kenya</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-teal shrink-0" />
+              <ShieldCheck className="h-4 w-4 text-success shrink-0" />
               <span>{product.warranty || 'Physical warranty verification included'}</span>
             </div>
           </div>
@@ -589,7 +589,7 @@ export default function ProductDetail() {
       </div>
 
       {/* Specifications Table */}
-      <section className="mt-14 rounded-2xl border border-line bg-card p-6 shadow-sm">
+      <section className="mt-14 rounded-xl border border-line bg-white p-6 shadow-xs">
         <h2 className="font-display text-lg font-bold text-ink">Technical Specifications</h2>
         <div className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {product.processor_model && (
@@ -662,21 +662,21 @@ export default function ProductDetail() {
       </section>
 
       {/* Description / Reviews tabs */}
-      <section className="mt-14 rounded-2xl border border-line bg-card shadow-sm">
-        <div className="border-b border-line flex">
+      <section className="mt-14 rounded-xl border border-line bg-white shadow-xs overflow-hidden">
+        <div className="border-b border-line flex bg-slate-50/50">
           <button
             type="button"
             onClick={() => setActiveTab('description')}
-            className={`-mb-px border-b-2 px-5 py-3 text-sm font-bold ${activeTab === 'description' ? 'border-teal text-tealdeep' : 'border-transparent text-muted hover:text-ink'}`}
+            className={`-mb-px border-b-2 px-6 py-3.5 text-xs sm:text-sm font-bold transition-colors ${activeTab === 'description' ? 'border-primary text-primary bg-white' : 'border-transparent text-slate-500 hover:text-ink'}`}
           >
-            Description
+            Product Description
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('reviews')}
-            className={`-mb-px border-b-2 px-5 py-3 text-sm font-bold ${activeTab === 'reviews' ? 'border-teal text-tealdeep' : 'border-transparent text-muted hover:text-ink'}`}
+            className={`-mb-px border-b-2 px-6 py-3.5 text-xs sm:text-sm font-bold transition-colors ${activeTab === 'reviews' ? 'border-primary text-primary bg-white' : 'border-transparent text-slate-500 hover:text-ink'}`}
           >
-            Reviews ({reviewCount})
+            Customer Reviews ({reviewCount})
           </button>
         </div>
 

@@ -621,7 +621,7 @@ export default function Checkout() {
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {paybillNumber ? <label
                 className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
-                  selectedPaymentMode === 'mpesa' ? 'border-teal bg-mint/30' : 'border-line bg-card'
+                  selectedPaymentMode === 'mpesa' ? 'border-primary bg-blue-50/60' : 'border-line bg-white'
                 }`}
               >
                 <input
@@ -629,7 +629,7 @@ export default function Checkout() {
                   name="payment"
                   checked={selectedPaymentMode === 'mpesa'}
                   onChange={() => setSelectedPaymentMode('mpesa')}
-                  className="mt-1"
+                  className="mt-1 text-primary focus:ring-primary"
                 />
                 <div>
                   <span className="block text-sm font-extrabold text-ink">M-PESA STK Push</span>
@@ -642,7 +642,7 @@ export default function Checkout() {
               {codEligible && (
                 <label
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
-                    selectedPaymentMode === 'delivery' ? 'border-teal bg-mint/30' : 'border-line bg-card'
+                    selectedPaymentMode === 'delivery' ? 'border-primary bg-blue-50/60' : 'border-line bg-white'
                   }`}
                 >
                   <input
@@ -650,7 +650,7 @@ export default function Checkout() {
                     name="payment"
                     checked={selectedPaymentMode === 'delivery'}
                     onChange={() => setSelectedPaymentMode('delivery')}
-                    className="mt-1"
+                    className="mt-1 text-primary focus:ring-primary"
                     disabled={!codEligible}
                   />
                   <div>
@@ -676,18 +676,18 @@ export default function Checkout() {
             )}
 
             {selectedPaymentMode === 'mpesa' && (
-              <div className="mt-4 rounded-lg border border-teal/30 bg-teal/5 p-4 text-xs">
+              <div className="mt-4 rounded-lg border border-primary/20 bg-blue-50/50 p-4 text-xs">
                 <p className="font-bold text-ink flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-teal" /> M-PESA PayBill
+                  <Phone className="h-4 w-4 text-primary" /> M-PESA PayBill Instructions
                 </p>
                 <div className="mt-2 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted">PayBill Number:</span>
-                    <span className="font-bold text-ink bg-mist px-2 py-0.5 rounded">{paybillNumber || 'Not configured'}</span>
+                    <span className="font-bold text-ink bg-white border border-slate-200 px-2 py-0.5 rounded">{paybillNumber || 'Not configured'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted">Account Number:</span>
-                    <span className="font-bold text-ink bg-mist px-2 py-0.5 rounded">{confirmedOrderNumber || formData.phone}</span>
+                    <span className="font-bold text-ink bg-white border border-slate-200 px-2 py-0.5 rounded">{confirmedOrderNumber || formData.phone}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted">Amount (KSh):</span>
@@ -704,7 +704,7 @@ export default function Checkout() {
         </div>
 
         {/* Sidebar Summary */}
-        <div className="h-fit rounded-xl border border-line bg-card p-6 shadow-sm">
+        <div className="h-fit rounded-xl border border-line bg-white p-6 shadow-sm">
           <h3 className="font-display text-base font-bold text-ink">Order Items ({items.length})</h3>
 
           <div className="mt-4 max-h-60 space-y-3 overflow-y-auto border-b border-line pb-4 text-xs">
@@ -745,7 +745,7 @@ export default function Checkout() {
             )}
             <div className="flex justify-between border-t border-line pt-2 text-sm font-extrabold text-ink">
               <span>Total Payable:</span>
-              <span className="text-base text-teal">{formatKES(totalAmount)}</span>
+              <span className="text-base text-primary">{formatKES(totalAmount)}</span>
             </div>
           </div>
 
@@ -754,7 +754,7 @@ export default function Checkout() {
             disabled={loading || submitting || feeCalculating || !deliverySupported || !deliveryZoneId}
             aria-live="polite"
             aria-busy={loading || submitting}
-            className="btn btn-emerald mt-6 w-full !h-12 text-sm font-bold shadow-md disabled:opacity-50"
+            className="btn btn-primary mt-6 w-full !h-12 text-sm font-bold shadow-md disabled:opacity-50"
           >
             {loading ? 'Processing Order…' : 'Place Order Now'}
           </button>

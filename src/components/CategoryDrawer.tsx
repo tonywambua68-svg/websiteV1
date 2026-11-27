@@ -136,7 +136,7 @@ export default function CategoryDrawer({ isOpen, onClose }: CategoryDrawerProps)
           <Link
             to="/shop"
             onClick={onClose}
-            className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-teal text-white font-bold text-xs shadow-xs hover:bg-tealdeep transition-colors"
+            className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg bg-primary text-white font-bold text-xs shadow-xs hover:bg-primary-hover transition-colors"
           >
             <span>⚡ Browse All Products</span>
             <ChevronRight className="h-4 w-4" />
