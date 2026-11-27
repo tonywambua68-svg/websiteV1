@@ -87,6 +87,14 @@ const COLLECTIONS = [
   { slug: 'computer-accessories', title: 'Computer Accessories', desc: 'Chargers, bags, docks and peripherals.', to: '/shop?category=computer-accessories' },
 ]
 
+// Browse by use — image cards linking into filtered catalogue views.
+const USE_CARDS = [
+  { slug: 'laptops', name: 'Business Laptops', desc: 'Durable, secure & reliable for the office', to: '/shop?category=laptops&search=business' },
+  { slug: 'laptops', name: 'Student Laptops', desc: 'Affordable & portable for study', to: '/shop?category=laptops&search=student' },
+  { slug: 'laptops', name: 'Gaming Laptops', desc: 'High performance with dedicated graphics', to: '/shop?search=gaming' },
+  { slug: 'desktops', name: 'Workstations', desc: 'Power for creators & engineers', to: '/shop?category=desktops' },
+]
+
 export default function Home() {
   const { products, fetchProducts, loading } = useProductStore()
   const [slideIndex, setSlideIndex] = useState(0)
@@ -341,6 +349,44 @@ export default function Home() {
         </section>
       )}
 
+      {/* BROWSE BY USE */}
+      <section className="wrap mt-10">
+        <div className="flex items-center justify-between border-b border-line pb-3">
+          <div>
+            <h2 className="font-display text-lg sm:text-xl font-bold text-ink">Browse by Use</h2>
+            <p className="text-xs text-muted">Find the right device for how you work and study.</p>
+          </div>
+          <Link to="/shop" className="text-xs font-bold text-primary hover:underline">
+            Shop all →
+          </Link>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {USE_CARDS.map((u) => (
+            <Link
+              key={u.name}
+              to={u.to}
+              className="group flex items-center gap-3 rounded-xl border border-line bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+            >
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line bg-slate-50">
+                <img
+                  src={repImage(u.slug)}
+                  alt={u.name}
+                  loading="lazy"
+                  className="h-full w-full object-contain p-1"
+                  onError={(e) => {
+                    e.currentTarget.src = PLACEHOLDER
+                  }}
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-sm font-bold text-ink group-hover:text-primary">{u.name}</p>
+                <p className="mt-0.5 text-[11px] text-muted line-clamp-2">{u.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* 6. SHOP BY TOP BRANDS */}
       <section className="wrap mt-12">
         <div className="flex items-center justify-between border-b border-line pb-3">
@@ -372,6 +418,28 @@ export default function Home() {
 
       {/* Recently Viewed Products */}
       <RecentlyViewed />
+
+      {/* EDUCATIONAL / BUYING GUIDES */}
+      <section className="wrap mt-14">
+        <div className="rounded-xl border border-line bg-white p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-display text-xl font-bold text-ink">Learn &amp; Buy Smarter</h2>
+              <p className="mt-1 text-xs text-muted">
+                Guides and answers to help you choose the right laptop, storage and accessories.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/blog" className="btn btn-primary !h-10 text-xs font-bold">
+                Visit the Blog
+              </Link>
+              <Link to="/faq" className="btn btn-outline !h-10 text-xs font-bold">
+                Buying FAQs
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 7. WHY CHOOSE OREMITECH (Trust & Guarantee Cards) */}
       <section className="wrap mt-14">
