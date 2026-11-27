@@ -4,7 +4,7 @@ import { availabilityLabel, conditionLabel, formatKES, specSummary } from '@/lib
 import { useCartStore } from '@/store/cartStore'
 import { useWishlistStore } from '@/store/wishlistStore'
 import { useCompareStore } from '@/store/compareStore'
-import { Heart, ShoppingCart, Check, ShieldCheck, Scale } from 'lucide-react'
+import { Heart, ShoppingCart, Check, Scale, Star } from 'lucide-react'
 import { useState } from 'react'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
@@ -24,6 +24,11 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
     product.comparison_price && product.comparison_price > product.selling_price
       ? Math.round(((product.comparison_price - product.selling_price) / product.comparison_price) * 100)
       : null
+
+  // Genuine rating only — never fabricated. Rendered only when real fields exist.
+  const rating = (product as { rating?: number }).rating
+  const reviewCount = (product as { review_count?: number }).review_count
+  const hasRating = typeof rating === 'number' && rating > 0 && typeof reviewCount === 'number' && reviewCount > 0
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -51,12 +56,16 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
           />
         </Link>
 
-        {/* Discount Badge */}
-        {discountPercent && discountPercent > 0 && (
-          <span className="absolute left-2 top-2 rounded bg-error px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+        {/* Circular discount badge (genuine comparison price only) */}
+        {discountPercent && discountPercent > 0 ? (
+          <span className="absolute left-2 top-2 grid h-11 w-11 place-items-center rounded-full bg-error text-[11px] font-extrabold leading-none text-white shadow-sm">
             -{discountPercent}%
           </span>
-        )}
+        ) : product.featured ? (
+          <span className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+            Featured
+          </span>
+        ) : null}
 
         {/* Condition Badge (if brand new or verified refurbished) */}
         {product.laptop_condition && (
@@ -105,6 +114,22 @@ export default function ProductCard({ product }: { product: CatalogueProduct }) 
             {product.name}
           </Link>
         </h3>
+
+        {/* Genuine rating & review count (only when real data exists) */}
+        {hasRating && (
+          <div className="flex items-center gap-1 text-[11px]">
+            <span className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  className={`h-3 w-3 ${s <= Math.round(rating!) ? 'fill-current text-amber' : 'text-slate-300'}`}
+                />
+              ))}
+            </span>
+            <span className="font-bold text-ink">{rating!.toFixed(1)}</span>
+            <span className="text-muted">({reviewCount})</span>
+          </div>
+        )}
 
         {/* Hardware Specifications Snippet */}
         <p className="line-clamp-1 text-[11px] font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100">
