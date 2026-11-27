@@ -48,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     group: 'Core Business',
     items: [
       { label: 'Overview', to: '/admin', icon: LayoutDashboard },
+      { label: 'Sales Insights', to: '/admin/sales-insights', icon: DollarSign },
       { label: 'Sales & Orders', to: '/admin/orders', icon: ShoppingCart },
       { label: 'Stock & Inventory', to: '/admin/inventory', icon: Boxes },
     ],
