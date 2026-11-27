@@ -41,6 +41,7 @@ import AdminPricingRules from '@/pages/admin/PricingRules'
 import AdminMarketing from '@/pages/admin/Marketing'
 import AdminSalesInsights from '@/pages/admin/SalesInsights'
 import AdminReviews from '@/pages/admin/Reviews'
+import AdminHomepageSections from '@/pages/admin/HomepageSections'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
 const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
@@ -99,6 +100,7 @@ function App() {
         <Route path="admin/marketing" element={<AdminMarketing />} />
         <Route path="admin/sales-insights" element={<AdminSalesInsights />} />
         <Route path="admin/reviews" element={<AdminReviews />} />
+        <Route path="admin/homepage-sections" element={<AdminHomepageSections />} />
 
         {/* Employee routes — protected by Guard inside EmployeeLayout */}
         <Route path="employee" element={<EmployeeLayout />} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 import ProductCard from '@/components/ProductCard'
@@ -102,6 +102,7 @@ export default function Home() {
   const [slideIndex, setSlideIndex] = useState(0)
   const [flashSales, setFlashSales] = useState<any[]>([])
   const [campaign, setCampaign] = useState<any | null>(null)
+  const [homeSections, setHomeSections] = useState<any[]>([])
 
   useEffect(() => {
     fetchProducts()
@@ -129,6 +130,14 @@ export default function Home() {
       .order('sort_order')
       .limit(1)
       .then(({ data }) => setCampaign(data && data[0] ? data[0] : null))
+    supabase
+      .from('homepage_sections')
+      .select('*')
+      .eq('is_visible', true)
+      .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+      .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+      .order('position', { ascending: true })
+      .then(({ data }) => setHomeSections(data || []))
   }, [])
 
   // Automatic hero slider rotation
@@ -325,6 +334,11 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* ADMIN-MANAGED HOMEPAGE SECTIONS (DB-driven, honour visibility + schedule) */}
+      {homeSections.map((section) => (
+        <HomeSection key={section.id} section={section} products={published} />
+      ))}
 
       {/* 2. POPULAR CATEGORIES (repositioned below the hero) */}
       <section className="wrap mt-8">
@@ -586,6 +600,83 @@ export default function Home() {
         </div>
       </section>
     </div>
+  )
+}
+
+function HomeSection({ section, products }: { section: any; products: any[] }) {
+  const selected: any[] = (section.product_ids || [])
+    .map((id: string) => products.find((p) => p.id === id))
+    .filter(Boolean)
+  // Auto-fill when no explicit products are chosen: fall back to newest published.
+  const items = (selected.length > 0 ? selected : products).slice(0, 12)
+  if (items.length === 0 && !section.banner_image) return null
+
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const scrollBy = (dir: number) => {
+    scrollerRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  }
+
+  return (
+    <section className="wrap mt-10">
+      <div className="flex items-center justify-between border-b border-line pb-3">
+        <div>
+          <h2 className="font-display text-lg sm:text-xl font-bold text-ink">{section.title}</h2>
+          {section.subtitle && <p className="text-xs text-muted">{section.subtitle}</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          {section.layout === 'carousel' && items.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => scrollBy(-1)}
+                className="grid h-8 w-8 place-items-center rounded-full border border-line bg-white text-ink hover:border-primary hover:text-primary"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollBy(1)}
+                className="grid h-8 w-8 place-items-center rounded-full border border-line bg-white text-ink hover:border-primary hover:text-primary"
+                aria-label="Next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          {section.banner_link && (
+            <Link to={section.banner_link} className="text-xs font-bold text-primary hover:underline">
+              {section.cta_text || 'View all →'}
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {section.banner_image && (
+        <Link
+          to={section.banner_link || '/shop'}
+          className="mt-4 block overflow-hidden rounded-xl border border-line shadow-xs"
+        >
+          <img src={section.banner_image} alt={section.title} loading="lazy" className="max-h-64 w-full object-cover" />
+        </Link>
+      )}
+
+      {section.layout === 'carousel' ? (
+        <div ref={scrollerRef} className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+          {items.map((product) => (
+            <div key={product.id} className="w-[46%] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[18%] min-[1400px]:w-[15.5%]">
+              <ProductCard product={product} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={`mt-4 ${PRODUCT_GRID}`}>
+          {items.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
