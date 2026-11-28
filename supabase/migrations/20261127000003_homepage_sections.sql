@@ -36,3 +36,7 @@ drop policy if exists homepage_sections_manage on public.homepage_sections;
 create policy homepage_sections_manage on public.homepage_sections
   for all using (public.current_profile_role() in ('owner', 'manager'))
   with check (public.current_profile_role() in ('owner', 'manager'));
+
+-- Privileges: storefront (anon) may read; authenticated may read + manage (RLS gates writes to owner/manager).
+grant select on public.homepage_sections to anon, authenticated;
+grant insert, update, delete on public.homepage_sections to authenticated;
