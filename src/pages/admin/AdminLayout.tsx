@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import Logo from '@/components/Logo'
@@ -26,6 +26,7 @@ import {
   Star,
   LayoutTemplate,
   Flag,
+  ChevronDown,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -51,40 +52,56 @@ const NAV_GROUPS: NavGroup[] = [
     group: 'Core Business',
     items: [
       { label: 'Overview', to: '/admin', icon: LayoutDashboard },
-      { label: 'Sales Insights', to: '/admin/sales-insights', icon: DollarSign },
-      { label: 'Sales & Orders', to: '/admin/orders', icon: ShoppingCart },
-      { label: 'Stock & Inventory', to: '/admin/inventory', icon: Boxes },
+      { label: 'Sales Analytics', to: '/admin/sales-insights', icon: DollarSign },
+      { label: 'Orders', to: '/admin/orders', icon: ShoppingCart },
+      { label: 'Customers', to: '/admin/employees', icon: Users },
+      { label: 'Inventory', to: '/admin/inventory', icon: Boxes },
     ],
   },
   {
-    group: 'Scraper & Catalogue',
+    group: 'Catalogue',
     items: [
-      { label: 'Product Scraper & Import', to: '/admin/product-import', icon: UploadCloud, badge: 'Scraper' },
-      { label: 'Batch Publishing', to: '/admin/product-publishing', icon: Rocket },
-      { label: 'Live Catalog', to: '/admin/products', icon: Package },
+      { label: 'Products', to: '/admin/products', icon: Package },
       { label: 'Categories', to: '/admin/categories', icon: Layers },
       { label: 'Brands', to: '/admin/brands', icon: Tags },
+      { label: 'Product Reports', to: '/admin/product-reports', icon: Flag },
+      { label: 'Suppliers', to: '/admin/suppliers', icon: Building2 },
+      { label: 'Product Import', to: '/admin/product-import', icon: UploadCloud, badge: 'Scraper' },
+      { label: 'Batch Publishing', to: '/admin/product-publishing', icon: Rocket },
       { label: 'Pricing Rules', to: '/admin/pricing-rules', icon: Percent },
     ],
   },
   {
-    group: 'Content & Growth',
+    group: 'Store Management',
     items: [
-      { label: 'Marketing & Promotions', to: '/admin/marketing', icon: Megaphone, badge: 'Offers' },
-      { label: 'Review Moderation', to: '/admin/reviews', icon: Star },
       { label: 'Homepage Sections', to: '/admin/homepage-sections', icon: LayoutTemplate },
-      { label: 'Product Reports', to: '/admin/product-reports', icon: Flag },
-      { label: 'Knowledge Centre', to: '/admin/blog', icon: BookOpen, badge: 'Blog' },
-      { label: 'Product Research', to: '/admin/research', icon: Compass },
-      { label: 'Suppliers', to: '/admin/suppliers', icon: Building2 },
+      { label: 'Marketing & Promotions', to: '/admin/marketing', icon: Megaphone, badge: 'Offers' },
     ],
   },
   {
-    group: 'Operations & Settings',
+    group: 'Customer Experience',
     items: [
-      { label: 'Delivery Zones (47 Counties)', to: '/admin/delivery-zones', icon: MapPin },
+      { label: 'Review Moderation', to: '/admin/reviews', icon: Star },
+      { label: 'Knowledge Centre', to: '/admin/blog', icon: BookOpen, badge: 'Blog' },
+      { label: 'Product Research', to: '/admin/research', icon: Compass },
+    ],
+  },
+  {
+    group: 'Finance',
+    items: [
       { label: 'Finance & P&L', to: '/admin/finance', icon: DollarSign, ownerOnly: true },
+    ],
+  },
+  {
+    group: 'Operations',
+    items: [
+      { label: 'Delivery Zones', to: '/admin/delivery-zones', icon: MapPin },
       { label: 'Staff Management', to: '/admin/employees', icon: Users },
+    ],
+  },
+  {
+    group: 'Settings',
+    items: [
       { label: 'Business Settings', to: '/admin/settings', icon: Settings, ownerOnly: true },
     ],
   },
@@ -95,6 +112,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const isOwner = user?.role === 'owner'
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   return (
     <Guard roles={['owner', 'manager']}>
@@ -114,9 +132,16 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
               if (visibleItems.length === 0) return null
               return (
                 <div key={group.group}>
-                  <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [group.group]: !prev[group.group] }))}
+                    className="flex w-full items-center justify-between px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-muted hover:text-ink"
+                    aria-expanded={!collapsed[group.group]}
+                  >
                     {group.group}
-                  </p>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${collapsed[group.group] ? '-rotate-90' : ''}`} />
+                  </button>
+                  {!collapsed[group.group] && (
                   <div className="space-y-0.5">
                     {visibleItems.map((item) => {
                       const Icon = item.icon
@@ -146,6 +171,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
                       )
                     })}
                   </div>
+                  )}
                 </div>
               )
             })}
@@ -179,7 +205,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
         </aside>
 
         {/* Main Content Area */}
-        <div className="flex flex-1 flex-col overflow-x-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
           {/* Top Bar */}
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-card/90 px-4 sm:px-6 backdrop-blur">
             <div>
@@ -218,7 +244,7 @@ export default function AdminLayout({ title, subtitle, actions, children }: Admi
           </nav>
 
           {/* Page Body */}
-          <main className="flex-1 p-3 sm:p-5">{children}</main>
+          <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-5">{children}</main>
         </div>
       </div>
     </Guard>
