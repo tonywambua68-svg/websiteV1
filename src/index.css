@@ -439,3 +439,31 @@
   line-height: 1.4;
   min-height: 2.1rem;
 }
+
+/* Horizontal product row: 6 + peek (desktop), 3-4 (tablet), 2 + peek (phone). */
+.product-row-track {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.product-row-track::-webkit-scrollbar {
+  display: none;
+}
+.product-row-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: calc(100% / 2.35);
+}
+@media (min-width: 640px) {
+  .product-row-card {
+    width: calc(100% / 3.35);
+  }
+}
+@media (min-width: 1024px) {
+  .product-row-card {
+    width: calc(100% / 6.35);
+  }
+}

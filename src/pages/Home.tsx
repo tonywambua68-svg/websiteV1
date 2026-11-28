@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 import ProductCard from '@/components/ProductCard'
+import ProductRow from '@/components/ProductRow/ProductRow'
+import type { ProductRowItem } from '@/components/ProductRow/ProductCard'
+import type { CatalogueProduct } from '@/lib/domain'
 import RecentlyViewed from '@/components/RecentlyViewed'
 import { getSupabase } from '@/lib/supabase'
 import {
@@ -69,6 +72,20 @@ const PROMO_SLIDES = [
 // Consistent 6-per-row product grid on large desktops.
 const PRODUCT_GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 min-[1400px]:grid-cols-6'
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
+
+// Map a real catalogue product to the JSON-driven ProductRow shape (no fabricated data).
+function toRowItem(p: CatalogueProduct): ProductRowItem {
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.selling_price,
+    old_price: p.comparison_price ?? 0,
+    rating: (p as { rating?: number }).rating ?? 0,
+    reviews: (p as { review_count?: number }).review_count ?? 0,
+    image: p.image_url ?? '',
+    link: `/product/${p.slug}`,
+  }
+}
 
 // Image-based category discovery (representative image pulled from live catalogue).
 const CATEGORY_CARDS = [
@@ -150,6 +167,7 @@ export default function Home() {
 
   const published = products.filter((p) => p.publication_status === 'published' || p.availability !== 'unavailable')
   const deals = products.filter((p) => p.comparison_price && p.comparison_price > p.selling_price).slice(0, 12)
+  const featured = products.filter((p) => p.featured).slice(0, 12)
   const newArrivals = [...products]
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
     .slice(0, 12)
@@ -339,6 +357,35 @@ export default function Home() {
       {homeSections.map((section) => (
         <HomeSection key={section.id} section={section} products={published} />
       ))}
+
+      {/* PRODUCT ROWS (real catalogue data, horizontal scroll) */}
+      {deals.length > 0 && (
+        <div className="wrap mt-10">
+          <ProductRow
+            config={{
+              title: 'Deals & Discounts',
+              subtitle: 'Top tech at reduced prices — limited stock.',
+              color: 'blue',
+              see_all_link: '/shop?offers=1',
+              products: deals.map(toRowItem),
+            }}
+          />
+        </div>
+      )}
+
+      {(featured.length > 0 || newArrivals.length > 0) && (
+        <div className="wrap mt-6">
+          <ProductRow
+            config={{
+              title: 'Featured Products',
+              subtitle: 'Handpicked laptops, SSDs and monitors.',
+              color: 'green',
+              see_all_link: '/shop?featured=1',
+              products: (featured.length > 0 ? featured : newArrivals).map(toRowItem),
+            }}
+          />
+        </div>
+      )}
 
       {/* 2. POPULAR CATEGORIES (repositioned below the hero) */}
       <section className="wrap mt-8">
