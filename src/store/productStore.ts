@@ -20,6 +20,34 @@ interface ProductState {
   fetchSection: (filters: ShopQuery, limit?: number) => Promise<CatalogueProduct[]>
 }
 
+type RatingMap = Record<string, { rating: number; count: number }>
+let RATING_CACHE: { at: number; map: RatingMap } | null = null
+
+async function loadRatingMap(supabase: any): Promise<RatingMap> {
+  const now = Date.now()
+  if (RATING_CACHE && now - RATING_CACHE.at < 60000) return RATING_CACHE.map
+  const map: RatingMap = {}
+  try {
+    const { data } = await supabase.rpc('product_rating_summary')
+    if (Array.isArray(data)) {
+      for (const r of data) {
+        map[r.product_id] = { rating: Number(r.avg_rating) || 0, count: Number(r.review_count) || 0 }
+      }
+    }
+  } catch {
+    /* RPC not available yet — cards simply omit ratings (never fabricated). */
+  }
+  RATING_CACHE = { at: now, map }
+  return map
+}
+
+function applyRatings<T extends CatalogueProduct>(list: T[], map: RatingMap): T[] {
+  return list.map((p) => {
+    const r = map[p.id]
+    return r ? ({ ...p, rating: r.rating, review_count: r.count } as T) : p
+  })
+}
+
 function applyFilters(query: any, filters: ShopQuery) {
   let next = query
   if (filters.category) next = next.eq('category_slug', filters.category)
@@ -129,9 +157,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
       if (data && data.length > 0) {
         const mapped = (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+        const withRatings = applyRatings(mapped, await loadRatingMap(supabase))
         set({
-          products: mapped,
-          allProducts: mapped,
+          products: withRatings,
+          allProducts: withRatings,
           total: count ?? mapped.length,
           page,
           loading: false,
@@ -248,7 +277,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
       try {
         const { data, error } = await applyFilters(supabase.from('catalogue_products').select('*'), filters).limit(limit)
         if (!error && data) {
-          return (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+          const mapped = (data as Record<string, unknown>[]).map((row) => asCatalogue(row))
+          return applyRatings(mapped, await loadRatingMap(supabase))
         }
       } catch (err) {
         console.warn('Supabase section fetch unavailable:', err)
