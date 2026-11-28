@@ -42,6 +42,7 @@ import AdminMarketing from '@/pages/admin/Marketing'
 import AdminSalesInsights from '@/pages/admin/SalesInsights'
 import AdminReviews from '@/pages/admin/Reviews'
 import AdminHomepageSections from '@/pages/admin/HomepageSections'
+import LaptopFinder from '@/pages/LaptopFinder'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
 const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
@@ -64,6 +65,7 @@ function App() {
           <Route path="order-confirmation/:orderNumber" element={<OrderConfirmation />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="compare" element={<Compare />} />
+          <Route path="laptop-finder" element={<LaptopFinder />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Login />} />
           <Route path="blog" element={<BlogListing />} />

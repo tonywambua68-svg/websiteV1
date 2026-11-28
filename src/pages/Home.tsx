@@ -539,6 +539,9 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Link to="/laptop-finder" className="btn btn-primary !h-10 text-xs font-bold">
+                Laptop Finder
+              </Link>
               <Link to="/blog" className="btn btn-primary !h-10 text-xs font-bold">
                 Visit the Blog
               </Link>
