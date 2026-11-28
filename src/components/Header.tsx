@@ -14,6 +14,7 @@ import {
   Truck,
   ShieldCheck,
   Search,
+  HelpCircle,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
@@ -149,6 +150,32 @@ export default function Header() {
                 </div>
               </Link>
             )}
+
+            {/* Help dropdown (hover) — links to help, policies & support */}
+            <div className="group relative">
+              <Link
+                to="/help"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-left hover:bg-white/10 transition-colors"
+                aria-haspopup="true"
+              >
+                <HelpCircle className="h-4 w-4 text-cyan" />
+                <div className="hidden sm:block leading-tight">
+                  <span className="block text-[10px] text-slate-400">Support</span>
+                  <span className="block text-xs font-bold text-white">Help</span>
+                </div>
+              </Link>
+              <div className="invisible absolute right-0 z-50 mt-1 w-60 translate-y-1 rounded-lg border border-line bg-white p-2 text-ink opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                <p className="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted">Help &amp; Support</p>
+                <Link to="/help" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Help Centre</Link>
+                <Link to="/how-to-order" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">How to Order</Link>
+                <Link to="/policies/delivery" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Delivery Information</Link>
+                <Link to="/policies/returns" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Returns &amp; Refunds</Link>
+                <Link to="/policies/warranty" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Warranty</Link>
+                <Link to="/policies/payment" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Payment Information</Link>
+                <Link to="/faq" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">FAQs</Link>
+                <Link to="/contact" className="block rounded px-3 py-2 text-xs font-semibold hover:bg-blue-50 hover:text-primary">Contact Us</Link>
+              </div>
+            </div>
 
             {/* Saved / Wishlist */}
             <Link
