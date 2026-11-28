@@ -32,8 +32,8 @@ export default function Footer() {
               <Truck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-white">Countrywide Delivery</p>
-              <p className="text-[11px] text-slate-400">All 47 Counties in Kenya</p>
+              <p className="text-xs font-bold text-white">Delivery Options</p>
+              <p className="text-[11px] text-slate-400">Shown at checkout</p>
             </div>
           </div>
 
@@ -42,8 +42,8 @@ export default function Footer() {
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-white">Secure M-PESA &amp; Bank</p>
-              <p className="text-[11px] text-slate-400">Verified Payment References</p>
+              <p className="text-xs font-bold text-white">Payment Options</p>
+              <p className="text-[11px] text-slate-400">Confirmed methods at checkout</p>
             </div>
           </div>
 
@@ -70,7 +70,7 @@ export default function Footer() {
       </div>
 
       {/* Main Footer Links */}
-      <div className="wrap grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="wrap grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-5">
         {/* Brand info */}
         <div>
           <Logo light />
@@ -108,28 +108,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Shop */}
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wider text-white">Shop Categories</p>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-white">Shop</p>
           <div className="mt-3 grid gap-2 text-xs">
-            <Link to="/shop?category=laptops" className="hover:text-white transition-colors">
-              Business &amp; Everyday Laptops
-            </Link>
-            <Link to="/shop?category=desktops" className="hover:text-white transition-colors">
-              Desktops &amp; Workstations
-            </Link>
-            <Link to="/shop?category=monitors" className="hover:text-white transition-colors">
-              Monitors &amp; Displays
-            </Link>
-            <Link to="/shop?category=storage-devices" className="hover:text-white transition-colors">
-              Storage, NVMe &amp; SSDs
-            </Link>
-            <Link to="/shop?category=computer-accessories" className="hover:text-white transition-colors">
-              Computer Accessories &amp; Chargers
-            </Link>
-            <Link to="/shop?offers=1" className="text-amber hover:underline font-semibold">
-              Today&rsquo;s Hot Deals
-            </Link>
+            <Link to="/shop?category=laptops" className="hover:text-white transition-colors">Laptops</Link>
+            <Link to="/shop?category=desktops" className="hover:text-white transition-colors">Desktops &amp; Workstations</Link>
+            <Link to="/shop?category=monitors" className="hover:text-white transition-colors">Monitors &amp; Displays</Link>
+            <Link to="/shop?category=storage-devices" className="hover:text-white transition-colors">Storage, NVMe &amp; SSDs</Link>
+            <Link to="/shop?category=computer-accessories" className="hover:text-white transition-colors">Accessories &amp; Chargers</Link>
+            <Link to="/shop?offers=1" className="text-amber hover:underline font-semibold">Today&rsquo;s Hot Deals</Link>
           </div>
         </div>
 
@@ -137,34 +125,52 @@ export default function Footer() {
         <div>
           <p className="text-xs font-extrabold uppercase tracking-wider text-white">Customer Care</p>
           <div className="mt-3 grid gap-2 text-xs">
-            <Link to="/order-tracking" className="hover:text-white transition-colors">
-              Track Your Order
-            </Link>
-            <Link to="/account" className="hover:text-white transition-colors">
-              My Account &amp; Order History
-            </Link>
-            <Link to="/about" className="hover:text-white transition-colors">
-              About OREMITECH
-            </Link>
-            <Link to="/contact" className="hover:text-white transition-colors">
-              Contact &amp; Store Location
-            </Link>
-            <Link to="/faq" className="hover:text-white transition-colors">
-              Frequently Asked Questions
-            </Link>
-            <Link to="/blog" className="hover:text-white transition-colors">
-              Tech Guides &amp; Blog
-            </Link>
+            <Link to="/order-tracking" className="hover:text-white transition-colors">Track Your Order</Link>
+            <Link to="/account" className="hover:text-white transition-colors">My Account &amp; Orders</Link>
+            <Link to="/wishlist" className="hover:text-white transition-colors">Wishlist</Link>
+            <Link to="/laptop-finder" className="hover:text-white transition-colors">Laptop Finder</Link>
+            <Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link>
+            <Link to="/help" className="hover:text-white transition-colors">Help Centre</Link>
           </div>
         </div>
 
-        {/* Newsletter & Updates */}
+        {/* Help & Policies */}
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wider text-white">Tech Newsletter</p>
-          <p className="mt-2 text-xs text-slate-400">
-            Get instant alerts on newly arrived laptops, price drops, and verified stock updates.
-          </p>
-          <form onSubmit={subscribe} className="mt-3">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-white">Help &amp; Policies</p>
+          <div className="mt-3 grid gap-2 text-xs">
+            <Link to="/how-to-order" className="hover:text-white transition-colors">How to Order</Link>
+            <Link to="/policies/delivery" className="hover:text-white transition-colors">Delivery Information</Link>
+            <Link to="/policies/returns" className="hover:text-white transition-colors">Returns &amp; Refunds</Link>
+            <Link to="/policies/warranty" className="hover:text-white transition-colors">Warranty</Link>
+            <Link to="/policies/payment" className="hover:text-white transition-colors">Payment Information</Link>
+            <Link to="/faq" className="hover:text-white transition-colors">FAQs</Link>
+          </div>
+        </div>
+
+        {/* Company */}
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-white">Company</p>
+          <div className="mt-3 grid gap-2 text-xs">
+            <Link to="/about" className="hover:text-white transition-colors">About OREMITECH</Link>
+            <Link to="/blog" className="hover:text-white transition-colors">Tech Guides &amp; Blog</Link>
+            <Link to="/product-request" className="hover:text-white transition-colors">Request a Product</Link>
+            <Link to="/bulk-orders" className="hover:text-white transition-colors">Bulk &amp; Corporate Orders</Link>
+            <Link to="/report-product" className="hover:text-white transition-colors">Report a Product</Link>
+            <Link to="/policies/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/policies/terms" className="hover:text-white transition-colors">Terms &amp; Conditions</Link>
+            <Link to="/policies/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Newsletter strip */}
+      <div className="border-t border-slate-800/80 bg-[#101820]">
+        <div className="wrap flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-wider text-white">Tech Newsletter</p>
+            <p className="mt-1 text-xs text-slate-400">Get alerts on new arrivals, price drops and verified stock updates.</p>
+          </div>
+          <form onSubmit={subscribe} className="flex w-full max-w-md gap-2">
             <input
               className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-primary focus:outline-none"
               type="email"
@@ -173,12 +179,12 @@ export default function Footer() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="Enter your email"
             />
-            <button className="mt-2 w-full rounded-md bg-primary py-2 text-xs font-bold text-white hover:bg-primary-hover shadow-sm transition-colors" type="submit">
+            <button className="rounded-md bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover shadow-sm transition-colors" type="submit">
               Subscribe
             </button>
-            {note && <p className="mt-2 text-[11px] text-cyan">{note}</p>}
           </form>
         </div>
+        {note && <p className="wrap pb-3 text-[11px] text-cyan">{note}</p>}
       </div>
 
       {/* Copyright */}

@@ -43,6 +43,7 @@ import AdminSalesInsights from '@/pages/admin/SalesInsights'
 import AdminReviews from '@/pages/admin/Reviews'
 import AdminHomepageSections from '@/pages/admin/HomepageSections'
 import LaptopFinder from '@/pages/LaptopFinder'
+import { InfoPage, SupportFormPage } from '@/pages/InfoPages'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
 const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
@@ -66,6 +67,12 @@ function App() {
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="compare" element={<Compare />} />
           <Route path="laptop-finder" element={<LaptopFinder />} />
+          <Route path="policies/:slug" element={<InfoPage />} />
+          <Route path="how-to-order" element={<InfoPage slug="how-to-order" />} />
+          <Route path="help" element={<InfoPage slug="help" />} />
+          <Route path="product-request" element={<SupportFormPage kind="request" />} />
+          <Route path="report-product" element={<SupportFormPage kind="report" />} />
+          <Route path="bulk-orders" element={<SupportFormPage kind="bulk" />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Login />} />
           <Route path="blog" element={<BlogListing />} />
