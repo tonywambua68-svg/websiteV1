@@ -38,6 +38,7 @@ import {
   Send,
   Clock,
   Edit2,
+  Flag,
 } from 'lucide-react'
 
 const PLACEHOLDER = '/images/products/laptop-placeholder.svg'
@@ -79,6 +80,15 @@ export default function ProductDetail() {
   const [enqMessage, setEnqMessage] = useState('')
   const [submittingEnq, setSubmittingEnq] = useState(false)
   const [enqFeedback, setEnqFeedback] = useState<string | null>(null)
+
+  // Report incorrect product information
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportReason, setReportReason] = useState('spec')
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportName, setReportName] = useState('')
+  const [reportContact, setReportContact] = useState('')
+  const [reportState, setReportState] = useState<'idle' | 'sending' | 'done'>('idle')
+  const [reportError, setReportError] = useState<string | null>(null)
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
@@ -301,6 +311,24 @@ export default function ProductDetail() {
     if (success) {
       navigate('/checkout')
     }
+  }
+
+  const submitReport = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setReportError(null)
+    if (!product) return
+    setReportState('sending')
+    const supabase = getSupabase()
+    if (!supabase) { setReportError('Database not configured.'); setReportState('idle'); return }
+    const { error } = await supabase.from('product_reports').insert({
+      product_id: product.id,
+      reason: reportReason,
+      details: reportDetails.trim() || null,
+      name: reportName.trim() || null,
+      contact: reportContact.trim() || null,
+    })
+    if (error) { setReportError(error.message); setReportState('idle'); return }
+    setReportState('done')
   }
 
   const handleShare = () => {
@@ -596,6 +624,68 @@ export default function ProductDetail() {
               <ShieldCheck className="h-4 w-4 text-success shrink-0" />
               <span>{product.warranty || 'See specifications for warranty details'}</span>
             </div>
+          </div>
+
+          {/* Delivery & Returns panel (honest — no invented services) */}
+          <div className="mt-4 rounded-xl border border-line bg-white p-4 text-xs shadow-xs">
+            <div className="flex items-center gap-2 font-bold text-ink">
+              <Truck className="h-4 w-4 text-primary" /> Delivery &amp; Returns
+            </div>
+            <p className="mt-2 text-muted">
+              Delivery is arranged by OREMITECH. Exact areas, fees and timing are confirmed at checkout for your location, or contact us to confirm before ordering.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3 text-[11px] font-bold">
+              <Link to="/policies/delivery" className="text-primary hover:underline">Delivery information</Link>
+              <Link to="/policies/returns" className="text-primary hover:underline">Returns &amp; refunds</Link>
+              <Link to="/policies/warranty" className="text-primary hover:underline">Warranty</Link>
+              <Link to="/help" className="text-primary hover:underline">Help centre</Link>
+            </div>
+          </div>
+
+          {/* Business / seller trust (OREMITECH itself — no invented third-party sellers) */}
+          <div className="mt-4 rounded-xl border border-line bg-white p-4 text-xs shadow-xs">
+            <div className="flex items-center gap-2 font-bold text-ink">
+              <ShieldCheck className="h-4 w-4 text-success" /> Sold &amp; supported by OREMITECH SOLUTIONS
+            </div>
+            <p className="mt-2 text-muted">Genuine products, clear specifications and transparent KSh pricing.</p>
+            <div className="mt-3 flex flex-wrap gap-3 text-[11px] font-bold">
+              <Link to="/about" className="text-primary hover:underline">About us</Link>
+              <Link to="/contact" className="text-primary hover:underline">Contact</Link>
+              <Link to="/help" className="text-primary hover:underline">Support</Link>
+            </div>
+          </div>
+
+          {/* Report incorrect product information */}
+          <div className="mt-4 rounded-xl border border-line bg-white p-4 text-xs shadow-xs">
+            {!reportOpen ? (
+              <button type="button" onClick={() => setReportOpen(true)} className="inline-flex items-center gap-1.5 font-bold text-muted hover:text-error">
+                <Flag className="h-3.5 w-3.5" /> Report incorrect product information
+              </button>
+            ) : reportState === 'done' ? (
+              <p className="font-bold text-success">Thank you — your report has been sent for review.</p>
+            ) : (
+              <form onSubmit={submitReport} className="space-y-2">
+                <p className="font-bold text-ink">Report an issue with this product</p>
+                <select value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="input w-full text-xs">
+                  <option value="spec">Incorrect specifications</option>
+                  <option value="image">Incorrect images</option>
+                  <option value="price">Incorrect price</option>
+                  <option value="condition">Incorrect condition</option>
+                  <option value="availability">Incorrect availability</option>
+                  <option value="other">Other problem</option>
+                </select>
+                <textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} rows={2} placeholder="Optional details" className="input w-full text-xs" />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder="Name (optional)" className="input text-xs" />
+                  <input value={reportContact} onChange={(e) => setReportContact(e.target.value)} placeholder="Phone/email (optional)" className="input text-xs" />
+                </div>
+                {reportError && <p className="text-[11px] font-bold text-error">{reportError}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" disabled={reportState === 'sending'} className="btn btn-primary !h-9 text-xs font-bold disabled:opacity-50">{reportState === 'sending' ? 'Sending…' : 'Submit report'}</button>
+                  <button type="button" onClick={() => setReportOpen(false)} className="btn btn-outline !h-9 text-xs font-bold">Cancel</button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

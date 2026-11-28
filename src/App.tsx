@@ -44,6 +44,7 @@ import AdminReviews from '@/pages/admin/Reviews'
 import AdminHomepageSections from '@/pages/admin/HomepageSections'
 import LaptopFinder from '@/pages/LaptopFinder'
 import { InfoPage, SupportFormPage } from '@/pages/InfoPages'
+import AdminProductReports from '@/pages/admin/ProductReports'
 import EmployeeLayout from '@/pages/employee/EmployeeLayout'
 
 const MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true'
@@ -110,6 +111,7 @@ function App() {
         <Route path="admin/sales-insights" element={<AdminSalesInsights />} />
         <Route path="admin/reviews" element={<AdminReviews />} />
         <Route path="admin/homepage-sections" element={<AdminHomepageSections />} />
+        <Route path="admin/product-reports" element={<AdminProductReports />} />
 
         {/* Employee routes — protected by Guard inside EmployeeLayout */}
         <Route path="employee" element={<EmployeeLayout />} />

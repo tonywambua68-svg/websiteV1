@@ -25,6 +25,7 @@ import {
   Megaphone,
   Star,
   LayoutTemplate,
+  Flag,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Marketing & Promotions', to: '/admin/marketing', icon: Megaphone, badge: 'Offers' },
       { label: 'Review Moderation', to: '/admin/reviews', icon: Star },
       { label: 'Homepage Sections', to: '/admin/homepage-sections', icon: LayoutTemplate },
+      { label: 'Product Reports', to: '/admin/product-reports', icon: Flag },
       { label: 'Knowledge Centre', to: '/admin/blog', icon: BookOpen, badge: 'Blog' },
       { label: 'Product Research', to: '/admin/research', icon: Compass },
       { label: 'Suppliers', to: '/admin/suppliers', icon: Building2 },
