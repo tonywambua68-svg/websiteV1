@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 
-/** Official OREMITECH brand mark (navy #0a1f1c rounded square, amber #f5a31a bar, teal #0b7a63 wedge). */
+/** Official OREMITECH brand mark (ink #101820 rounded square, electric-blue #087BFF bar, cyan #00C8E8 wedge) — matches site palette. */
 export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} role="img" aria-label="OREMITECH">
       <title>OREMITECH</title>
-      <rect width="32" height="32" rx="7" fill="#0a1f1c" />
-      <path d="M10 22V10h4v12z" fill="#f5a31a" />
-      <path d="M18 10l6 12h-4.5L15 13z" fill="#0b7a63" />
+      <rect width="32" height="32" rx="7" fill="#101820" />
+      <path d="M10 22V10h4v12z" fill="#087BFF" />
+      <path d="M18 10l6 12h-4.5L15 13z" fill="#00C8E8" />
     </svg>
   )
 }
